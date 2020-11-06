@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So21Mapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.report.So21View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+	<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[
+		SELECT ROW_NUMBER() OVER (ORDER BY t.branch) AS id, t.* FROM (
+		SELECT DISTINCT
+dh.name as branch,
+ eh.surname +  ' ' +  eh.name + ' ' + eh.PATRONUMIC + ' (' + eh.PERSONNEL_NUMBER + ')' as employee,
+ acc.card_number as bsk,
+ acc.check_time as dateTimes,
+ acc.park_name as operator,
+ case when acc.route_id is not null then CASE tt.COD WHEN '1' THEN 'А_' WHEN '2' THEN 'Тб_' WHEN '3' THEN 'Тр_' WHEN '4' THEN 'Э_' END + acc.route_number 
+ else case when len(acc.route_number) > 5 then acc.route_number  else CONCAT('А_',acc.route_number) end end as route,
+ acc.move_code as run
+FROM
+PBK_VIS.ASKP_CONTACTLESS_CARDS acc
+LEFt JOIN PBK_NSI.CONTACTLESS_CARD_HISTS cch on (acc.CARD_NUMBER = cch.UID)
+LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh on (cch.HEAD_ID = eh.CONTACTLESS_CARD_ID)
+LEFT JOIN PBK_NSI.DEPARTMENT_HISTS dh ON eh.DEPT_ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+JOIN PBK_NSI.EMP_DEPT_MOVES edm on (eh.DEPT_ID = edm.DEPT_ID and eh.HEAD_ID = edm.EMPLOYEE_ID)
+left JOIN PBK_NSI.ROUTE_HISTS rh on (acc.ROUTE_ID = rh.HEAD_ID)
+            LEFT JOIN PBK_NSI.ROUTE_TS_KINDS rtk on (rh.ROUTE_TS_KIND_ID = rtk.ID)
+            LEFT JOIN PBK_NSI.TS_TYPES tt on (rtk.COD = tt.COD)
+WHERE 1=1
+		]]><if test="filter.dateTimeFrom != null">
+		<![CDATA[
+			AND acc.CHECK_TIME >= #{filter.dateTimeFrom, jdbcType=DATE} and acc.CHECK_TIME <= #{filter.dateTimeTo, jdbcType=DATE}
+		]]></if>
+		<if test="filter.dateTimeFrom == null">
+		<![CDATA[
+			AND acc.WORK_DATE >= #{filter.dateFrom, jdbcType=DATE} and acc.WORK_DATE <= #{filter.dateTo, jdbcType=DATE}
+		]]></if>
+		<![CDATA[
+AND (#{filter.dateFrom, jdbcType=DATE} < cast(eh.V_END_DATE AS DATE))
+AND (#{filter.dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+AND (#{filter.dateFrom, jdbcType=DATE} <= cast(edm.PERIOD_end_DATE AS DATE))
+AND (#{filter.dateTo, jdbcType=DATE} >= cast(edm.PERIOD_START_DATE AS DATE))
+AND acc.card_number LIKE ('%${filter.bskId}%')
+and acc.ROUTE_NUMBER in (select distinct rh.ROUTE_NUMBER from
+PBK_NSI.ROUTE_HISTS rh where 1=1
+and (#{filter.dateFrom, jdbcType=DATE} < cast(rh.V_END_DATE AS DATE))
+AND (#{filter.dateTo, jdbcType=DATE} >= cast(rh.V_START_DATE AS DATE))
+        ]]><if test="filter.routeId != null">
+			<![CDATA[
+            and rh.HEAD_ID in (${filter.routeId})
+			]]></if>
+			)
+			<if test="filter.departmentId != null">
+			<![CDATA[
+			AND eh.DEPT_ID IN (${filter.departmentId})
+			]]></if>
+			<if test="filter.employeeId != null">
+			<![CDATA[
+				AND eh.HEAD_ID IN (${filter.employeeId})
+			]]></if>
+			<![CDATA[
+			and (#{filter.deptAuthId} is null or eh.DEPT_ID = #{filter.deptAuthId})
+			) t
+			]]>
+    <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+	
+	 <select id="getGridViewTotal" resultType="ru.armd.pbk.views.report.So21View">
+        <![CDATA[
+		select count(sub.run) as run from (
+		SELECT ROW_NUMBER() OVER (ORDER BY t.branch) AS id, t.* FROM (
+            SELECT DISTINCT
+dh.name as branch,
+ eh.surname +  ' ' +  eh.name + ' ' + eh.PATRONUMIC + ' (' + eh.PERSONNEL_NUMBER + ')' as employee,
+ acc.card_number as bsk,
+ acc.check_time as dateTimes,
+ acc.park_name as operator,
+ case when acc.route_id is not null then CASE tt.COD WHEN '1' THEN 'А_' WHEN '2' THEN 'Тб_' WHEN '3' THEN 'Тр_' WHEN '4' THEN 'Э_' END + acc.route_number 
+ else case when len(acc.route_number) > 5 then acc.route_number  else CONCAT('А_',acc.route_number) end end as route,
+ acc.move_code as run
+FROM
+PBK_VIS.ASKP_CONTACTLESS_CARDS acc
+LEFt JOIN PBK_NSI.CONTACTLESS_CARD_HISTS cch on (acc.CARD_NUMBER = cch.UID)
+LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh on (cch.HEAD_ID = eh.CONTACTLESS_CARD_ID)
+LEFT JOIN PBK_NSI.DEPARTMENT_HISTS dh ON eh.DEPT_ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+JOIN PBK_NSI.EMP_DEPT_MOVES edm on (eh.DEPT_ID = edm.DEPT_ID and eh.HEAD_ID = edm.EMPLOYEE_ID)
+left JOIN PBK_NSI.ROUTE_HISTS rh on (acc.ROUTE_ID = rh.HEAD_ID)
+            LEFT JOIN PBK_NSI.ROUTE_TS_KINDS rtk on (rh.ROUTE_TS_KIND_ID = rtk.ID)
+            LEFT JOIN PBK_NSI.TS_TYPES tt on (rtk.COD = tt.COD)
+WHERE 1=1
+		]]><if test="dateTimeFrom != null">
+		 <![CDATA[
+			AND acc.CHECK_TIME >= #{dateTimeFrom, jdbcType=DATE} and acc.CHECK_TIME <= #{dateTimeTo, jdbcType=DATE}
+		]]></if>
+		 <if test="dateTimeFrom == null">
+			 <![CDATA[
+			AND acc.WORK_DATE >= #{dateFrom, jdbcType=DATE} and acc.WORK_DATE <= #{dateTo, jdbcType=DATE}
+		]]></if>
+		 <![CDATA[
+AND (#{dateFrom, jdbcType=DATE} < cast(eh.V_END_DATE AS DATE))
+AND (#{dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+AND (#{dateFrom, jdbcType=DATE} <= cast(edm.PERIOD_end_DATE AS DATE))
+AND (#{dateTo, jdbcType=DATE} >= cast(edm.PERIOD_START_DATE AS DATE))
+AND acc.card_number LIKE ('%${bskId}%')
+and acc.ROUTE_NUMBER in (select distinct rh.ROUTE_NUMBER from
+PBK_NSI.ROUTE_HISTS rh where 1=1
+and (#{dateFrom, jdbcType=DATE} < cast(rh.V_END_DATE AS DATE))
+AND (#{dateTo, jdbcType=DATE} >= cast(rh.V_START_DATE AS DATE))
+        ]]><if test="routeId != null">
+			<![CDATA[
+            and rh.HEAD_ID in (${routeId})
+			]]></if>
+			)
+			<if test="departmentId != null">
+			<![CDATA[
+			AND eh.DEPT_ID IN (${departmentId})
+			]]></if>
+			<if test="employeeId != null">
+			<![CDATA[
+				AND eh.HEAD_ID IN (${employeeId})
+			]]></if>
+			<![CDATA[
+			and (#{deptAuthId} is null or eh.DEPT_ID = #{deptAuthId})
+			) t) as sub
+        ]]>
+    </select>
+
+</mapper>

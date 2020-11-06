@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.employee.EmployeeWorkModeMapper">
+
+		<sql id="fieldDomain">
+	        <![CDATA[				
+			  	,dh.[CREATE_DATE] as createDate
+			  	,dh.[CREATE_USER_ID] as createUserId
+			  	,dh.[UPDATE_DATE] as updateDate
+			  	,dh.[UPDATE_USER_ID] as updateUserId
+			  	,dh.[EMPLOYEE_ID] as employeeId
+			  	,dh.[WORK_MODE_ID] as workModeId
+			  	,dh.[WORK_PLAN_HOURS] as workPlanHours			  	
+			  	,dh.[WORK_DATE] as workDate
+			  	,dh.[IS_CHANGE] as isChange	 	  	
+	        ]]>
+		</sql>   
+	
+		<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.employee.EmployeeWorkMode" keyProperty="id" keyColumn="id">
+			<![CDATA[
+	        insert into PBK_NSI.EMPLOYEE_WORK_MODES (
+	                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[	             
+	        	, [EMPLOYEE_ID]
+	        	, [WORK_MODE_ID]        	
+	          	, [WORK_PLAN_HOURS]  	          	
+	          	, [WORK_DATE]
+	          	, [IS_CHANGE]             	
+	        ) VALUES (
+	               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[	               
+	        	, #{employeeId}
+	        	, #{workModeId}
+				, #{workPlanHours}				
+				, #{workDate}
+				, #{isChange}				      	
+	        )
+	        ]]>
+			<selectKey order="AFTER" resultType="long" keyProperty="id">
+				<![CDATA[
+	              SELECT IDENT_CURRENT( 'PBK_NSI.EMPLOYEE_WORK_MODES' ) as id
+	            ]]>
+			</selectKey>
+		</insert>
+		
+		<select id="getDomain" resultType="ru.armd.pbk.domain.nsi.employee.EmployeeWorkMode">
+			<![CDATA[
+				SELECT 
+					dh.id as id
+	            	]]><include refid="fieldDomain" /><![CDATA[
+				FROM
+	            	PBK_NSI.EMPLOYEE_WORK_MODES dh
+				WHERE
+	  			    (#{workDate} is not null and dh.WORK_DATE = #{workDate}) 
+					AND (#{employeeId} is not null and dh.EMPLOYEE_ID = #{employeeId})		
+                ORDER BY UPDATE_DATE desc
+                offset 0 rows fetch first 1 rows only		
+	        ]]>
+		</select>
+		
+		<update id="update" parameterType="ru.armd.pbk.domain.nsi.employee.EmployeeWorkMode">
+	    	<![CDATA[
+			    UPDATE
+			    	PBK_NSI.EMPLOYEE_WORK_MODES
+			    SET
+			    	[CREATE_DATE] = #{createDate}
+			  		, [CREATE_USER_ID] = #{createUserId}
+			  		, [UPDATE_DATE] = #{updateDate}
+			  		, [UPDATE_USER_ID] = #{updateUserId}
+			  		, [EMPLOYEE_ID] = #{employeeId}
+			  		, [WORK_MODE_ID] = #{workModeId}
+			  		, [WORK_PLAN_HOURS] = #{workPlanHours}		  	
+			  		, [WORK_DATE] = #{workDate}
+			  		, [IS_CHANGE] = #{isChange}	
+			    WHERE
+			    	ID = #{id}
+		    ]]>
+    	</update>
+		
+		<select id="getDomains" resultType="ru.armd.pbk.domain.nsi.employee.EmployeeWorkMode">
+			<![CDATA[
+				SELECT 
+					dh.id as id
+	            	]]><include refid="fieldDomain" /><![CDATA[
+				FROM
+	            	PBK_NSI.EMPLOYEE_WORK_MODES dh
+				WHERE
+	  			    dh.EMPLOYEE_ID = #{employeeId} 
+	  			    and (cast(#{dateFrom} as DATE) is null or cast(#{dateFrom} as DATE) <= cast(dh.WORK_DATE as DATE))
+	  			    and (cast(#{dateTo} as DATE) is null or cast(#{dateTo} as DATE) >= cast(dh.WORK_DATE as DATE))
+				ORDER BY
+					dh.WORK_DATE			
+	        ]]>
+		</select>
+		
+</mapper>

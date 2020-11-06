@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.easu.EasuTripScheduleMapper">
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.easu.EasuTripSchedule" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_VIS].[FHD_TRIP_SCHEDULE] (
+                 [DATE]
+                ,[SCHEDULE_CODE]
+                ,[RECORD_NUM]
+                ,[ROUTE_CODE]
+                ,[MOVE_CODE]
+                ,[SHIFT_NUM]
+                ,[VEHICLE_TYPE]
+                ,[DAY_TYPE]
+                ,[SHORT_STOP_NAME]
+                ,[STOP_NAME]
+                ,[TIME]
+                ,[ROUTE_NUM]
+            ) VALUES (
+                  #{date}
+                , #{scheduleCode}
+                , #{recordNum}
+                , #{routeCode}
+                , #{moveCode}
+                , #{shiftNum}
+                , #{vehicleType}
+                , #{dayType}
+                , #{shortStopName}
+                , #{stopName}
+                , #{time}
+                , #{routeNum}
+            )
+        ]]>
+        <!-- selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_VIS.FHD_TRIP_SCHEDULE' ) as id
+            ]]>
+        </selectKey -->
+    </insert>
+
+    <insert id="insertBulk" parameterType="java.util.List">
+        <![CDATA[
+            INSERT INTO [PBK_VIS].[FHD_TRIP_SCHEDULE] (
+                 [DATE]
+                ,[SCHEDULE_CODE]
+                ,[RECORD_NUM]
+                ,[ROUTE_CODE]
+                ,[MOVE_CODE]
+                ,[SHIFT_NUM]
+                ,[VEHICLE_TYPE]
+                ,[DAY_TYPE]
+                ,[SHORT_STOP_NAME]
+                ,[STOP_NAME]
+                ,[TIME]
+                ,[ROUTE_NUM]
+            ) VALUES
+        ]]><foreach collection="list" item="element" index="index" separator=","><![CDATA[
+            (
+                  #{element.date}
+                , #{element.scheduleCode}
+                , #{element.recordNum}
+                , #{element.routeCode}
+                , #{element.moveCode}
+                , #{element.shiftNum}
+                , #{element.vehicleType}
+                , #{element.dayType}
+                , #{element.shortStopName}
+                , #{element.stopName}
+                , #{element.time}
+                , #{routeNum}
+            )
+        ]]></foreach>
+    </insert>
+</mapper>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fhd:ExportDepartmentResponse xmlns:com="http://mgt.ru/pbk/xsd/1/Common" xmlns:dept="http://mgt.ru/pbk/xsd/fhd/1/Departments" xmlns:dr="http://mgt.ru/pbk/xsd/fhd/1/DataRequest" xmlns:emp="http://mgt.ru/pbk/xsd/fhd/1/Employees" xmlns:ewm="http://mgt.ru/pbk/xsd/fhd/1/EmployeeWorkModes" xmlns:fhd="http://mgt.ru/pbk/xsd/fhd/1/MessageData" xmlns:tsv="http://mgt.ru/pbk/xsd/fhd/1/TsVenicles" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://mgt.ru/pbk/xsd/fhd/1/MessageData xsd/MessageData.xsd ">
+  <dept:departments>
+  
+    <dept:department>
+      <dept:ident>1</dept:ident>
+      <dept:name>СДиК</dept:name>
+      <dept:fullName>Служба доходов и контроля (СДиК)</dept:fullName>
+    </dept:department>
+    
+    <dept:department>
+      <dept:ident>2</dept:ident>
+      <dept:name>ТО СДиК №1</dept:name>
+      <dept:fullName>Территориальный отдел СДиК (ТО СДиК) №1</dept:fullName>
+      <dept:parentDeptId>1</dept:parentDeptId>
+    </dept:department>
+    
+    <dept:department>
+      <dept:ident>3</dept:ident>
+      <dept:name>ТО СДиК №2</dept:name>
+      <dept:fullName>Территориальный отдел СДиК (ТО СДиК) №2</dept:fullName>
+      <dept:parentDeptId>1</dept:parentDeptId>
+    </dept:department>
+    
+    <dept:department>
+      <dept:ident>4</dept:ident>
+      <dept:name>ТО СДиК №3</dept:name>
+      <dept:fullName>Территориальный отдел СДиК (ТО СДиК) №3</dept:fullName>
+      <dept:parentDeptId>1</dept:parentDeptId>
+    </dept:department>
+
+    <dept:department>
+      <dept:ident>5</dept:ident>
+      <dept:name>ТО СДиК №4</dept:name>
+      <dept:fullName>Территориальный отдел СДиК (ТО СДиК) №4</dept:fullName>
+      <dept:parentDeptId>1</dept:parentDeptId>
+    </dept:department>
+
+    <dept:department>
+      <dept:ident>6</dept:ident>
+      <dept:name>ТО СДиК №5</dept:name>
+      <dept:fullName>Территориальный отдел СДиК (ТО СДиК) №5</dept:fullName>
+      <dept:parentDeptId>1</dept:parentDeptId>
+    </dept:department>
+
+  </dept:departments>
+  
+</fhd:ExportDepartmentResponse>

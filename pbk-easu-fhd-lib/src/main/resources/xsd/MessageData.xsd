@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"            
+           xmlns:dr="http://mgt.ru/pbk/xsd/fhd/1/DataRequest" 
+           xmlns:dept="http://mgt.ru/pbk/xsd/fhd/1/Departments"
+           xmlns:emp="http://mgt.ru/pbk/xsd/fhd/1/Employees"
+           xmlns:ewm="http://mgt.ru/pbk/xsd/fhd/1/EmployeeWorkModes"
+           xmlns:tsv="http://mgt.ru/pbk/xsd/fhd/1/TsVenicles"
+           xmlns:fhd="http://mgt.ru/pbk/xsd/fhd/1/MessageData" targetNamespace="http://mgt.ru/pbk/xsd/fhd/1/MessageData"
+           elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+  <xs:import namespace="http://mgt.ru/pbk/xsd/fhd/1/DataRequest" schemaLocation="DataRequest.xsd"/>
+  <xs:import namespace="http://mgt.ru/pbk/xsd/fhd/1/Departments" schemaLocation="Departments.xsd"/>
+  <xs:import namespace="http://mgt.ru/pbk/xsd/fhd/1/Employees" schemaLocation="Employees.xsd"/>
+  <xs:import namespace="http://mgt.ru/pbk/xsd/fhd/1/EmployeeWorkModes" schemaLocation="EmployeeWorkModes.xsd"/>
+  <xs:import namespace="http://mgt.ru/pbk/xsd/fhd/1/TsVenicles" schemaLocation="TsVenicles.xsd"/>
+
+
+  <xs:element name="RequestMessageData" abstract="true">
+    <xs:annotation>
+      <xs:documentation>Данные запроса</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="ResponseMessageData" abstract="true">
+    <xs:annotation>
+      <xs:documentation>Данные ответа</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+
+  <xs:element name="ExportRequest" type="dr:DataRequest" substitutionGroup="fhd:RequestMessageData">
+    <xs:annotation>
+      <xs:documentation>Запрос на экспорт сущностей из ЕАСУ ФХД</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+
+  <xs:element name="ExportDepartmentResponse" type="dept:ExportDepartmentResponseType" substitutionGroup="fhd:ResponseMessageData">
+    <xs:annotation>
+      <xs:documentation>Ответ на запрос подразделений</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+
+  <xs:element name="ExportEmployeeResponse" type="emp:ExportEmployeeResponseType" substitutionGroup="fhd:ResponseMessageData">
+    <xs:annotation>
+      <xs:documentation>Ответ на запрос сотрудников</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+
+  <xs:element name="ExportEmployeeWorkModeResponse" type="ewm:ExportEmployeeWorkModeResponseType" substitutionGroup="fhd:ResponseMessageData">
+    <xs:annotation>
+      <xs:documentation>Ответ на запрос балансов рабочего времени</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+
+  <xs:element name="ExportTsVenicleResponse" type="tsv:ExportTsVenicleResponseType" substitutionGroup="fhd:ResponseMessageData">
+    <xs:annotation>
+      <xs:documentation>Ответ на запрос балансов рабочего времени</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+
+</xs:schema>

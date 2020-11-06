@@ -1,0 +1,31 @@
+<div class="modal-header" draggable-modal>
+	<button type="button" class="close" data-dismiss="modal"
+		aria-label="Close" ng-click="close()">
+		<span aria-hidden="true">&times;</span>
+	</button>
+	<h4 class="modal-title">{{title}}</h4>
+</div>
+<div class="modal-body">
+    <div class="row">
+	   <form class="form-inline col-sm-12">
+			<div class="h6 col-sm-9">Файл: 
+				<span ng-show="!isEmptyFileInfo()">Не выбран</span>
+				<span class='' id="upload-file-info"></span>
+		    </div> 
+		    <div class="col-sm-2">
+				<a class='btn btn-primary btn-sm' href='javascript:;'>Выбрать файл 
+				    <input type="file" class="form-control file-btn-input"
+						   name="file_source" size="20" file-model="attachedFile"
+						   onchange='$("#upload-file-info").html($(this).val().replace("C:\\fakepath\\",""));'>
+				</a>
+			</div>
+    	</form>
+    </div>
+</div>
+<div class="modal-footer">
+	<button type="button" class="btn btn-primary" ng-click="save()" ng-disabled="attachedFile == null || isUploading">
+	   <span ng-show="!isUploading">Загрузить</span>
+	   <span ng-show="isUploading">Загрузка...</span>
+	</button>
+	<button type="button" class="btn btn-default" ng-click="close()" ng-disabled="isUploading">Отмена</button>
+</div>

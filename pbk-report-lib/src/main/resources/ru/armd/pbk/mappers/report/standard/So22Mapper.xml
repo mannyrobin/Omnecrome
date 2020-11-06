@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So22Mapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.report.So22View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[
+            SELECT ROW_NUMBER() OVER (ORDER BY t.workDateId) AS id, t.* FROM (
+select  distinct
+q.workDateId as workDateId
+,substring(q.deptName,0,7) as deptName
+,q.gkuopName as gkuopName
+,s.name as shiftName
+,q.mgt as mgtHead
+,q.gkuop as gkuopHead
+,len(q.mgt) - len(replace(q.mgt, char(10), '')) as mgtCount
+,len(q.gkuop) - len(replace(q.gkuop, char(10), '')) as gkuopCount
+from
+(select distinct t.ID as id
+  ,ps.WORK_DATE as workDateId
+  ,dh.name as deptName
+  ,ps.SHIFT_ID as shiftId
+  				,isnull( (select distinct geh.GKUOP_DEPT_NAME + char(10) 
+					from PBK_TASK.TASK_GKUOP_EMPLOYEES tge
+					join pbk_nsi.GKUOP_EMPLOYEE_HISTS geh on tge.EMPLOYEE_ID = geh.head_id
+					where tge.TASK_ID = t.ID for xml path('')
+				) ,'Отсутствует')as gkuopName
+
+                , isnull((select distinct eh.SURNAME + ' ' +
+								case when eh.patronumic = '' then eh.name else eh.name + ' ' + eh.patronumic end + char(10)
+					from PBK_TASK.TASK_MGT_EMPLOYEES tme
+						join PBK_TASK.TASK_MGT_EMPLOYEES tme2 on tme.TASK_ID = tme2.TASK_ID
+						join pbk_nsi.EMPLOYEE_HISTS eh on tme2.EMPLOYEE_ID = eh.HEAD_ID 
+					where tme.TASK_ID IN (
+						select t2.ID
+						from PBK_TASK.TASKS t2
+							join PBK_PLAN.PLAN_SCHEDULES ps2 on ps2.ID = t2.PLAN_SCHEDULE_ID
+						where 
+							ps2.WORK_DATE = ps.WORK_DATE
+					)
+					and tme.EMPLOYEE_ID = ps.EMPLOYEE_ID for xml path ('')
+                    ),
+                    (select distinct eh3.SURNAME + ' ' +
+                    case when eh3.patronumic = '' then eh3.name else eh3.name + ' ' + eh3.patronumic end + char(10)
+                        from PBK_TASK.TASKS t3
+                        join PBK_PLAN.PLAN_SCHEDULES ps3 on t3.PLAN_SCHEDULE_ID = ps3.id
+                        join pbk_nsi.EMPLOYEE_HISTS eh3 on ps3.EMPLOYEE_ID = eh3.HEAD_ID
+                        where ps3.WORK_DATE = ps.WORK_DATE
+                        and ps3.shift_id in (2,3,6,7,14)
+                        and ps3.EMPLOYEE_ID = ps.EMPLOYEE_ID and t3.id = t.id for xml path(''))
+                ) as mgt
+
+                , isnull((select distinct geh.SURNAME + ' ' +
+												case when geh.patronumic = '' then geh.name else geh.name + ' ' + geh.patronumic end + char(10) 
+					from PBK_TASK.TASK_GKUOP_EMPLOYEES tge
+					join pbk_nsi.GKUOP_EMPLOYEE_HISTS geh on tge.EMPLOYEE_ID = geh.head_id
+					where tge.TASK_ID = t.ID for xml path('')
+				) ,'Отсутствует')as gkuop
+
+							from PBK_TASK.TASKS t
+				join PBK_PLAN.PLAN_SCHEDULES ps on ps.ID = t.PLAN_SCHEDULE_ID
+				join PBK_TASK.TASK_STATES ts on ts.ID = t.TASK_STATE_ID
+				join PBK_NSI.DEPARTMENT_HISTS dh on t.DEPT_ID = dh.head_id AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+							where 
+				ps.WORK_DATE between #{filter.dateFrom, jdbcType=DATE} and #{filter.dateTo, jdbcType=DATE}
+			]]><if test="filter.departmentId != null">
+			<![CDATA[
+			AND dh.HEAD_ID IN (${filter.departmentId})
+			]]></if>
+			<![CDATA[
+			and (#{filter.deptAuthId} is null or dh.HEAD_ID = #{filter.deptAuthId})
+				AND ts.COD IN ('DONE', 'CLOSED')) q
+				join PBK_NSI.SHIFTS s on q.shiftId = s.id
+				where 1=1
+and s.id not in (1,4,5,8)
+			]]><if test="filter.shiftId != null">
+        <![CDATA[
+				and s.id IN (${filter.shiftId})
+							]]></if>
+        <![CDATA[
+				and (replace(q.gkuopName, char(10), '') like ('%${filter.gkuopId}%'))
+and (upper(replace(q.mgt, char(10), ' ')) like UPPER('%${filter.mgt}%'))
+and (upper(replace(q.gkuop, char(10), ' ')) like UPPER('%${filter.gkuop}%'))
+			]]><if test="filter.hasGkuop != null">
+        <![CDATA[
+and (q.gkuop = 'Отсутствует' and #{filter.hasGkuop} = 0 or q.gkuop != 'Отсутствует' and #{filter.hasGkuop} = 1)
+		]]></if>
+        <![CDATA[
+				) t
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <select id="getGridViewTotal" resultType="ru.armd.pbk.views.report.So22View">
+        <![CDATA[
+            select sum(sub.mgtCount) as mgtHead, sum(sub.gkuopCount) as gkuopHead
+            from(
+            SELECT ROW_NUMBER() OVER (ORDER BY t.workDateId) AS id, t.* FROM (
+select  distinct
+q.workDateId as workDateId
+,substring(q.deptName,0,7) as deptName
+,q.gkuopName as gkuopName
+,s.name as shiftName
+,q.mgt as mgtHead
+,q.gkuop as gkuopHead
+,len(q.mgt) - len(replace(q.mgt, char(10), '')) as mgtCount
+,len(q.gkuop) - len(replace(q.gkuop, char(10), '')) as gkuopCount
+from
+(select distinct t.ID as id
+  ,ps.WORK_DATE as workDateId
+  ,dh.name as deptName
+  ,ps.SHIFT_ID as shiftId
+  				,isnull( (select distinct geh.GKUOP_DEPT_NAME + char(10) 
+					from PBK_TASK.TASK_GKUOP_EMPLOYEES tge
+					join pbk_nsi.GKUOP_EMPLOYEE_HISTS geh on tge.EMPLOYEE_ID = geh.head_id
+					where tge.TASK_ID = t.ID for xml path('')
+				) ,'Отсутствует')as gkuopName
+								, isnull((select distinct eh.SURNAME + ' ' + 
+								case when eh.patronumic = '' then eh.name else eh.name + ' ' + eh.patronumic end + char(10)
+					from PBK_TASK.TASK_MGT_EMPLOYEES tme
+						join PBK_TASK.TASK_MGT_EMPLOYEES tme2 on tme.TASK_ID = tme2.TASK_ID
+						join pbk_nsi.EMPLOYEE_HISTS eh on tme2.EMPLOYEE_ID = eh.HEAD_ID 
+					where tme.TASK_ID IN (
+						select t2.ID
+						from PBK_TASK.TASKS t2
+							join PBK_PLAN.PLAN_SCHEDULES ps2 on ps2.ID = t2.PLAN_SCHEDULE_ID
+						where 
+							ps2.WORK_DATE = ps.WORK_DATE
+					)
+					and tme.EMPLOYEE_ID = ps.EMPLOYEE_ID for xml path ('')
+				), 				
+				(select distinct eh3.SURNAME + ' ' + 
+				case when eh3.patronumic = '' then eh3.name else eh3.name + ' ' + eh3.patronumic end + char(10) 
+					from PBK_TASK.TASKS t3
+					join PBK_PLAN.PLAN_SCHEDULES ps3 on t3.PLAN_SCHEDULE_ID = ps3.id
+					join pbk_nsi.EMPLOYEE_HISTS eh3 on ps3.EMPLOYEE_ID = eh3.HEAD_ID 
+					where ps3.WORK_DATE = ps.WORK_DATE
+					and ps3.shift_id in (2,3,6,7,14)
+					and ps3.EMPLOYEE_ID = ps.EMPLOYEE_ID and t3.id = t.id for xml path(''))
+								) as mgt
+												, isnull((select distinct geh.SURNAME + ' ' + 
+												case when geh.patronumic = '' then geh.name else geh.name + ' ' + geh.patronumic end + char(10) 
+					from PBK_TASK.TASK_GKUOP_EMPLOYEES tge
+					join pbk_nsi.GKUOP_EMPLOYEE_HISTS geh on tge.EMPLOYEE_ID = geh.head_id
+					where tge.TASK_ID = t.ID for xml path('')
+				) ,'Отсутствует')as gkuop
+							from PBK_TASK.TASKS t
+				join PBK_PLAN.PLAN_SCHEDULES ps on ps.ID = t.PLAN_SCHEDULE_ID
+				join PBK_TASK.TASK_STATES ts on ts.ID = t.TASK_STATE_ID
+				join PBK_NSI.DEPARTMENT_HISTS dh on t.DEPT_ID = dh.head_id AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+							where 
+				ps.WORK_DATE between #{dateFrom, jdbcType=DATE} and #{dateTo, jdbcType=DATE}
+			]]><if test="departmentId != null">
+			<![CDATA[
+			AND dh.HEAD_ID IN (${departmentId})
+			]]></if>
+			<![CDATA[
+			and (#{deptAuthId} is null or dh.HEAD_ID = #{deptAuthId})
+				AND ts.COD IN ('DONE', 'CLOSED')) q
+				join PBK_NSI.SHIFTS s on q.shiftId = s.id
+				where 1=1
+and s.id not in (1,4,5,8)
+			]]><if test="shiftId != null">
+        <![CDATA[
+				and s.id IN (${shiftId})
+							]]></if>
+        <![CDATA[
+				and (replace(q.gkuopName, char(10), '') like ('%${gkuopId}%'))
+and (upper(replace(q.mgt, char(10), ' ')) like UPPER('%${mgt}%'))
+and (upper(replace(q.gkuop, char(10), ' ')) like UPPER('%${gkuop}%'))
+			]]><if test="hasGkuop != null">
+        <![CDATA[
+and (q.gkuop = 'Отсутствует' and #{hasGkuop} = 0 or q.gkuop != 'Отсутствует' and #{hasGkuop} = 1)
+		]]></if>
+        <![CDATA[
+				) t
+            ) as sub
+        ]]>
+    </select>
+    
+</mapper>

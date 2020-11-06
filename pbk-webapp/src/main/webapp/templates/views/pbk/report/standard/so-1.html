@@ -1,0 +1,156 @@
+<div ar-grid-filter parameters="gridScope.filterParams"></div>
+<div ar-grid-title parameters="gridScope.titleParams"></div>
+<div class="row" style="padding-top: 20px;">
+    <div class="col-sm-2"><i ng-style="{color: scheduleColors.HOLIDAY}" class="glyphicon glyphicon-stop btn-md"></i> -
+        выходной
+    </div>
+    <div class="col-sm-2"><i ng-style="{color: scheduleColors.VACATION}" class="glyphicon glyphicon-stop btn-md"></i> -
+        отпуск
+    </div>
+    <div class="col-sm-2">p - резерв</div>
+</div>
+
+<table st-table="gridScope.grid.rows" st-pipe="gridScope.grid.loadAction" st-safe-src="gridScope.grid.rows"
+       class='table table-hover {{getRowClass == null ? "table-striped" : ""}}'>
+    <!--<colgroup>-->
+    <!--<col ng-style="{'width': '10%'}">-->
+    <!--<col ng-style="{'width': '6%'}">-->
+    <!--<col ng-repeat="day in days">-->
+    <!--</colgroup>-->
+    <thead ng-show="!gridScope.grid.isLoading" style="display: block">
+    <tr>
+    	<th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle; min-width: 100px;"
+            ar-st-sort="departmentName" rowspan="2">
+            ТО СДиК
+        </th>
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle; min-width: 150px;"
+            ar-st-sort="surname" rowspan="2">
+            ФИО
+        </th>
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle; min-width: 100px;"
+            ar-st-sort="personalNumber" rowspan="2">
+            Табельный номер
+        </th>
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle;"
+            colspan="{{days.length}}">
+            График работы на каждый день месяца
+        </th>
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle; min-width: 15px;" rowspan="2"></th>
+    </tr>
+    <tr>
+        <th class="grid-header plan-table-border" ng-style="{'min-width': dayWidth}" style="text-align: center; vertical-align: middle;"
+            ng-repeat="day in days">
+            {{getDayOfMonth(day)}}
+        </th>
+    </tr>
+    </thead>
+    <tbody ng-if="gridScope.grid.isLoading">
+    <tr>
+        <td colspan="{{(days == null || days.length == 0 ? 1 : days.length) + 3}}" class="text-center"><img
+                ng-src="{{'images/spinner.gif'}}"></td>
+    </tr>
+    </tbody>
+    <tbody ng-if="!gridScope.grid.isLoading && gridScope.grid.rows.cnt > 0"
+           style="display: block; height: auto; max-height: 400px; overflow-y: scroll; overflow-x: auto;">
+    <tr ng-if="gridScope.grid.rows.nightSchedules && gridScope.grid.rows.nightSchedules.length > 0">
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle;"
+            colspan="{{days.length + 3}}">Дневные, ночные
+        </th>
+    </tr>
+    <tr ng-repeat="row in gridScope.grid.rows.nightSchedules">
+        <td class="plan-table-border" style="min-width: 100px">
+            <span>{{getDepartmentName(row)}}</span>
+        </td>
+        <td class="plan-table-border" style="min-width: 150px">
+            <span>{{getFio(row)}}</span>
+        </td>
+        <td class="plan-table-border" style="min-width: 100px">
+            <span>{{row.employee.personalNumber}}</span>
+        </td>
+        <td ng-repeat="day in days" class="hover-table-color plan-table-border"
+            style="text-align: center; vertical-align: middle;" title="{{getTooltip(getShift(row.schedule, day))}}"
+            ng-style="{'min-width': dayWidth, 'background-color':'{{getCurrentDateColor(getShift(row.schedule, day))}}'}">
+            <span>{{getCurrentDateText(getShift(row.schedule, day))}}</span>
+        </td>
+    </tr>
+    <tr ng-if="gridScope.grid.rows.saturdaySundaySchedules && gridScope.grid.rows.saturdaySundaySchedules.length > 0">
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle;"
+            colspan="{{days.length + 3}}">Выходные суббота, воскресенье
+        </th>
+    </tr>
+    <tr ng-repeat="row in gridScope.grid.rows.saturdaySundaySchedules">
+        <td class="plan-table-border" style="min-width: 100px">
+            <span>{{getDepartmentName(row)}}</span>
+        </td>
+        <td class="plan-table-border" style="min-width: 150px">
+            <span>{{getFio(row)}}</span>
+        </td>
+        <td class="plan-table-border" style="min-width: 100px">
+            <span>{{row.employee.personalNumber}}</span>
+        </td>
+        <td ng-repeat="day in days" class="hover-table-color plan-table-border"
+            style="text-align: center; vertical-align: middle;" title="{{getTooltip(getShift(row.schedule, day))}}"
+            ng-style="{'min-width': dayWidth, 'background-color':'{{getCurrentDateColor(getShift(row.schedule, day))}}'}">
+            <span>{{getCurrentDateText(getShift(row.schedule, day))}}</span>
+        </td>
+    </tr>
+
+    <tr ng-if="gridScope.grid.rows.fridaySaturdaySchedules && gridScope.grid.rows.fridaySaturdaySchedules.length > 0">
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle;"
+            colspan="{{days.length + 3}}">Выходные пятница, суббота
+        </th>
+    </tr>
+    <tr ng-repeat="row in gridScope.grid.rows.fridaySaturdaySchedules">
+        <td class="plan-table-border" style="min-width: 100px">
+            <span>{{getDepartmentName(row)}}</span>
+        </td>
+        <td class="plan-table-border" style="min-width: 150px">
+            <span>{{getFio(row)}}</span>
+        </td>
+        <td class="plan-table-border" style="min-width: 100px">
+            <span>{{row.employee.personalNumber}}</span>
+        </td>
+        <td ng-repeat="day in days" class="hover-table-color plan-table-border"
+            style="text-align: center; vertical-align: middle;" title="{{getTooltip(row.schedule[day])}}"
+            ng-style="{'min-width': dayWidth, 'background-color':'{{getCurrentDateColor(getShift(row.schedule, day))}}'}">
+            <span>{{getCurrentDateText(getShift(row.schedule, day))}}</span>
+        </td>
+    </tr>
+    <tr ng-if="gridScope.grid.rows.sundayMondaySchedules && gridScope.grid.rows.sundayMondaySchedules.length > 0">
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle;"
+            colspan="{{days.length + 3}}">Выходные воскресенье, понедельник
+        </th>
+    </tr>
+    <tr ng-repeat="row in gridScope.grid.rows.sundayMondaySchedules">
+        <td class="plan-table-border" style="min-width: 100px">
+            <span>{{getDepartmentName(row)}}</span>
+        </td>
+        <td class="plan-table-border" style="min-width: 150px">
+            <span>{{getFio(row)}}</span>
+        </td>
+        <td class="plan-table-border" style="min-width: 100px">
+            <span>{{row.employee.personalNumber}}</span>
+        </td>
+        <td ng-repeat="day in days" class="hover-table-color plan-table-border"
+            style="text-align: center; vertical-align: middle;" title="{{getTooltip(row.schedule[day])}}"
+            ng-style="{'min-width': dayWidth, 'background-color':'{{getCurrentDateColor(getShift(row.schedule, day))}}'}">
+            <span>{{getCurrentDateText(getShift(row.schedule, day))}}</span>
+        </td>
+    </tr>
+    </tbody>
+    <tbody ng-if="!gridScope.grid.isLoading && (gridScope.grid.rows.length == 0 || gridScope.grid.rows[0].cnt == 0)">
+        <tr style="background-color: transparent;">
+            <td class="text-center" colspan="{{(days == null || days.length == 0 ? 1 : days.length) + 3}}">
+                <p class="lead">Элементы не найдены</p>
+            </td>
+        </tr>
+    </tbody>
+    <tfoot ng-show="!gridScope.grid.isLoading" style="display: block">
+        <tr>
+            <td class="text-center plan-table-border" ng-style="{'min-width' : footerWidth}">
+                <div ar-grid-pagination rows-on-page="gridScope.colRowsOnPage" hide-button="gridScope.hideButton"
+                     grid-scope="gridScope"></div>
+            </td>
+        </tr>
+    </tfoot>
+</table>

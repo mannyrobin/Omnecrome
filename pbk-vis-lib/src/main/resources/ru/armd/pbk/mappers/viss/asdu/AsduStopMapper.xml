@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.asdu.AsduStopMapper">
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.asdu.AsduStop" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_VIS].[ASDU_STOPS] (
+                 [ASDU_STOP_ID]
+                ,[STOP_CODE]
+                ,[STOP_NAME]
+                ,[STOP_DESC]
+                ,[STOP_LAT]
+                ,[STOP_LON]
+                ,[ZONE_ID]
+                ,[STOP_URL]
+                ,[LOCATION_TYPE]
+                ,[PARENT_STATION]
+                ,[STOP_TIMEZONE]
+                ,[WHEELCHAIR_BOARDING]
+                ,[STOP_POLYGON]
+            ) VALUES (
+                  #{asduStopId}
+                , #{stopCode}
+                , #{stopName}
+                , #{stopDesc}
+                , #{stopLat}
+                , #{stopLon}
+                , #{zoneId}
+                , #{stopUrl}
+                , #{locationType}
+                , #{parentStation}
+                , #{stopTimezone}
+                , #{wheelchairBoarding}
+                , #{stopPolygon}
+            )
+        ]]>
+        <!-- selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_VIS.ASDU_STOPS' ) as id
+            ]]>
+        </selectKey -->
+    </insert>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.asdu.AsduStop">
+        <![CDATA[
+            UPDATE [PBK_VIS].[ASDU_STOPS]
+            SET
+                 [ASDU_STOP_ID] = #{asduStopId}
+                ,[STOP_CODE] = #{stopCode}
+                ,[STOP_NAME] = #{stopName}
+                ,[STOP_DESC] = #{stopDesc}
+                ,[STOP_LAT] = #{stopLat}
+                ,[STOP_LON] = #{stopLon}
+                ,[ZONE_ID] = #{zoneId}
+                ,[STOP_URL] = #{stopUrl}
+                ,[LOCATION_TYPE] = #{locationType}
+                ,[PARENT_STATION] = #{parentStation}
+                ,[STOP_TIMEZONE] = #{stopTimezone}
+                ,[WHEELCHAIR_BOARDING] = #{wheelchairBoarding}
+                ,[STOP_POLYGON] = #{stopPolygon}
+            WHERE [ID] = #{id}
+        ]]>
+    </update>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.asdu.AsduStop">
+        <![CDATA[
+            SELECT [ID] as id
+                ,[ASDU_STOP_ID] as asduStopId
+                ,[STOP_CODE] as stopCode
+                ,[STOP_NAME] as stopName
+                ,[STOP_DESC] as stopDesc
+                ,[STOP_LAT] as stopLat
+                ,[STOP_LON] as stopLon
+                ,[ZONE_ID] as zoneId
+                ,[STOP_URL] as stopUrl
+                ,[LOCATION_TYPE] as locationType
+                ,[PARENT_STATION] as parentStation
+                ,[STOP_TIMEZONE] as stopTimezone
+                ,[WHEELCHAIR_BOARDING] as wheelchairBoarding
+                ,[STOP_POLYGON] as stopPolygon
+            FROM [PBK_VIS].[ASDU_STOPS]
+            WHERE [ID] = #{id}
+       ]]>
+    </select>
+
+    <select id="getDomains" resultType="ru.armd.pbk.domain.viss.asdu.AsduStop">
+        <![CDATA[
+            SELECT [ID] as id
+                ,[ASDU_STOP_ID] as asduStopId
+                ,[STOP_CODE] as stopCode
+                ,[STOP_NAME] as stopName
+                ,[STOP_DESC] as stopDesc
+                ,[STOP_LAT] as stopLat
+                ,[STOP_LON] as stopLon
+                ,[ZONE_ID] as zoneId
+                ,[STOP_URL] as stopUrl
+                ,[LOCATION_TYPE] as locationType
+                ,[PARENT_STATION] as parentStation
+                ,[STOP_TIMEZONE] as stopTimezone
+                ,[WHEELCHAIR_BOARDING] as wheelchairBoarding
+                ,[STOP_POLYGON] as stopPolygon
+            FROM [PBK_VIS].[ASDU_STOPS]
+            WHERE 1 = 1
+              and (#{asduStopId} is null or [ASDU_STOP_ID] = #{asduStopId})
+        ]]>
+    </select>
+</mapper>

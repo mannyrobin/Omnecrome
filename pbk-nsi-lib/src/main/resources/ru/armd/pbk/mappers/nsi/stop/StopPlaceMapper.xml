@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.stop.StopPlaceMapper">
+	
+	<update id="update" parameterType="ru.armd.pbk.domain.nsi.stop.StopPlace">
+		<![CDATA[
+			UPDATE PBK_GISMGT.GM_STOP_PLACES SET
+				WKT_GEOM = #{wktGeom}
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+    
+   <select id="getStopPlaceByGmStopId" resultType="ru.armd.pbk.domain.nsi.stop.StopPlace">
+    		select 
+    			sp.ID as id,
+    			sp.WKT_GEOM as wktGeom		    	            
+            from PBK_GISMGT.GM_STOP_PLACES sp
+            JOIN PBK_GISMGT.GM_STOPS s ON sp.STOP_MUID = s.MUID 
+            where s.ID = #{id}
+			 and sp.VERSION = (select max(t.version) from PBK_GISMGT.GM_STOP_PLACES t where t.MUID = sp.MUID)
+    </select>
+    
+</mapper>

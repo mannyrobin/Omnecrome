@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.TsModelMapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.TSModelView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+    	<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" /> 
+        SELECT
+        	ts_m.ID as id,
+			ts_t.NAME as tsTypeName,
+			ts_c.NAME as tsCapacities,
+			ts_m.MAKE as make,
+			ts_m.MODEL as model,
+			ts_m.PASSENGER_COUNT_MAX as passengerCountMax,
+			ts_m.SEAT_COUNT as seatCount,
+			ts_m.LENGTH as length,
+			ts_m.WIDTH as width,
+			ts_m.HEIGHT as height,
+			ts_m.IS_DELETE as isDelete	
+        FROM
+        	PBK_NSI.TS_MODELS ts_m LEFT JOIN PBK_NSI.TS_CAPACITIES ts_c ON (ts_m.TS_CAPACITY_ID = ts_c.ID) LEFT JOIN PBK_NSI.TS_TYPES ts_t ON (ts_c.TS_TYPE_ID = ts_t.ID)
+        WHERE
+        	(#{filter.make} is null or UPPER(ts_m.MAKE) like UPPER('%${filter.make}%'))
+        	AND (#{filter.model} is null or UPPER(ts_m.MODEL) like UPPER('%${filter.model}%'))
+        	and ((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR ts_m.IS_DELETE = 0)
+        	<if test="filter.tsType != null"><![CDATA[
+            	AND ts_t.ID IN (${filter.tsType})
+        	]]></if>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.TsModel">
+        <![CDATA[
+            SELECT
+	            ID as id,
+				MAKE as make,
+				MODEL as model,
+				TS_CAPACITY_ID as tsCapacityId,
+				PASSENGER_COUNT_MAX as passengerCountMax,
+				SEAT_COUNT as seatCount,
+				SQUARE as square,
+				MASS as mass,
+				LENGTH as length,
+				WIDTH as width,
+				HEIGHT as height,
+				SPEED_MAX as speedMax,
+				IS_DELETE as isDelete
+             FROM
+            	PBK_NSI.TS_MODELS
+            WHERE
+            	ID = #{id}
+        ]]>
+    </select>
+
+    <select id="getDomains" resultType="ru.armd.pbk.domain.nsi.TsModel">
+        <![CDATA[
+            SELECT [ID] as id
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues" /><![CDATA[
+		      ,[IS_DELETE] 		      as isDelete
+              ,[MAKE]                 as make
+              ,[MODEL]                as model
+              ,[TS_CAPACITY_ID]       as tsCapacityId
+              ,[PASSENGER_COUNT_MAX]  as passengerCountMax
+              ,[SEAT_COUNT]           as seatCount
+              ,[SQUARE]               as square
+              ,[MASS]                 as mass
+              ,[LENGTH]               as length
+              ,[WIDTH]                as width
+              ,[HEIGHT]               as height
+              ,[SPEED_MAX]            as speedMax
+            FROM [PBK_NSI].[TS_MODELS]
+            WHERE 1 = 1
+              and (#{model} is null or [MODEL] = #{model})
+        ]]>
+    </select>
+    
+    <select id="getDomain" resultType="ru.armd.pbk.domain.nsi.TsModel">
+        <![CDATA[
+            SELECT [ID] as id
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues" /><![CDATA[
+		      ,[IS_DELETE] 		      as isDelete
+              ,[MAKE]                 as make
+              ,[MODEL]                as model
+              ,[TS_CAPACITY_ID]       as tsCapacityId
+              ,[PASSENGER_COUNT_MAX]  as passengerCountMax
+              ,[SEAT_COUNT]           as seatCount
+              ,[SQUARE]               as square
+              ,[MASS]                 as mass
+              ,[LENGTH]               as length
+              ,[WIDTH]                as width
+              ,[HEIGHT]               as height
+              ,[SPEED_MAX]            as speedMax
+            FROM [PBK_NSI].[TS_MODELS]
+            WHERE 
+            	(#{model} is not null and UPPER([MODEL]) like UPPER(#{model}))
+        ]]>
+    </select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.nsi.TsModel" keyProperty="id" keyColumn="id">
+    	<![CDATA[
+	        INSERT INTO
+	        	PBK_NSI.TS_MODELS (
+	        	]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+	         	,MAKE,
+				MODEL,
+				TS_CAPACITY_ID,
+				PASSENGER_COUNT_MAX,
+				SEAT_COUNT,
+				SQUARE,
+				MASS,
+				LENGTH,
+				WIDTH,
+				HEIGHT,
+				SPEED_MAX,
+				IS_DELETE
+	        	)
+	        VALUES (
+	        	]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+	            ,#{make},
+				#{model},
+				#{tsCapacityId},
+				#{passengerCountMax},
+				#{seatCount},
+				#{square},
+				#{mass},
+				#{length},
+				#{width},
+				#{height},
+				#{speedMax},
+				0)
+         ]]>
+         <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.TS_MODELS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.nsi.TsModel">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.TS_MODELS
+		    SET
+		    	UPDATE_DATE = #{updateDate},
+            	UPDATE_USER_ID = #{updateUserId},
+		    	MAKE = #{make},
+				MODEL = #{model},
+				TS_CAPACITY_ID = #{tsCapacityId},
+				PASSENGER_COUNT_MAX = #{passengerCountMax},
+				SEAT_COUNT = #{seatCount},
+				SQUARE = #{square},
+				MASS = #{mass},
+				LENGTH = #{length},
+				WIDTH = #{width},
+				HEIGHT = #{height},
+				SPEED_MAX = #{speedMax}
+		    WHERE
+		    	ID = #{id}
+	    ]]>
+    </update>
+    
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_NSI.TS_MODELS
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.TS_MODELS
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+      SELECT
+      	ID as id,
+      	CONCAT(MAKE, ' ', MODEL) as name
+      FROM
+      	PBK_NSI.TS_MODELS
+      WHERE
+      	IS_DELETE = 0 OR (#{currentId} IS NOT NULL AND ID = #{currentId})
+    </select>
+</mapper>

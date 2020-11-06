@@ -1,0 +1,30 @@
+<div class="row">
+    <div>
+        <form class="form-inline filters">
+
+            <div class="form-group filter-base"><input type="text" class="form-control" ng-model="filters['fio']"
+                   placeholder="ФИО" ar-tooltip="ФИО"></div>
+
+            <div class="form-group filter-base"><input type="text" class="form-control" ng-model="filters['venueName']"
+                   placeholder="Место встречи" ar-tooltip="Место встречи"></div>
+
+            <div class="form-group filter-base">
+            <oi-select oi-options="item.name for item in shifts track by item.id"
+                       ng-model="filters['shiftId']" placeholder="Смена" ar-tooltip="Смена"></oi-select></div>
+
+            <div class="form-group filter-buttons">
+                <nobr>
+                    <button ar-tooltip="Найти задание" class="btn btn-info" ng-click="applyFiltersFunc()" type="submit" >
+                        <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                    </button>
+                    <button ar-tooltip="Сбросить фильтры" ng-show="isShowClearFunc()" ng-click="clearFiltersFunc()" class="btn btn-warning" type="button">
+                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                    </button>
+                </nobr>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="errors"><p ng-repeat="error in errors">{{error}}</p></div>
+
+<div class="calendar" ng-model="eventSources" ui-calendar="uiConfig.calendar" calendar="calendarInstance"></div>

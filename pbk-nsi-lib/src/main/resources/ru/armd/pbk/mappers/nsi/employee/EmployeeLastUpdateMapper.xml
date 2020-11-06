@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.employee.EmployeeLastUpdateMapper">
+
+		<sql id="fieldDomain">
+	        <![CDATA[				
+			  	,dh.[EMPLOYEE_ID] as employeeId
+			  	,dh.[LAST_UPDATE_DATE] as lastUpdate
+			  	,dh.[LAST_DEPT_ID] as lastDepartmentId
+			  	,dh.[CURR_DEPT_ID] as currDepartmentId	
+			  	,dh.[IS_FIRE] as isFire
+			  	,dh.[FIRE_DATE] as fireDate
+			  	,dh.[IS_SCHEDULED] as isScheduled
+	        ]]>
+		</sql> 
+	
+		<update id="update" parameterType="ru.armd.pbk.domain.nsi.employee.EmployeeLastUpdate">
+			<![CDATA[
+				UPDATE PBK_NSI.EMPLOYEES_LAST_UPDATE SET							
+				  	[EMPLOYEE_ID] = #{employeeId}
+				  	,[LAST_UPDATE_DATE] = #{lastUpdate}
+				  	,[LAST_DEPT_ID] = #{lastDepartmentId}
+				  	,[CURR_DEPT_ID] = #{currDepartmentId}	
+				  	,[FIRE_DATE] = #{fireDate}
+				  	,[IS_FIRE] = #{isFire}
+				  	,[IS_SCHEDULED] = #{isScheduled}
+				WHERE
+				  ID = #{id}
+	        ]]>
+		</update>
+	
+		<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.employee.EmployeeLastUpdate" keyProperty="id" keyColumn="id">
+			<![CDATA[
+	        insert into PBK_NSI.EMPLOYEES_LAST_UPDATE (	                          
+	        	[EMPLOYEE_ID]
+	        	, [LAST_UPDATE_DATE]        	
+	          	, [LAST_DEPT_ID]  
+	          	, [CURR_DEPT_ID]	
+	          	, [IS_FIRE]
+	          	, [FIRE_DATE]
+	          	,[IS_SCHEDULED]
+	        ) VALUES (	                              
+	        	#{employeeId}
+	        	, #{lastUpdate}
+				, #{lastDepartmentId}	
+				, #{currDepartmentId}
+				, #{isFire}
+				, #{fireDate}
+				, #{isScheduled}
+	        )
+	        ]]>
+			<selectKey order="AFTER" resultType="long" keyProperty="id">
+				<![CDATA[
+	              SELECT IDENT_CURRENT( 'PBK_NSI.EMPLOYEES_LAST_UPDATE' ) as id
+	            ]]>
+			</selectKey>
+		</insert>
+	
+		<select id="getDomains" resultType="ru.armd.pbk.domain.nsi.employee.EmployeeLastUpdate">
+			<![CDATA[
+				SELECT 
+					dh.id as id
+	            	]]><include refid="fieldDomain" /><![CDATA[
+				FROM
+	            	PBK_NSI.EMPLOYEES_LAST_UPDATE dh
+	            JOIN 
+	            	PBK_NSI.EMPLOYEES e on e.ID = dh.EMPLOYEE_ID and e.IS_DELETE = 0							
+	        ]]>
+		</select>
+		
+		<select id="getDomain" resultType="ru.armd.pbk.domain.nsi.employee.EmployeeLastUpdate">
+			<![CDATA[
+				SELECT 
+					dh.id as id
+	            	]]><include refid="fieldDomain" /><![CDATA[
+				FROM
+	            	PBK_NSI.EMPLOYEES_LAST_UPDATE dh
+	            JOIN 
+	            	PBK_NSI.EMPLOYEES e on e.ID = dh.EMPLOYEE_ID and e.IS_DELETE = 0	
+	            WHERE dh.EMPLOYEE_ID = #{employeeId}						
+	        ]]>
+		</select>
+		
+		<delete id="delete">
+        	<![CDATA[
+            	DELETE FROM
+            		PBK_NSI.EMPLOYEES_LAST_UPDATE
+            	WHERE ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    	</delete>
+    	
+</mapper>

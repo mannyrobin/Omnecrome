@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.ShiftDepartmentMapper">
+
+	<select id="getGridViews" resultType="ru.armd.pbk.views.nsi.ShiftDepartmentView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          	SELECT d.id as id, dh.name as departmentName, d.RESERVE_COUNT as reserveCount, 
+				CASE d.IS_WORK_DAY WHEN 0 then 'Выходной день' ELSE 'Рабочий день' END as day
+		  	FROM [PBK_NSI].[SHIFT_DEPARTMENTS] d
+          	JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on d.DEPARTMENT_ID = dh.HEAD_ID and dh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+          	WHERE #{filter.shiftId} is null or d.SHIFT_ID = #{filter.shiftId}
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    	
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.ShiftDepartment">
+        <![CDATA[
+            SELECT
+	            ID as id,
+				SHIFT_ID as shiftId,
+				RESERVE_COUNT as reserveCount,
+				DEPARTMENT_ID as departmentId,
+				IS_WORK_DAY as isWorkDay
+             FROM
+            	PBK_NSI.SHIFT_DEPARTMENTS
+            WHERE
+            	ID = #{id}
+        ]]>
+    </select>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.nsi.ShiftDepartment">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.SHIFT_DEPARTMENTS
+		    SET
+		    	SHIFT_ID = #{shiftId},
+				RESERVE_COUNT = #{reserveCount},
+				DEPARTMENT_ID = #{departmentId},
+				IS_WORK_DAY = #{isWorkDay}
+		    WHERE
+		    	ID = #{id}
+	    ]]>
+    </update>
+    
+</mapper>

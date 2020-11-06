@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.GkuopMapper">
+
+	<sql id="fieldDomain">
+        <![CDATA[
+		  	d.[IS_DELETE] as isDelete,
+			dh.[CREATE_DATE] as createDate,
+			dh.[CREATE_USER_ID] as createUserId,
+			dh.[UPDATE_DATE] as updateDate,
+			dh.[UPDATE_USER_ID] as updateUserId,
+			dh.[V_START_DATE] as versionStartDate,
+			dh.[V_END_DATE] as versionEndDate,
+			dh.[HEAD_ID] as headId,
+			dh.GKUOP_DEPT_NAME as gkuopDeptName,
+           	dh.NAME as name,
+           	dh.PATRONUMIC as patronumic,
+           	dh.SURNAME as surname,
+           	dh.POSITION_NAME as positionName,
+           	dh.PERSONNEL_NUMBER as personalNumber,
+           	dh.GKUOP_EMPLOYEE_ID as visGkuopId,
+           	dh.FOR_PLAN_USE as forPlanUse,
+			dh.DESCRIPTION as description
+        ]]>
+    </sql>
+    
+	<select id="getGridViews" resultType="ru.armd.pbk.views.nsi.gkuop.GkuopView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          SELECT
+			d.id as id,
+			dh.NAME as name,
+			dh.PATRONUMIC as patronumic,
+			dh.SURNAME as surname,
+		    dh.GKUOP_DEPT_NAME as gkuopDeptName,
+		    dh.POSITION_NAME as positionName,
+           	dh.PERSONNEL_NUMBER as personalNumber,
+           	dh.GKUOP_EMPLOYEE_ID as visGkuopId,
+           	dh.DESCRIPTION as description,
+		    d.IS_DELETE as isDelete
+		  FROM
+		    PBK_NSI.GKUOP_EMPLOYEES d LEFT JOIN PBK_NSI.GKUOP_EMPLOYEE_HISTS dh ON (d.ID = dh.HEAD_ID)
+		  WHERE
+          	dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate() AND
+          	(#{filter.name} is null or UPPER(dh.NAME) like UPPER('%${filter.name}%')  or UPPER(dh.SURNAME) like UPPER('%${filter.name}%')  or UPPER(dh.PATRONUMIC) like UPPER('%${filter.name}%')) AND
+          	(#{filter.gkuopDeptName} is null or UPPER(dh.GKUOP_DEPT_NAME) like UPPER('%${filter.gkuopDeptName}%')) AND
+          	(#{filter.personalNumber} is null or UPPER(dh.PERSONNEL_NUMBER) like UPPER('%${filter.personalNumber}%'))
+          	and ((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR d.IS_DELETE = 0)
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getHistoryViews" resultType="ru.armd.pbk.views.nsi.gkuop.GkuopHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+				dh.NAME as name,
+				dh.PATRONUMIC as patronumic,
+				dh.SURNAME as surname,
+				dh.GKUOP_DEPT_NAME as gkuopDeptName,
+           		dh.POSITION_NAME as positionName,
+           		dh.PERSONNEL_NUMBER as personalNumber,
+           		dh.GKUOP_EMPLOYEE_ID as visGkuopId,
+				dh.DESCRIPTION as description
+			FROM
+				PBK_NSI.GKUOP_EMPLOYEE_HISTS dh LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+			WHERE
+          		dh.HEAD_ID = #{filter.gkuopHeadId}
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <insert id="insertHead" parameterType="ru.armd.pbk.domain.HeadVersionDomain" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.GKUOP_EMPLOYEES(
+	        IS_DELETE
+        ) VALUES (
+        	#{isDelete}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.GKUOP_EMPLOYEES' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+	<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.Gkuop" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        insert into PBK_NSI.GKUOP_EMPLOYEE_HISTS(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+        	,[HEAD_ID]
+        	,[GKUOP_DEPT_NAME]
+            ,[NAME]
+            ,[PATRONUMIC]
+            ,[SURNAME]
+            ,[POSITION_NAME]
+            ,[PERSONNEL_NUMBER]
+            ,[GKUOP_EMPLOYEE_ID]
+            ,[DESCRIPTION]
+            ,[FOR_PLAN_USE]
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+        	,#{headId}
+        	,#{gkuopDeptName}
+            ,#{name}
+            ,#{patronumic}
+            ,#{surname}
+            ,#{positionName}
+            ,#{personalNumber}
+            ,#{visGkuopId}
+            ,#{description}
+            ,#{forPlanUse}
+        )
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.GKUOP_EMPLOYEE_HISTS' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+
+	<update id="update" parameterType="ru.armd.pbk.domain.nsi.Gkuop">
+		<![CDATA[
+			UPDATE PBK_NSI.GKUOP_EMPLOYEE_HISTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+				,GKUOP_DEPT_NAME = #{gkuopDeptName}
+           		,NAME = #{name}
+           		,PATRONUMIC = #{patronumic}
+           		,SURNAME = #{surname}
+           		,POSITION_NAME = #{positionName}
+           		,PERSONNEL_NUMBER = #{personalNumber}
+           		,GKUOP_EMPLOYEE_ID = #{visGkuopId}
+				,DESCRIPTION = #{description}
+				,FOR_PLAN_USE = #{forPlanUse}
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+
+	<update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.GKUOP_EMPLOYEES
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+    
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_NSI.GKUOP_EMPLOYEES
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.Gkuop">
+		<![CDATA[
+			SELECT
+            	dh.id as id,
+            	]]><include refid="fieldDomain" /><![CDATA[
+            FROM
+            	PBK_NSI.GKUOP_EMPLOYEES d JOIN PBK_NSI.GKUOP_EMPLOYEE_HISTS dh on (d.ID = dh.HEAD_ID)
+            WHERE
+            	dh.ID = #{id}
+        ]]>
+    </select>
+
+	<select id="getActual" resultType="ru.armd.pbk.domain.nsi.Gkuop">
+		<![CDATA[
+			SELECT 
+				dh.id as id,
+            	]]><include refid="fieldDomain" /><![CDATA[
+			FROM
+            	PBK_NSI.GKUOP_EMPLOYEES d JOIN PBK_NSI.GKUOP_EMPLOYEE_HISTS dh on (d.ID = dh.HEAD_ID)
+			WHERE
+  			   dh.HEAD_ID = #{domainId}
+			   and dh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+        ]]>
+	</select>
+	
+	<select id="getDomain" resultType="ru.armd.pbk.domain.nsi.Gkuop">
+		<![CDATA[
+			SELECT 
+				dh.id as id,
+            	]]><include refid="fieldDomain" /><![CDATA[
+			FROM
+            	PBK_NSI.GKUOP_EMPLOYEES d JOIN PBK_NSI.GKUOP_EMPLOYEE_HISTS dh on (d.ID = dh.HEAD_ID)
+			WHERE
+  			   dh.GKUOP_EMPLOYEE_ID = #{gkuopId}
+			   and dh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+        ]]>
+	</select>
+	
+	<select id="isExist" resultType="boolean">
+	    <include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+   			SELECT
+   				1
+   			FROM
+   				PBK_NSI.GKUOP_EMPLOYEE_HISTS
+   			WHERE
+   				(#{headId} is null OR HEAD_ID != #{headId})
+   				AND (#{personalNumber} is null OR PERSONNEL_NUMBER = #{personalNumber})
+   				AND V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    	<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+    </select>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+        	d.ID as id,
+			dh.SURNAME + ' ' + dh.NAME + ' ' + dh.PATRONUMIC as name
+        FROM
+        	PBK_NSI.GKUOP_EMPLOYEES d JOIN PBK_NSI.GKUOP_EMPLOYEE_HISTS dh on (d.ID = dh.HEAD_ID)        	
+        WHERE
+        	(d.IS_DELETE = 0) AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate() AND (FOR_PLAN_USE = 1
+        	or (#{taskId} is null or d.ID in (SELECT EMPLOYEE_ID
+										  FROM PBK_DB.PBK_TASK.TASK_GKUOP_EMPLOYEES
+										  WHERE TASK_ID = #{taskId})))
+        ORDER BY
+        	dh.SURNAME, dh.NAME, dh.PATRONUMIC
+    </select>
+</mapper>

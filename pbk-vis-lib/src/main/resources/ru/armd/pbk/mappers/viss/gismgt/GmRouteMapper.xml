@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gismgt.GmRouteMapper">
+	
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.gismgt.GmRoute" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into [PBK_GISMGT].[GM_ROUTES] (
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmFields" /><![CDATA[	
+    			, [CLOSE_ORDER_MUID]
+    			, [OPEN_ORDER_MUID]
+    			, [ROUTE_VARIANT_MUID]
+    			, [ROUTE_NUMBER]
+    			, [CLOSE_DATE]
+    			, [ROUTE_STATE2_MUID]
+    			, [ROUTE_KIND_MUID]
+    			, [ROUTE_STATE_MUID]
+    			, [ROUTE_TRANS_KIND_MUID]
+    			, [ROUTE_TS_KIND_MUID]
+    			, [COMMENT]
+    			, [OPEN_DATE]
+    			, [AGENCY_MUID]
+            ) values (
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmValues" /><![CDATA[
+    			, #{closeOrderMuid}
+    			, #{openOrderMuid}
+    			, #{currentRouteVariantMuid}
+    			, #{number}
+    			, #{closeDate}
+    			, #{state2Muid}
+    			, #{kindMuid}
+    			, #{stateMuid}
+    			, #{transportationKindMuid}
+    			, #{transportKindMuid}
+    			, #{comment}
+    			, #{openDate}
+    			, #{agencyMuid}
+            )
+        ]]>       
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( '[PBK_GISMGT].[GM_ROUTES]' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+    
+    <select id="getByMuid" resultType="ru.armd.pbk.domain.viss.gismgt.GmRoute">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, CLOSE_ORDER_MUID as closeOrderMuid
+	    		, OPEN_ORDER_MUID as openOrderMuid
+	    		, ROUTE_VARIANT_MUID as currentRouteVariantMuid
+	    		, ROUTE_NUMBER as number
+	    		, CLOSE_DATE as closeDate
+	    		, ROUTE_STATE2_MUID as state2Muid
+	    		, ROUTE_KIND_MUID as kindMuid
+	    		, ROUTE_STATE_MUID as stateMuid
+	    		, ROUTE_TRANS_KIND_MUID as transportationKindMuid
+	    		, ROUTE_TS_KIND_MUID as transportKindMuid
+	    		, COMMENT as comment
+	    		, OPEN_DATE as openDate
+	    		, AGENCY_MUID as agencyMuid
+			from [PBK_GISMGT].[GM_ROUTES] a
+            where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTES WHERE MUID = #{muid})			
+        ]]>        
+    </select>
+    
+    <select id="getRouteByRouteTrajectoryMuid" resultType="ru.armd.pbk.domain.viss.gismgt.GmRoute">
+        <![CDATA[
+        	select 
+        		r.ID as id
+            	, r.MUID as muid
+            	, r.IS_DELETE as isDelete
+            	, r.VERSION as version
+				, r.CLOSE_ORDER_MUID as closeOrderMuid
+	    		, r.OPEN_ORDER_MUID as openOrderMuid
+	    		, r.ROUTE_VARIANT_MUID as currentRouteVariantMuid
+	    		, r.ROUTE_NUMBER as number
+	    		, r.CLOSE_DATE as closeDate
+	    		, r.ROUTE_STATE2_MUID as state2Muid
+	    		, r.ROUTE_KIND_MUID as kindMuid
+	    		, r.ROUTE_STATE_MUID as stateMuid
+	    		, r.ROUTE_TRANS_KIND_MUID as transportationKindMuid
+	    		, r.ROUTE_TS_KIND_MUID as transportKindMuid
+	    		, r.COMMENT as comment
+	    		, r.OPEN_DATE as openDate
+	    		, r.AGENCY_MUID as agencyMuid
+			from [PBK_GISMGT].[GM_ROUTES] r
+			join [PBK_GISMGT].GM_ROUTE_VARIANTS rv on rv.ROUTE_MUID = r.MUID
+			join [PBK_GISMGT].GM_ROUTE_ROUNDS rr on rr.ROUTE_VARIANT_MUID = rv.MUID
+			join [PBK_GISMGT].GM_ROUTE_TRAJECTORIES rt on rt.RR_MUID = rr.MUID
+            where rt.MUID = #{muid} and rt.VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTE_TRAJECTORIES  WHERE MUID = #{muid})		
+        	and r.VERSION =  (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTES  WHERE MUID = r.MUID)
+        	and rv.VERSION =  (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTE_VARIANTS  WHERE MUID = rv.MUID)
+			and rr.VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTE_ROUNDS  WHERE MUID = rr.MUID)
+        ]]>        
+    </select>
+        
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.gismgt.GmRoute">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, CLOSE_ORDER_MUID as closeOrderMuid
+	    		, OPEN_ORDER_MUID as openOrderMuid
+	    		, ROUTE_VARIANT_MUID as currentRouteVariantMuid
+	    		, ROUTE_NUMBER as number
+	    		, CLOSE_DATE as closeDate
+	    		, ROUTE_STATE2_MUID as state2Muid
+	    		, ROUTE_KIND_MUID as kindMuid
+	    		, ROUTE_STATE_MUID as stateMuid
+	    		, ROUTE_TRANS_KIND_MUID as transportationKindMuid
+	    		, ROUTE_TS_KIND_MUID as transportKindMuid
+	    		, COMMENT as comment
+	    		, OPEN_DATE as openDate
+	    		, AGENCY_MUID as agencyMuid
+			from [PBK_GISMGT].[GM_ROUTES] a
+            where ID = #{id}			
+        ]]>        
+    </select>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.gismgt.GmRoute">
+        <![CDATA[
+        	update [PBK_GISMGT].[GM_ROUTES]
+            set
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.updateGmFields" /><![CDATA[
+	    		, CLOSE_ORDER_MUID = #{closeOrderMuid}
+	    		, OPEN_ORDER_MUID = #{openOrderMuid}
+	    		, ROUTE_VARIANT_MUID = #{currentRouteVariantMuid}
+	    		, ROUTE_NUMBER = #{number}
+	    		, CLOSE_DATE = #{closeDate}
+	    		, ROUTE_STATE2_MUID = #{state2Muid}
+	    		, ROUTE_KIND_MUID = #{kindMuid}
+	    		, ROUTE_STATE_MUID = #{stateMuid}
+	    		, ROUTE_TRANS_KIND_MUID = #{transportationKindMuid}
+	    		, ROUTE_TS_KIND_MUID = #{transportKindMuid}
+	    		, COMMENT = #{comment}
+	    		, OPEN_DATE = #{openDate}
+	    		, AGENCY_MUID = #{agencyMuid}
+			where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTES WHERE MUID = #{muid})
+        ]]>
+    </update>   
+        
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+		SELECT DISTINCT s.ID as id, s.name as name from (
+	    	SELECT
+	        	gm.ID as id, gm.ROUTE_NUMBER as name
+	        FROM
+	        	PBK_GISMGT.GM_ROUTES gm
+	        WHERE
+	        	gm.IS_DELETE = 0 AND
+	        	gm.ID NOT IN (SELECT rh.GM_ROUTE_ID FROM PBK_NSI.ROUTES r 
+							  JOIN PBK_NSI.ROUTE_HISTS rh on r.ID = rh.HEAD_ID WHERE r.IS_DELETE = 0 AND rh.GM_ROUTE_ID IS NOT NULL) 
+				UNION ALL
+				SELECT
+	        	gm.ID as id, gm.ROUTE_NUMBER as name
+	        FROM
+	        	PBK_GISMGT.GM_ROUTES gm
+	        WHERE
+	        	gm.IS_DELETE = 0 AND
+				(#{currentId} IS NOT NULL AND gm.ID = #{currentId}) 
+				) s
+    	]]> 
+    </select> 
+</mapper>

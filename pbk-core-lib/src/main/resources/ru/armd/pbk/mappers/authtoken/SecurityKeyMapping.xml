@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.authtoken.SecurityKeyMapping">
+
+    <insert id="setNewKey" parameterType="ru.armd.pbk.domain.authtoken.SecurityKey" keyProperty="id" keyColumn="id">
+        <![CDATA[
+          insert into [PBK_CORE].[SECURITY_KEYS](
+            [CREATE_DATE]
+            ,[KEY_CONTENT])
+            VALUES(
+              #{createDate},
+              #{keyContent}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( '[PBK_CORE].[SECURITY_KEYS]' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <select id="getRecentKey" resultType="ru.armd.pbk.domain.authtoken.SecurityKey">
+        <![CDATA[
+          select
+                  ID as id
+                  ,CREATE_DATE as createDate
+                  ,KEY_CONTENT as keyContent
+            from [PBK_CORE].[SECURITY_KEYS]
+            where CREATE_DATE = (select max(CREATE_DATE) from [PBK_CORE].[SECURITY_KEYS])
+        ]]>
+    </select>
+
+</mapper>

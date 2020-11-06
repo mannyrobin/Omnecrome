@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.SexMapper">
+	<select id="getGridViews" resultType="ru.armd.pbk.views.nsi.SexView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          select id as id, cod as cod, name as name, description as description
+          from [PBK_NSI].[SEXES] sex
+          where (#{filter.name} is null or UPPER(sex.NAME) like UPPER('%${filter.name}%'))
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        select id as id, name as name
+        from [PBK_NSI].[SEXES]
+    </select>
+
+	<select id="getById" resultType="ru.armd.pbk.domain.nsi.Sex">
+        <![CDATA[
+            SELECT
+            	sex.ID as id
+				, COD as cod
+				, NAME as name
+				, DESCRIPTION as description
+			FROM
+            	[PBK_NSI].[SEXES] sex
+            WHERE
+            	sex.ID = #{id}
+        ]]>
+    </select>
+    
+    <select id="getByCode" resultType="ru.armd.pbk.domain.nsi.Sex">
+		<![CDATA[
+            SELECT
+            	sex.ID as id
+				, COD as cod
+				, NAME as name
+				, DESCRIPTION as description
+			FROM
+            	[PBK_NSI].[SEXES] sex
+            WHERE
+            	sex.COD = #{code}
+        ]]>
+	</select>
+	
+</mapper>

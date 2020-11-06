@@ -1,0 +1,69 @@
+<div class="modal-header" draggable-modal>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="close()">
+        <span aria-hidden="true">&times;</span>
+    </button>
+    <h4 class="modal-title">{{title}}</h4>
+</div>
+
+<div class="modal-body">
+    <div ar-validation-errors></div>
+
+    <!-- FORM -->
+    <form name="form">  
+    	<span style="display: none;" id="upload-file-info"></span>
+    	
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[0]"></div>
+            <div ar-form-field col-class="'col-sm-6'" field="fields[1]"></div>
+        </div>    
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[2]"></div>
+            <div ar-form-field col-class="'col-sm-6'" field="fields[3]"></div>
+        </div>   
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[4]"></div>
+            <div ar-form-field col-class="'col-sm-6'" field="fields[5]"></div>
+        </div>
+
+		<div class="row form-group">
+			<div ar-form-field col-class="'col-sm-6'" field="fields[6]"></div>
+			<div ar-form-field col-class="'col-sm-6'" field="fields[11]"></div>
+		</div>
+
+		<div ar-form-field col-class="'col-sm-6'" style="display: none;" field="fields[7]"></div>
+		<div ar-form-field col-class="'col-sm-6'" style="display: none;" field="fields[9]"></div>
+        <hr/>
+        <div
+			style="position: relative; display: inline-block;">
+			<a class='btn btn-primary btn-sm' href='javascript:;'>Загрузить скан<input type="file" class="form-control file-btn-input"
+				name="file_source" size="20" file-model="attachedFile"
+				onchange='$("#upload-file-info").html($(this).val().replace("C:\\fakepath\\",""));'>
+			</a> &nbsp;			
+		</div>
+		<button ng-show="isFileAttached() || fields[8].value != null" type="button"
+				ng-click="backToCreateFile()" class="btn btn-sm btn-warning">
+				<i class="glyphicon glyphicon-remove"></i>
+		</button>
+		<button ng-show="fields[8].value != null" type="button"
+				ng-click="download()" class="btn btn-sm btn-success">
+				<i class="glyphicon glyphicon-download"></i>
+		</button>
+		<div ng-show="isFileAttached() || fields[8].value != null">
+			<div class="row form-group">
+				<div ar-form-field col-class="'col-sm-12'" field="fields[10]"></div>
+			</div>
+			<div class="row form-group">
+				<div ar-form-field col-class="'col-sm-12'" field="fields[8]"></div>
+	        </div> 
+		</div>		
+		
+    </form>
+    <!-- END FORM -->
+    
+
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-primary" ng-click="saveFile()" ng-disabled="form.$invalid">Сохранить</button>
+    <button type="button" class="btn btn-default" ng-click="close()">Закрыть</button>
+</div>

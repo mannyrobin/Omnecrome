@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.ShiftMapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.ShiftView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+    	<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        SELECT
+        	ID as id,
+			COD as code,
+			NAME as name,
+			RESERVE_COUNT as reserveCount,
+			DESCRIPTION as description,
+			WORK_START_TIME as workStartTime,	
+			WORK_END_TIME as workEndTime,
+			BREAK_START_TIME as breakStartTime,
+			BREAK_END_TIME as breakEndTime,
+			IS_DELETE as isDelete	
+        FROM
+        	PBK_NSI.SHIFTS
+        WHERE
+        	(#{filter.code} is null or UPPER(COD) like UPPER('%${filter.code}%'))
+        	AND (#{filter.name} is null or UPPER(NAME) like UPPER('%${filter.name}%'))
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.Shift">
+        <![CDATA[
+            SELECT
+	            ID as id,
+				COD as code,
+				NAME as name,
+				RESERVE_COUNT as reserveCount,
+				DESCRIPTION as description,
+				WORK_START_TIME as workStartTime,	
+				WORK_END_TIME as workEndTime,
+				BREAK_START_TIME as breakStartTime,
+				BREAK_END_TIME as breakEndTime,
+				IS_DELETE as isDelete
+             FROM
+            	PBK_NSI.SHIFTS
+            WHERE
+            	ID = #{id}
+        ]]>
+    </select>
+    
+    <select id="getByCode" resultType="ru.armd.pbk.domain.nsi.Shift">
+        <![CDATA[
+            SELECT
+	            ID as id,
+				COD as code,
+				NAME as name,
+				RESERVE_COUNT as reserveCount,
+				DESCRIPTION as description,
+				WORK_START_TIME as workStartTime,	
+				WORK_END_TIME as workEndTime,
+				BREAK_START_TIME as breakStartTime,
+				BREAK_END_TIME as breakEndTime,
+				IS_DELETE as isDelete
+             FROM
+            	PBK_NSI.SHIFTS
+            WHERE
+            	COD = #{code}
+        ]]>
+    </select>
+    
+    <select id="getDepartmentShift" resultType="ru.armd.pbk.domain.nsi.Shift">
+        <![CDATA[
+            SELECT
+	            s.ID as id,
+				s.COD as code,
+				s.NAME as name,
+				sh.RESERVE_COUNT as reserveCount,
+				s.DESCRIPTION as description,
+				s.WORK_START_TIME as workStartTime,	
+				s.WORK_END_TIME as workEndTime,
+				s.BREAK_START_TIME as breakStartTime,
+				s.BREAK_END_TIME as breakEndTime,
+				s.IS_DELETE as isDelete
+             FROM
+            	PBK_NSI.SHIFTS s
+				JOIN PBK_NSI.SHIFT_DEPARTMENTS sh on s.ID = sh.SHIFT_ID
+             WHERE
+            	s.COD = #{code}
+            	and sh.DEPARTMENT_ID = #{deptId}
+            	and sh.IS_WORK_DAY = (SELECT case wd.[WORK_DAY_TYPE_ID] when 1 then 1 else 0 end
+									  FROM [PBK_NSI].[WORK_DAYS] wd
+									  WHERE WORK_DATE = cast(#{workDate} as date))
+        ]]>
+    </select>
+    
+    <insert id="insert" parameterType="ru.armd.pbk.domain.nsi.Shift" keyProperty="id" keyColumn="id">
+    	<![CDATA[
+	        INSERT INTO
+	        	PBK_NSI.SHIFTS (
+	        	]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+	         	,COD,
+				NAME,
+				RESERVE_COUNT,
+				DESCRIPTION,
+				WORK_START_TIME,	
+				WORK_END_TIME,
+				BREAK_START_TIME,
+				BREAK_END_TIME,
+				IS_DELETE
+	        	)
+	        VALUES (
+	        	]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+	            ,#{code},
+				#{name},
+				#{reserveCount},
+				#{description},
+				#{workStartTime},	
+				#{workEndTime},
+				#{breakStartTime},
+				#{breakEndTime},
+				0)
+         ]]>
+         <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.SHIFTS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.nsi.Shift">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.SHIFTS
+		    SET
+		    	UPDATE_DATE = #{updateDate},
+            	UPDATE_USER_ID = #{updateUserId},
+		     	COD = #{code},
+				NAME = #{name},
+				RESERVE_COUNT = #{reserveCount},
+				DESCRIPTION = #{description},
+				WORK_START_TIME = #{workStartTime},	
+				WORK_END_TIME = #{workEndTime},
+				BREAK_START_TIME = #{breakStartTime},
+				BREAK_END_TIME = #{breakEndTime}
+		    WHERE
+		    	ID = #{id}
+	    ]]>
+    </update>
+    
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_NSI.SHIFTS
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.SHIFTS
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+      SELECT
+      	ID as id,
+      	NAME as name
+      FROM
+      	PBK_NSI.SHIFTS
+      WHERE
+      	ID IN (SELECT ID FROM PBK_NSI.SHIFTS WHERE IS_DELETE = 0)
+      	AND (#{isWork} IS NULL OR #{isWork} = 1 AND COD IN ('DAY', 'NIGHT', 'I', 'II', 'OTHER', 'III', 'LINE1', 'LINE2') OR #{isWork} = 0 AND COD IN ('HOLIDAY', 'VACATION', 'SICK'))
+      	AND (#{notHoliday} IS NULL OR #{notHoliday} = 1 AND COD != ('HOLIDAY'))
+      	AND (#{isChangeSchedule} IS NULL OR #{isChangeSchedule} = 1 AND COD IN ('VACATION', 'SICK', 'OTHER', 'LINE1', 'LINE2'))
+      	OR (#{currentId} IS NOT NULL AND ID = #{currentId})
+      	
+    </select>
+    
+    <select id="getSelectItemsForPlan" resultType="ru.armd.pbk.core.views.SelectItem">
+	    SELECT
+	      	ID as id,
+	      	NAME as name
+	    FROM
+	      	PBK_NSI.SHIFTS
+	    WHERE
+	      	ID IN (SELECT ID FROM PBK_NSI.SHIFTS WHERE IS_DELETE = 0)
+	      	AND (#{isWork} IS NULL OR #{isWork} = 1 AND COD IN ('DAY', 'NIGHT', 'I', 'II', 'OTHER', 'III', 'LINE1', 'LINE2') OR #{isWork} = 0 AND COD IN ('HOLIDAY', 'VACATION', 'SICK'))
+			AND #{venueId} IS NOT NULL AND ID NOT IN (SELECT DISTINCT SHIFT_ID FROM PBK_PLAN.PLAN_VENUES WHERE CITY_VENUE_ID = #{venueId} AND PLAN_ID = #{planId})
+	</select>
+	
+	<select id="getByScheduleId" resultType="ru.armd.pbk.domain.nsi.Shift">
+        <![CDATA[
+            SELECT
+	            s.ID as id,
+				s.COD as code,
+				s.NAME as name,
+				s.RESERVE_COUNT as reserveCount,
+				s.DESCRIPTION as description,
+				s.WORK_START_TIME as workStartTime,	
+				s.WORK_END_TIME as workEndTime,
+				s.BREAK_START_TIME as breakStartTime,
+				s.BREAK_END_TIME as breakEndTime,
+				s.IS_DELETE as isDelete
+             FROM
+				PBK_PLAN.PLAN_SCHEDULES ps LEFT JOIN PBK_NSI.SHIFTS s ON (ps.SHIFT_ID = s.ID)
+			WHERE
+				ps.ID = #{scheduleId}
+        ]]>
+    </select>
+    
+    <select id="getByTaskId" resultType="ru.armd.pbk.domain.nsi.Shift">
+        <![CDATA[
+            SELECT	sh.WORK_START_TIME as workStartTime			
+					, sh.BREAK_START_TIME as breakStartTime
+					, sh.BREAK_END_TIME as breakEndTime		
+					, case when t.TASK_TYPE_ID = 1 
+						AND sh.COD in('DAY', 'I', 'II', 'III') 
+						AND (DATEPART(HOUR, sh.WORK_END_TIME) - DATEPART(HOUR, sh.WORK_START_TIME) - (DATEPART(HOUR, sh.BREAK_END_TIME) - DATEPART(HOUR, sh.BREAK_START_TIME)) != CEILING(ewm.WORK_PLAN_HOURS)) 
+						then DATEADD(MS, DATEDIFF (MS  , sh.BREAK_START_TIME, sh.BREAK_END_TIME  ), DATEADD(hh, ewm.WORK_PLAN_HOURS, sh.WORK_START_TIME)) 
+						else sh.WORK_END_TIME end as workEndTime
+					, sh.IS_DELETE as isDelete
+					, sh.ID as id
+					, sh.COD as code
+					, sh.NAME as name
+					, sh.RESERVE_COUNT as reserveCount
+					, sh.DESCRIPTION as description
+ 		 	FROM [PBK_TASK].[TASKS] t
+  			JOIN [PBK_PLAN].[PLAN_SCHEDULES] ps on t.PLAN_SCHEDULE_ID = ps.ID 
+  			JOIN [PBK_NSI].[EMPLOYEE_WORK_MODES] ewm on ps.EMPLOYEE_ID = ewm.EMPLOYEE_ID and ewm.WORK_DATE = ps.WORK_DATE
+  			JOIN [PBK_NSI].[SHIFTS] sh on ps.SHIFT_ID = sh.ID  
+  			WHERE t.ID = #{taskId}
+        ]]>
+    </select>
+    
+</mapper>

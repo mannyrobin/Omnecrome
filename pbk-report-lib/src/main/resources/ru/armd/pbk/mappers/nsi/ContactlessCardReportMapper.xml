@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.ContactlessCardReportMapper">
+
+	 <select id="getReportViews" resultType="ru.armd.pbk.views.nsi.ContactlessCardReportView">
+        <![CDATA[
+			SELECT
+               ROW_NUMBER() OVER (]]><include refid="ru.armd.pbk.mappers.CommonSql.orderBySql" /><![CDATA[) AS id,
+               t.*
+            FROM (
+				SELECT
+		            d.[ID] as id
+					,dh.[CARD_NUMBER] as cardNumber
+					,dh.[UID] as uid
+					,dh.[DESCRIPTION] as description
+	                ,eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as owner
+	                ,dpth.NAME as dptName
+				FROM [PBK_NSI].[CONTACTLESS_CARDS] d JOIN [PBK_NSI].[CONTACTLESS_CARD_HISTS] dh on (d.ID = dh.HEAD_ID)
+					LEFT JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh on eh.[CONTACTLESS_CARD_ID] = d.[ID] and eh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+					LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] dpth on dpth.[HEAD_ID] = eh.DEPT_ID and dpth.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+				WHERE dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+					and (d.IS_DELETE = 0)
+				  	and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+				  	and (#{filter.cardNumber} is null or UPPER(dh.CARD_NUMBER) like UPPER('%${filter.cardNumber}%'))
+				  	and (#{filter.uid} is null or UPPER(dh.UID) like UPPER('%${filter.uid}%')) 
+				  	and (#{filter.departmentId} is null or dpth.HEAD_ID = #{filter.departmentId}) 
+				  	and (#{filter.employeeId} is null or eh.HEAD_ID = #{filter.employeeId})
+				  	]]><if test="filter.ids != null">
+					AND d.ID IN (${filter.ids})
+					</if>
+        ) t
+        <include refid="ru.armd.pbk.mappers.CommonSql.orderBySql_t" />
+    </select>
+
+</mapper>

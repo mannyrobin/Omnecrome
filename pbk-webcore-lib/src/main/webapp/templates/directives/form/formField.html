@@ -1,0 +1,109 @@
+<div class="{{::colClass}}">
+    <div ar-validate-field="{{::field.name}}">
+        <label for="{{::field.name}}">{{::field.label}}</label>
+        
+        <!-- TEXT -->
+        <input autocomplete="{{::field.autocomplete}}" ng-if='field.type == "text" && field.required' class="form-control" id="{{::field.name}}" type="{{::field.inputType}}" maxlength="{{::field.maxLength}}"
+            ng-model="field.value" ng-change="field.onChange()" ng-attr-placeholder="{{::field.placeholder}}" name="{{::field.name}}" required ng-readonly="field.readonly" ar-format="{{::field.arFormat}}"/>
+        <input ng-if='field.type == "text" && !field.required' class="form-control" id="{{::field.name}}" type="{{::field.inputType}}" maxlength="{{::field.maxLength}}"
+            ng-model="field.value" ng-attr-placeholder="{{::field.placeholder}}" name="{{::field.name}}" ng-readonly="field.readonly" ar-format="{{::field.arFormat}}"/>
+        
+        <!-- DATE -->
+        <div autocomplete="{{::field.autocomplete}}" ng-if='field.type == "date" && field.required' id="{{::field.name}}" ar-datetimepicker date-format="DD.MM.YYYY"
+            ng-model="field.value" ng-change="field.onChange()" placeholder="{{::field.placeholder}}" name="{{::field.name}}" readonly="field.readonly" required></div>
+        <div ng-if='field.type == "date" && !field.required' id="{{::field.name}}" ar-datetimepicker date-format="DD.MM.YYYY"
+            ng-model="field.value" placeholder="{{::field.placeholder}}" name="{{::field.name}}" readonly="field.readonly" ></div>
+
+        <!-- MULTISELECT -->
+        <oi-select ng-if='field.type == "multiselect" && field.required && field.lazyfunc == null'
+            oi-options="item.name for item in field.list track by item.id"
+            ng-model="field.value" id="{{::field.name}}" name="{{::field.name}}" placeholder="{{::field.placeholder}}"
+            multiple required ng-change="field.onChange()"></oi-select>
+        <oi-select ng-if='field.type == "multiselect"  && !field.required && field.lazyfunc == null'
+            oi-options="item.name for item in field.list track by item.id"
+            ng-model="field.value" id="{{::field.name}}" name="{{::field.name}}" placeholder="{{::field.placeholder}}"
+            multiple ng-change="field.onChange()"></oi-select>
+
+        <!-- SELECT -->
+        <oi-select ng-if='field.type == "select" && field.required && field.lazyfunc == null'
+            oi-options="item.name for item in field.list track by item.id"
+            ng-model="field.value" id="{{::field.name}}" name="{{::field.name}}" placeholder="{{::field.placeholder}}"
+            ng-change="field.onChange()" ng-disabled="field.readonly"
+            required></oi-select>
+        <oi-select ng-if='field.type == "select"  && !field.required && field.lazyfunc == null'
+            oi-options="item.name for item in field.list track by item.id"
+            ng-model="field.value" id="{{::field.name}}" name="{{::field.name}}" placeholder="{{::field.placeholder}}"
+            ng-change="field.onChange()" ng-disabled="field.readonly"
+            ></oi-select>
+            
+        <!-- LAZY MULTISELECT -->
+        <oi-select ng-if='field.type == "multiselect" && field.required && field.lazyfunc != null'
+            oi-options="item.name for item in field.lazyfunc($query)"
+            ng-model="field.value" id="{{::field.name}}" name="{{::field.name}}" placeholder="{{::field.placeholder}}"
+            multiple required></oi-select>
+        <oi-select ng-if='field.type == "multiselect"  && !field.required && field.lazyfunc != null'
+            oi-options="item.name for item in field.lazyfunc($query)"
+            ng-model="field.value" id="{{::field.name}}" name="{{::field.name}}" placeholder="{{::field.placeholder}}"
+            multiple></oi-select>
+            
+        <!-- LAZY SELECT -->
+        <oi-select ng-if='field.type == "select" && field.required && field.lazyfunc != null'
+            oi-options="item.name for item in field.lazyfunc($query)"
+            ng-model="field.value" id="{{::field.name}}" name="{{::field.name}}" placeholder="{{::field.placeholder}}"
+            ng-change="field.onChange()" ng-disabled="{{field.readonly}}"
+            required></oi-select>
+        <oi-select ng-if='field.type == "select"  && !field.required && field.lazyfunc != null'
+            oi-options="item.name for item in field.lazyfunc($query)"
+            ng-model="field.value" id="{{::field.name}}" name="{{::field.name}}" placeholder="{{::field.placeholder}}"
+            ng-change="field.onChange()" ng-disabled="{{field.readonly}}"
+            ></oi-select>
+
+        <!-- YESNO -->
+        <oi-select ng-if='field.type == "yesno"' oi-options="item.name for item in field.list track by item.id"
+            ng-model="field.value" id="{{::field.name}}" name="{{::field.name}}" placeholder="{{::field.placeholder}}"
+            ng-change="field.onChange()" ng-disabled="field.readonly" required="field.required"></oi-select>
+
+        <!-- LEGITIMATE -->
+        <oi-select ng-if='field.type == "legitimate"' oi-options="item.name for item in field.list track by item.id"
+                   ng-model="field.value" id="{{::field.name}}" name="{{::field.name}}" placeholder="{{::field.placeholder}}"
+                   ng-change="field.onChange()"></oi-select>
+
+        <oi-select ng-if='field.type == "mapType"' oi-options="item.name for item in field.list track by item.id"
+                   ng-model="field.value" id="{{::field.name}}" name="{{::field.name}}" placeholder="{{::field.placeholder}}"
+                   ng-change="field.onChange()" ng-disabled="{{field.readonly}}"></oi-select>
+
+        <!-- TEXTAREA -->
+        <textarea ng-if='field.type == "textarea" && field.required' class="form-control" id="{{::field.name}}" ng-readonly="{{::field.readonly}}" maxlength="{{::field.maxLength}}"
+                  ng-model="field.value" ng-change="field.onChange()" ng-attr-placeholder="{{::field.placeholder}}" name="{{::field.name}}" required rows="{{::field.rows}}"/>
+        <textarea ng-if='field.type == "textarea" && !field.required' class="form-control" id="{{::field.name}}" ng-readonly="{{::field.readonly}}" maxlength="{{::field.maxLength}}"
+                  ng-model="field.value" ng-attr-placeholder="{{::field.placeholder}}" name="{{::field.name}}" rows="{{::field.rows}}"/>
+
+        <!-- TIME -->
+        <div ng-if='field.type == "time" && field.required'  ar-timepicker id="{{::field.name}}" readonly="field.readonly"
+             ng-model="field.value" placeholder="{{::field.placeholder}}" name="{{::field.name}}" required></div>
+        <div ng-if='field.type == "time" && !field.required'  ar-timepicker id="{{::field.name}}" readonly="field.readonly"
+             ng-model="field.value" placeholder="{{::field.placeholder}}" name="{{::field.name}}"></div>
+        
+        <!-- NUMBER -->
+        <input ng-if='field.type == "number" && field.required' class="form-control" ar-number="{{::field.arNumber}}" id="{{::field.name}}" ng-readonly="{{::field.readonly}}" maxlength="{{::field.maxLength}}" min="{{::field.min}}" max="{{::field.max}}"
+             ng-model="field.value" ng-attr-placeholder="{{::field.placeholder}}" name="{{::field.name}}" required></input>
+        <input ng-if='field.type == "number" && !field.required' class="form-control" ar-number="{{::field.arNumber}}" id="{{::field.name}}" ng-readonly="{{::field.readonly}}" maxlength="{{::field.maxLength}}" min="{{::field.min}}" max="{{::field.max}}"
+             ng-model="field.value" ng-attr-placeholder="{{::field.placeholder}}" name="{{::field.name}}"></input>
+
+        <!-- INT -->
+        <input ng-if='field.type == "int" && field.required' class="form-control" ar-int-number id="{{::field.name}}" ng-readonly="{{::field.readonly}}" maxlength="{{::field.maxLength}}" min="{{::field.min}}" max="{{::field.max}}"
+               ng-change="field.onChange()" ng-model="field.value" ng-attr-placeholder="{{::field.placeholder}}" name="{{::field.name}}" required></input>
+        <input ng-if='field.type == "int" && !field.required' class="form-control" ar-int-number id="{{::field.name}}" ng-readonly="{{::field.readonly}}" maxlength="{{::field.maxLength}}" min="{{::field.min}}" max="{{::field.max}}"
+               ng-model="field.value" ng-attr-placeholder="{{::field.placeholder}}" name="{{::field.name}}"></input>
+
+        <!-- TIME RANGE -->
+        <div ng-if='field.type == "timeRange" && !field.required' ar-timepicker-range id="{{::field.id}}" ng-readonly="{{::field.readonly}}" from-id="{{::filter.name.from}}"
+             to-id="{{::filter.name.to}}" ng-model="field.value" from-placeholder="{{::filter.placeholder.from}}" to-placeholder="{{::filter.placeholder.to}}" name="{{::field.id}}"></div>
+        <div ng-if='field.type == "timeRange" && field.required' ar-timepicker-range id="{{::field.id}}" ng-readonly="{{::field.readonly}}" from-id="{{::filter.name.from}}"
+             to-id="{{::filter.name.to}}" ng-model="field.value" from-placeholder="{{::filter.placeholder.from}}" to-placeholder="{{::filter.placeholder.to}}" name="{{::field.id}}" required></div>
+
+        <!-- HINT -->
+        <label ng-if='field.hint' for="{{::field.name}}" class="hint">{{::field.hint}}</label>
+        
+    </div>
+</div>

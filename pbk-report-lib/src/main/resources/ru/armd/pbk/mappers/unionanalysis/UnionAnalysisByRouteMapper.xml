@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.unionanalysis.UnionAnalysisByRouteMapper">
+
+	<sql id="workday">
+		<![CDATA[ 
+			(
+				SELECT [WORK_DATE]
+				FROM [PBK_NSI].[WORK_DAYS]
+				WHERE WORK_DAY_TYPE_ID = 1
+					AND (#{filter.dateFrom, jdbcType=DATE} <= WORK_DATE)
+        			AND (#{filter.dateTo, jdbcType=DATE} >= WORK_DATE)
+        	)
+        ]]>
+	</sql>
+	
+	<sql id="holiday">
+		<![CDATA[ 
+			(
+				SELECT [WORK_DATE]
+				FROM [PBK_NSI].[WORK_DAYS]
+				WHERE WORK_DAY_TYPE_ID != 1
+					AND (#{filter.dateFrom, jdbcType=DATE} <= WORK_DATE)
+        			AND (#{filter.dateTo, jdbcType=DATE} >= WORK_DATE)
+        	)
+        ]]>
+	</sql>
+	
+	<sql id="asmppRoutesFilter">
+		<if test="filter.routes != null"><![CDATA[
+    		AND [ROUTE_ID] IN (${filter.routes})
+        ]]></if>
+	</sql>
+	
+	<sql id="askpRoutesFilter">
+		<if test="filter.routes != null"><![CDATA[
+    		AND [ASDU_ROUTE_ID] IN (${filter.routes})
+        ]]></if>
+	</sql>
+    
+    <select id="getGridViews" resultType="ru.armd.pbk.views.unionanalysis.UnionAnalysisByRouteView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[          
+			SELECT  agr.ROUTE_ID as routeId
+					, agr.ROUTE_TYPE + '-' + agr.ROUTE_SHORT_NAME as routeName
+					, agr.ROUTE_SHORT_NAME + ' (' + agr.NAME + ')' as routeFilterName				
+					, workdayAsmpp.passengersIncludedCount as workdayAsmppPassengersIncludedCount
+					, workdayAsmpp.passengersLeftCount as workdayAsmppPassengersLeftCount
+					, workdayAsmpp.passengersTransportedCount as workdayAsmppPassengersTransportedCount
+					, workdayAskp.passengersCount as workdayAskpPassengersCount
+					, holidayAsmpp.passengersIncludedCount as holidayAsmppPassengersIncludedCount
+					, holidayAsmpp.passengersLeftCount as holidayAsmppPassengersLeftCount
+					, holidayAsmpp.passengersTransportedCount as holidayAsmppPassengersTransportedCount
+					, holidayAskp.passengersCount as holidayAskpPassengersCount
+				
+			FROM 	
+				(
+					SELECT distinct a.ROUTE_ID, a.ROUTE_SHORT_NAME, g.NAME, a.ROUTE_TYPE		
+					FROM PBK_VIS.ASDU_GTFS_ROUTES a
+					JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS g on a.ROUTE_TYPE = g.SHORT_NAME	
+					WHERE 1 = 1 and a.[ROUTE_ID] in (
+						SELECT asmpp.ROUTE_ID
+						FROM [PBK_VIS].[ASMPP_STOPS] asmpp
+						WHERE 1 = 1
+						    AND #{filter.dateFrom, jdbcType=DATE} <= cast(asmpp.WORK_DATE as datetime) + cast(cast(asmpp.time as time) as datetime) - CAST('03:00:00' as datetime)
+							AND DATEADD(day, 1, #{filter.dateTo, jdbcType=DATE}) >= cast(asmpp.WORK_DATE as datetime) + cast(cast(asmpp.time as time) as datetime) - CAST('03:00:00' as datetime)
+        					]]><if test="filter.routes != null"><![CDATA[
+        						AND asmpp.[ROUTE_ID] IN (${filter.routes}) 
+        					]]></if><![CDATA[
+        			)	 	
+				) agr
+				-- АСМПП рабочий день
+				LEFT JOIN (
+						SELECT [ROUTE_ID] as routeId 							    
+							  ,sum([PASSENGERSINCLUDED]) as passengersIncludedCount
+							  ,sum([PASSENGERSLEFT]) as passengersLeftCount
+							  ,sum([TRANSPORTED])  as passengersTransportedCount
+						FROM (SELECT DISTINCT route_id, grafic,
+						                      stop_sequence, stop_id,
+						                      PASSENGERSINCLUDED, PASSENGERSLEFT,TRANSPORTED,
+						                      [TIME]
+								  FROM [PBK_VIS].[ASMPP_STOPS]
+							WHERE WORK_DATE in
+							]]><include refid="workday"/><![CDATA[
+							]]><include refid="asmppRoutesFilter"/><![CDATA[) ASMPP_STOPS
+						group by ROUTE_ID) as workdayAsmpp on agr.ROUTE_ID = workdayAsmpp.routeId
+				-- АСКП рабочий день
+				LEFT JOIN (  
+						SELECT sum([ASKP_CHECKS_COUNT]) as passengersCount
+							   , [ASDU_ROUTE_ID] as routeId
+						FROM (SELECT DISTINCT ASDU_ROUTE_ID, grafic,
+						                     trip_id, trip_num, order_num ,stop_id, ASKP_CHECKS_COUNT
+								FROM [PBK_DB].[PBK_VIS].[STOP_INTERVALS] a
+								WHERE WORK_DATE in ]]><include refid="workday"/><![CDATA[
+									]]><include refid="askpRoutesFilter"/><![CDATA[
+									AND GRAFIC in (
+										SELECT GRAFIC FROM [PBK_VIS].[ASMPP_STOPS]
+										WHERE WORK_DATE in ]]><include refid="workday"/><![CDATA[
+										AND a.[ASDU_ROUTE_ID] = ROUTE_ID)) STOP_INTERVALS
+						GROUP BY [ASDU_ROUTE_ID]) as workdayAskp on workdayAskp.routeId = workdayAsmpp.routeId 
+				-- АСМПП выходной день
+				LEFT JOIN (
+						SELECT [ROUTE_ID] as routeId    
+							  ,sum([PASSENGERSINCLUDED]) as passengersIncludedCount
+							  ,sum([PASSENGERSLEFT]) as passengersLeftCount
+							  ,sum([TRANSPORTED])  as passengersTransportedCount
+
+						FROM (SELECT DISTINCT route_id, grafic,
+						                      stop_sequence, stop_id,
+						                      PASSENGERSINCLUDED, PASSENGERSLEFT,TRANSPORTED,
+						                      [TIME]
+                              FROM [PBK_VIS].[ASMPP_STOPS]
+						     WHERE WORK_DATE in
+								]]><include refid="holiday"/><![CDATA[
+								]]><include refid="asmppRoutesFilter"/><![CDATA[ ) ASMPP_STOPS
+						group by ROUTE_ID) as holidayAsmpp on agr.ROUTE_ID = holidayAsmpp.routeId
+				-- АСКП выходной день
+				LEFT JOIN (  
+						SELECT sum([ASKP_CHECKS_COUNT]) as passengersCount
+							   , [ASDU_ROUTE_ID] as routeId
+						FROM (SELECT DISTINCT ASDU_ROUTE_ID, grafic,
+						                     trip_id, trip_num, order_num ,stop_id, ASKP_CHECKS_COUNT
+						        FROM [PBK_DB].[PBK_VIS].[STOP_INTERVALS] a
+								WHERE WORK_DATE in ]]><include refid="holiday"/><![CDATA[
+									]]><include refid="askpRoutesFilter"/><![CDATA[
+									AND GRAFIC in (
+										SELECT GRAFIC FROM [PBK_VIS].[ASMPP_STOPS]
+										WHERE WORK_DATE in ]]><include refid="holiday"/><![CDATA[
+										AND a.[ASDU_ROUTE_ID] = ROUTE_ID)) STOP_INTERVALS
+						GROUP BY [ASDU_ROUTE_ID]) as holidayAskp on holidayAskp.routeId = holidayAsmpp.routeId
+		]]><include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd"/>
+		<include refid="ru.armd.pbk.mappers.CommonSql.mssqlTurboMode"/>
+    </select>
+    
+</mapper>

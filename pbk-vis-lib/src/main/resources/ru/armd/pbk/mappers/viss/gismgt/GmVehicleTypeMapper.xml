@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gismgt.GmVehicleTypeMapper">
+	
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.gismgt.GmVehicleType" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into [PBK_GISMGT].[GM_VEHICLE_TYPES] (
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmFields" /><![CDATA[	
+    			, [SEAT_CAPACITY]
+    			, [DIMENSIONS]
+    			, [NAME]
+    			, [MODEL]
+    			, [HAS_FFD]
+    			, [SHORT_NAME]
+    			, [EFFECTIVE_AREA]
+    			, [FULL_LOAD_WEIGHT]
+    			, [MAX_CAPACITY]
+    			, [TS_KIND_MUID]
+            ) values (
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmValues" /><![CDATA[
+    			, #{seatingCapacity}
+    			, #{dimension}
+    			, #{name}
+    			, #{model}
+    			, #{hasFacilitiesForDisabled}
+    			, #{shortName}
+    			, #{effectiveArea}
+    			, #{fullLoadWeight}
+    			, #{maxCapacity}
+    			, #{routeTransportKindMuid}
+            )
+        ]]>  
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( '[PBK_GISMGT].[GM_VEHICLE_TYPES]' ) as id
+            ]]>
+        </selectKey>     
+    </insert>
+    
+    <select id="getByMuid" resultType="ru.armd.pbk.domain.viss.gismgt.GmVehicleType">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, SEAT_CAPACITY as seatingCapacity
+	    		, DIMENSIONS as dimension
+	    		, TS_KIND_MUID as routeTransportKindId
+	    		, NAME as name
+	    		, MODEL as model
+	    		, HAS_FFD as hasFacilitiesForDisabled
+	    		, SHORT_NAME as shortName
+	    		, EFFECTIVE_AREA as effectiveArea
+	    		, FULL_LOAD_WEIGHT as fullLoadWeight
+	    		, MAX_CAPACITY as maxCapacity
+			from [PBK_GISMGT].[GM_VEHICLE_TYPES] a
+            where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_VEHICLE_TYPES WHERE MUID = #{muid})			
+        ]]>
+    </select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.gismgt.GmVehicleType">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, SEAT_CAPACITY as seatingCapacity
+	    		, DIMENSIONS as dimension
+	    		, TS_KIND_MUID as routeTransportKindId
+	    		, NAME as name
+	    		, MODEL as model
+	    		, HAS_FFD as hasFacilitiesForDisabled
+	    		, SHORT_NAME as shortName
+	    		, EFFECTIVE_AREA as effectiveArea
+	    		, FULL_LOAD_WEIGHT as fullLoadWeight
+	    		, MAX_CAPACITY as maxCapacity
+			from [PBK_GISMGT].[GM_VEHICLE_TYPES] a
+            where ID = #{id}			
+        ]]>
+    </select>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.gismgt.GmVehicleType">
+        <![CDATA[
+        	update [PBK_GISMGT].[GM_VEHICLE_TYPES]
+            set
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.updateGmFields" /><![CDATA[
+	    		, SEAT_CAPACITY = #{seatingCapacity}
+	    		, DIMENSIONS = #{dimension}
+	    		, TS_KIND_MUID = #{routeTransportKindMuid}
+	    		, NAME = #{name}
+	    		, MODEL = #{model}
+	    		, HAS_FFD = #{hasFacilitiesForDisabled}
+	    		, SHORT_NAME = #{shortName}
+	    		, EFFECTIVE_AREA = #{effectiveArea}
+	    		, FULL_LOAD_WEIGHT = #{fullLoadWeight}
+	    		, MAX_CAPACITY = #{maxCapacity}
+			where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_VEHICLE_TYPES WHERE MUID = #{muid})
+        ]]>
+    </update>    
+</mapper>

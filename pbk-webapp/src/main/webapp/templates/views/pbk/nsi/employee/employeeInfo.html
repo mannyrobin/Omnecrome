@@ -1,0 +1,118 @@
+<div class="modal fade bs-example-modal-sm" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog modal-sm" role="document" style="top: 5%;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <img style="height: 100%;width: 100%;background: white;" ng-src="{{myImage}}"/>
+            </div>
+        </div>
+    </div>
+</div>
+<div>
+    <div ar-validation-errors></div>
+
+    <!-- FORM -->
+    <form name="employeeInfoForm">
+        <h4>Основная информация</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-4'" field="fields[0]"></div>
+            <div ar-form-field col-class="'col-sm-3'" field="fields[1]"></div>
+            <div ar-form-field col-class="'col-sm-3'" field="fields[2]"></div>
+            <div ar-form-field col-class="'col-sm-2'" field="fields[3]"></div>
+        </div>
+        <div class="row form-group">
+            <div class="col-sm-9">
+                <div class="row">
+                    <div ar-form-field col-class="'col-sm-3'" field="fields[4]"></div>
+                    <div ar-form-field col-class="'col-sm-3'" field="fields[5]"></div>
+                    <div ar-form-field col-class="'col-sm-3'" field="fields[6]"></div>
+                    <div ar-form-field col-class="'col-sm-3'" field="fields[21]"></div>
+                </div>
+                <div class="row form-group">
+                    <div ar-form-field col-class="'col-sm-3'" field="fields[7]"></div>
+                    <div ar-form-field col-class="'col-sm-4'" field="fields[10]"></div>
+                    <div ar-form-field col-class="'col-sm-5'" field="fields[20]"></div>
+                </div>
+                <div class="row form-group">
+                    <div ar-form-field col-class="'col-sm-4'" field="fields[8]"></div>
+                    <div ar-form-field col-class="'col-sm-4'" field="fields[9]"></div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="col-sm-8 col-sm-offset-4">
+                    <div>
+                        <button type="button" data-toggle="modal" data-target="#exampleModalCenter">
+                            <img ng-src="{{myImage}}" style="height: 200px;max-width: 150px;width: 150px;background: white;">
+                        </button>
+                    </div>
+                    <div>
+                    <button ar-tooltip="Добавить фото" type="button" class="btn btn-success" ng-click="addPhoto()"
+                            ng-disabled="readonly" ng-hide="{{!hasUserEditAdminRole}}" data-toggle="tooltip" title="" data-container="body" data-original-title="Добавить фото">
+                        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                    </button>
+                    <button ar-tooltip="Удалить фото" type="button" class="btn btn-danger" ng-click="deletePhoto()"
+                            ng-disabled="readonly" ng-hide="{{!hasUserEditAdminRole}}" data-toggle="tooltip" title="" data-container="body" data-original-title="Удалить фото">
+                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                    </button>
+                </div>
+                </div>
+            </div>
+        </div>
+        <h4>Устройства</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-2'" field="fields[11]"></div>
+            <div class="col-sm-1 row field-button">
+                <button ar-tooltip="Создать видеорегистратор" type="button" class="btn btn-success"
+                        ng-click="createDvr()" ng-disabled="readonly">
+                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div ar-form-field col-class="'col-sm-2'" field="fields[12]"></div>
+            <div class="col-sm-1 row field-button">
+                <button ar-tooltip="Создать БСК" type="button" class="btn btn-success"
+                        ng-click="createBsk()" ng-disabled="readonly">
+                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div ar-form-field col-class="'col-sm-2'" field="fields[13]"></div>
+            <div class="col-sm-1 row field-button">
+                <button ar-tooltip="Создать СКК" type="button" class="btn btn-success"
+                        ng-click="createSkk()" ng-disabled="readonly">
+                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div ar-form-field col-class="'col-sm-2'" field="fields[14]"></div>
+            <div class="col-sm-1 row field-button">
+                <button ar-tooltip="Создать ПУсК" type="button" class="btn btn-success"
+                        ng-click="createPusk()" ng-disabled="readonly">
+                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+        <h4>Дополнительная информация</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-4'" field="fields[15]"></div>
+            <div ar-form-field col-class="'col-sm-4'" field="fields[16]"></div>
+            <div ar-form-field col-class="'col-sm-4'" field="fields[17]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-3'" field="fields[18]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-12'" field="fields[19]"></div>
+        </div>
+
+    </form>
+    <!-- END FORM -->
+
+</div>
+
+<div ng-if="item.isDelete == 0 && isNotReadOnlyUser" class="pull-right">
+    <button type="button" class="btn btn-primary" ng-click="saveVersion()" ng-disabled="employeeInfoForm.$invalid || !isChange">Сохранить версию</button>
+    <!--    <button type="button" class="btn btn-primary" ng-click="save()" ng-disabled="employeeInfoForm.$invalid || !isChange">Сохранить</button>-->
+    <button type="button" class="btn btn-default" ng-click="reset()">Отменить изменения</button>
+</div>

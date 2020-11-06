@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:com="http://mgt.ru/pbk/xsd/1/Common"
+            xmlns:emp="http://mgt.ru/pbk/xsd/fhd/1/Employees" targetNamespace="http://mgt.ru/pbk/xsd/fhd/1/Employees"
+            elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+  <xsd:import namespace="http://mgt.ru/pbk/xsd/1/Common" schemaLocation="Common.xsd"/>
+
+  <xsd:complexType name="ExportEmployeeResponseType">
+    <xsd:sequence>
+      <xsd:element name="employees">
+        <xsd:annotation>
+          <xsd:documentation>Перечень сотрудников </xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+          <xsd:sequence minOccurs="0">
+            <xsd:element name="employee" maxOccurs="unbounded">
+              <xsd:annotation>
+                <xsd:documentation>Данные по сотруднику</xsd:documentation>
+              </xsd:annotation>
+              <xsd:complexType>
+                <xsd:sequence>
+                  <xsd:element name="ident" type="com:TIdent" nillable="true" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Уникальный идентификатор</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="personelNumber" type="com:TVarchar32" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Табельный номер</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="surname" type="com:TVarchar128" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Фамилия</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="name" type="com:TVarchar128" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Имя</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="patronumic" type="com:TVarchar128" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Отчество</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="deptId" type="com:TIdent" nillable="false" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Подразделение</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="deptStartDate" type="com:TDate" nillable="true" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Дата начала работы в текущем подразделении. YYYY.MM.DD-заполняется, если дата начала работы в текущем подразделении попадает в период запроса</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="deptEndDate" type="com:TDate" nillable="true" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Дата окончания работы в текущем подразделении. YYYY.MM.DD-заполняется, если дата окончания работы в текущем подразделении попадает в период запроса</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="holidayStartDate" type="com:TDate" nillable="true" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Дата начала отпускного периода. YYYY.MM.DD-заполняется, если дата начала отпускного периода попадает в период запроса</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="holidayEndDate" type="com:TDate" nillable="true" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Дата окончания отпускного периода. YYYY.MM.DD-заполняется, если дата окончания отпускного периода попадает в период запроса</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="sickStartDate" type="com:TDate" nillable="true" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Дата начала нахождения на больничном. YYYY.MM.DD-заполняется, если дата начала нахождения на больничном попадает в период запроса</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="sickEndDate" type="com:TDate" nillable="true" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Дата окончания нахождения на больничном. YYYY.MM.DD-заполняется, если дата окончания нахождения на больничном попадает в период запроса</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:schema>

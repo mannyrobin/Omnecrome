@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.OfficialCardMapper">
+
+    <sql id="fieldDomain">
+        <![CDATA[
+              ,d.[IS_DELETE] as isDelete
+              ,dh.[CREATE_DATE] as createDate
+              ,dh.[CREATE_USER_ID] as createUserId
+              ,dh.[UPDATE_DATE] as updateDate
+              ,dh.[UPDATE_USER_ID] as updateUserId
+              ,dh.[V_START_DATE] as versionStartDate
+              ,dh.[V_END_DATE] as versionEndDate
+              ,dh.[HEAD_ID] as headId
+              ,dh.[CARD_NUMBER] as cardNumber
+              ,dh.[DESCRIPTION] as description
+        ]]>
+    </sql>
+
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.officialcard.OfficialCardView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+         <![CDATA[
+			SELECT
+                d.[ID] as id
+                , eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as owner
+                , dpth.NAME as dptName
+                ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[OFFICIAL_CARDS] d JOIN [PBK_NSI].[OFFICIAL_CARD_HISTS] dh on (d.ID = dh.HEAD_ID)
+				LEFT JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh on eh.[OFFICIAL_CARD_ID] = d.[ID] and eh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+				LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] dpth on dpth.[HEAD_ID] = eh.DEPT_ID and dpth.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+			WHERE 1 = 1
+  			   and ((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR d.IS_DELETE = 0)
+			   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+			   and (#{filter.cardNumber} is null or UPPER(dh.CARD_NUMBER) like UPPER('%${filter.cardNumber}%'))
+			   and (#{filter.departmentId} is null or dpth.HEAD_ID = #{filter.departmentId}) 
+			   and (#{filter.employeeId} is null or eh.HEAD_ID = #{filter.employeeId}) 
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+	<select id="getHistoryViews" resultType="ru.armd.pbk.views.nsi.officialcard.OfficialCardHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+				dh.CARD_NUMBER as cardNumber
+			FROM
+				PBK_NSI.OFFICIAL_CARD_HISTS dh LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+			WHERE
+          		dh.HEAD_ID = #{filter.officialCardHeadId}
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <select id="getOwnersHistoryViews" resultType="ru.armd.pbk.views.nsi.officialcard.OfficialCardOwnersHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <![CDATA[
+			with y as (
+			SELECT
+				 isnull(employess.SURNAME, '') as surname
+				,isnull(employess.NAME, '') as name
+				,isnull(employess.PATRONUMIC, '') as patronumic
+				,employess.PERSONNEL_NUMBER as pesonalNumber
+				,deh.UPDATE_DATE as updateDate
+				,CARD_NUMBER as officialCardNumber
+				,uu.LOGIN as updateUser
+				,CASE WHEN deh.[V_END_DATE] >= PBK_CORE.getVersionEndDate() THEN 1 ELSE 0 END AS active
+				,CASE WHEN employess.ID is null then 'Отвязка' else 'Привязка' end as operation
+			FROM PBK_NSI.OFFICIAL_CARD_EMPLOYEE_HISTS as deh
+			     LEFT JOIN PBK_NSI.EMPLOYEE_HISTS employess on deh.EMPLOYEE_ID = employess.HEAD_ID AND employess.[V_END_DATE] >= PBK_CORE.getVersionEndDate() 			     
+				 JOIN PBK_NSI.OFFICIAL_CARDS dvr on dvr.ID=deh.DEVICE_ID
+				 JOIN PBK_CORE.USERS uu ON (deh.UPDATE_USER_ID  = uu.ID)
+				 JOIN PBK_NSI.OFFICIAL_CARD_HISTS dvr_his on dvr.ID=dvr_his.HEAD_ID and dvr_his.V_END_DATE >= PBK_CORE.getVersionEndDate()
+			WHERE deh.DEVICE_ID=#{filter.ocId}
+			order by deh.DEVICE_ID, deh.UPDATE_DATE offset (#{page} - 1) * #{count} rows fetch first #{count} rows only
+			)
+            select
+                (select count(*) from y) as cnt
+                , * from y
+        ]]>
+    </select>
+
+    <insert id="insertHead" parameterType="ru.armd.pbk.domain.HeadVersionDomain" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.OFFICIAL_CARDS(
+	        [IS_DELETE]
+        ) VALUES (
+        	#{isDelete}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.OFFICIAL_CARDS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.nsi.OfficialCard" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.OFFICIAL_CARD_HISTS(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+        	, [HEAD_ID]
+        	, [CARD_NUMBER]
+        	, [DESCRIPTION]
+        ) VALUES(
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+        	, #{headId}
+        	, #{cardNumber}
+        	, #{description}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.OFFICIAL_CARD_HISTS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.nsi.OfficialCard">
+        <![CDATA[
+			UPDATE PBK_NSI.OFFICIAL_CARD_HISTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+				,CARD_NUMBER = #{cardNumber}
+                ,DESCRIPTION = #{description}
+			WHERE
+			  ID = #{id}
+        ]]>
+    </update>
+    
+    <update id="updateWithEmployee">
+			UPDATE [PBK_NSI].[EMPLOYEE_HISTS]
+			SET OFFICIAL_CARD_ID = null
+			WHERE EMPLOYEE_HISTS.OFFICIAL_CARD_ID = #{offCardId} and EMPLOYEE_HISTS.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    </update>
+
+    <update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE PBK_NSI.OFFICIAL_CARDS SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+    
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM PBK_NSI.OFFICIAL_CARDS
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.OfficialCard">
+        <![CDATA[
+			SELECT
+                dh.[ID] as id
+                ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[OFFICIAL_CARDS] d JOIN [PBK_NSI].[OFFICIAL_CARD_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE 1 = 1
+               and dh.[ID] = #{id}
+        ]]>
+    </select>
+
+    <select id="getActual" resultType="ru.armd.pbk.domain.nsi.OfficialCard">
+        <![CDATA[
+			SELECT
+                dh.[ID] as id
+                ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[OFFICIAL_CARDS] d JOIN [PBK_NSI].[OFFICIAL_CARD_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE 1 = 1
+  			   and d.[IS_DELETE] = 0
+               and dh.[HEAD_ID] = #{domainId}
+			   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>
+    
+    <select id="getDomain" resultType="ru.armd.pbk.domain.nsi.OfficialCard">
+        <![CDATA[
+			SELECT
+                dh.[ID] as id
+                ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[OFFICIAL_CARDS] d JOIN [PBK_NSI].[OFFICIAL_CARD_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE 1 = 1  			  
+               and dh.[CARD_NUMBER] = #{cardNumber}
+			   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>
+    
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+        	d.ID as id, dh.CARD_NUMBER as name
+        FROM
+        	PBK_NSI.OFFICIAL_CARDS d JOIN PBK_NSI.OFFICIAL_CARD_HISTS dh on (d.ID = dh.HEAD_ID)
+        WHERE
+        	(d.IS_DELETE = 0 OR (#{currentId} IS NOT NULL AND d.ID = #{currentId})) AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    </select>
+	
+	<select id="getSelectItemsForEmployee" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+        	d.ID as id, dh.CARD_NUMBER as name
+        FROM
+        	PBK_NSI.OFFICIAL_CARDS d JOIN PBK_NSI.OFFICIAL_CARD_HISTS dh on (d.ID = dh.HEAD_ID)
+        WHERE
+        	d.IS_DELETE = 0 AND
+        	(d.ID NOT IN (
+        		SELECT
+        			eh.OFFICIAL_CARD_ID
+        		FROM
+        			PBK_NSI.EMPLOYEES e LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (e.ID = eh.HEAD_ID)
+        		WHERE
+        			e.IS_DELETE = 0 AND eh.OFFICIAL_CARD_ID IS NOT NULL AND eh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+			) OR (#{offCardId} IS NOT NULL AND d.ID = #{offCardId})) AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    </select>
+    
+    <select id="isExist" resultType="boolean">
+	    <include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+   			SELECT
+   				1
+   			FROM
+   				PBK_NSI.OFFICIAL_CARD_HISTS
+   			WHERE
+   				(#{headId} is null OR HEAD_ID != #{headId})
+   				AND (#{cardNumber} is null OR CARD_NUMBER = #{cardNumber})
+   				AND V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    	<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+    </select>
+    
+</mapper>

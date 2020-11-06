@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.askp.AskpRouteMoveTripMapper">
+	
+	<sql id="fieldDomain">
+		<![CDATA[
+			, dh.DATE as date
+			, dh.MOVE_CODE as moveCode
+			, dh.ASDU_ROUTE_CODE as routeCode
+			, dh.SHIFT_NUM as shiftId
+		]]>
+	</sql>   
+	
+	<select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT distinct MOVE_CODE as id, MOVE_CODE as name
+			FROM [PBK_VIS].[ASKP_ROUTE_MOVE_TRIPS]
+			LEFT JOIN PBK_NSI.ROUTE_HISTS rh ON (ASDU_ROUTE_CODE = rh.ASDU_ROUTE_ID AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+	  		WHERE rh.HEAD_ID = #{routeId} and DATE = #{date}	
+	  	]]>
+	</select>
+	
+	<select id="getDomains" resultType="ru.armd.pbk.domain.nsi.askp.AskpRouteMoveTrip">
+			<![CDATA[
+				SELECT 
+	               dh.[ID] as id
+	               ]]><include refid="fieldDomain" /><![CDATA[
+				FROM [PBK_VIS].[ASKP_ROUTE_MOVE_TRIPS] dh
+				WHERE 1 = 1
+					AND (#{moveCode} is null or dh.MOVE_CODE = #{moveCode})
+					AND (#{date} is null or dh.DATE = #{date})      			   
+	        ]]>
+	</select>
+	
+	<insert id="insertByWorkDate">
+		<![CDATA[
+			INSERT INTO [PBK_VIS].[ASKP_ROUTE_MOVE_TRIPS]
+           	(	[DATE]
+	           ,[MOVE_CODE]
+	           ,[ASDU_ROUTE_CODE])
+    		   (SELECT distinct
+				[WORK_DATE]
+	           ,[GRAFIC]
+	           ,[ASDU_ROUTE_ID]	
+			FROM [PBK_VIS].[STOP_INTERVALS]
+			WHERE WORK_DATE = #{workDate, jdbcType=DATE})	
+		]]>    
+    </insert>
+    
+    <delete id="deleteByWorkDate">
+		<![CDATA[
+			DELETE FROM [PBK_VIS].[ASKP_ROUTE_MOVE_TRIPS]
+			WHERE cast([DATE] as DATE) = #{workDate, jdbcType=DATE}			
+		]]>
+	</delete>
+		
+</mapper>

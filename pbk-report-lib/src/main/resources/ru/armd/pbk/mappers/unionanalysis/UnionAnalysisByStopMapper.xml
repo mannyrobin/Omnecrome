@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.unionanalysis.UnionAnalysisByStopMapper">
+    
+    <select id="getGridViews" resultType="ru.armd.pbk.views.unionanalysis.UnionByStopView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <![CDATA[                          
+            SELECT a.WORK_DAY_TYPE_ID  as workDayTypeId
+                , a.[ROUTE_ID] as routeId
+                , a.[TRIP_ID] as tripId
+                , a.[DIRECTION] as direction
+                , a.[STOP_SEQUENCE] as stopSequence
+                , a.[STOP_ID] as stopId
+                , a.[STOP_NAME]  as stopName
+                , sum(a.[PASSENGERSINCLUDED]) as asmppPassengersIncludedCount
+                , sum(a.[PASSENGERSLEFT]) as asmppPassengersLeftCount
+                , sum(a.[TRANSPORTED]) as asmppPassengersTransportedCount
+                , sum(s.[ASKP_CHECKS_COUNT]) as askpPassengersCount
+            FROM (
+                SELECT d.WORK_DAY_TYPE_ID
+                    , t.[ROUTE_ID]
+                    , t.[TRIP_ID]
+                    , t.[ROUTE_NUM]
+                    , t.[DIRECTION]
+                    , t.[STOP_SEQUENCE]
+                    , t.[STOP_ID]
+                    , t.[STOP_NAME]
+                    , ISNULL(sum(t.[PASSENGERSINCLUDED]), 0) as [PASSENGERSINCLUDED]
+                    , ISNULL(sum(t.[PASSENGERSLEFT]), 0) as [PASSENGERSLEFT]
+                    , ISNULL(sum(t.[TRANSPORTED]), 0) as [TRANSPORTED]
+                FROM [PBK_VIS].[ASMPP_STOPS] t
+                JOIN [PBK_NSI].[WORK_DAYS] d ON
+                    t.WORK_DATE = d.WORK_DATE
+                WHERE 1 = 1
+                    AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= cast(t.WORK_DATE as datetime) + cast(cast(t.time as time) as datetime) - CAST('03:00:00' as datetime))
+                    AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR DATEADD(day, 1, #{filter.dateTo, jdbcType=DATE}) >= cast(t.WORK_DATE as datetime) + cast(cast(t.time as time) as datetime) - CAST('03:00:00' as datetime))
+                    AND (#{filter.grafic} IS NULL or #{filter.grafic} = t.GRAFIC)
+                    AND (#{filter.routeId} IS NULL or #{filter.routeId} = t.[ROUTE_ID])        
+                    AND (#{filter.tripId} IS NULL or #{filter.tripId} = t.[TRIP_ID])                         
+                GROUP BY d.WORK_DAY_TYPE_ID, t.[ROUTE_ID], t.[TRIP_ID], t.[ROUTE_NUM], t.[DIRECTION], t.[STOP_SEQUENCE], t.[STOP_ID], t.[STOP_NAME] ) a
+            LEFT JOIN (
+                SELECT d.WORK_DAY_TYPE_ID
+                    , s.[ASDU_ROUTE_ID]
+                    , s.[TRIP_ID]
+                    , s.[TRIP_NUM]
+                    , s.[STOP_ID]
+                    , ISNULL(sum(s.[ASKP_CHECKS_COUNT]), 0) as [ASKP_CHECKS_COUNT]
+                    , ISNULL(sum(s.[ASKP_CHECKS_COUNT_PAID]), 0) as [ASKP_CHECKS_COUNT_PAID]
+                FROM [PBK_VIS].[ASMPP_STOPS] a
+                JOIN [PBK_VIS].[STOP_INTERVALS] s ON
+                    (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= s.WORK_DATE)
+                    AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= s.WORK_DATE)
+                    AND (#{filter.grafic} IS NULL or #{filter.grafic} = s.GRAFIC)
+                    AND (#{filter.routeId} IS NULL or #{filter.routeId} = s.[ASDU_ROUTE_ID])    
+                    AND (#{filter.tripId} IS NULL or #{filter.tripId} = s.[TRIP_ID])        
+                    AND a.ROUTE_ID = s.ASDU_ROUTE_ID
+                    AND a.GRAFIC = s.GRAFIC
+                    AND a.TRIP_ID = s.TRIP_ID
+                    AND a.ROUTE_NUM = s.TRIP_NUM
+                    AND a.STOP_ID = s.STOP_ID
+                JOIN [PBK_NSI].[WORK_DAYS] d ON
+                    s.WORK_DATE = d.WORK_DATE
+                WHERE 1 = 1               
+                    AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= a.WORK_DATE)
+                    AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= a.WORK_DATE)
+                    AND (#{filter.grafic} IS NULL or #{filter.grafic} = a.GRAFIC)
+                    AND (#{filter.routeId} IS NULL or #{filter.routeId} = a.[ROUTE_ID])        
+                    AND (#{filter.tripId} IS NULL or #{filter.tripId} = a.[TRIP_ID])    
+                GROUP BY d.WORK_DAY_TYPE_ID, s.[ASDU_ROUTE_ID], s.[TRIP_ID], s.[TRIP_NUM], s.[STOP_ID]) s ON
+            
+                a.WORK_DAY_TYPE_ID = s.WORK_DAY_TYPE_ID
+                AND a.ROUTE_ID = s.ASDU_ROUTE_ID
+                AND a.TRIP_ID = s.TRIP_ID
+                AND a.ROUTE_NUM = s.TRIP_NUM
+                AND a.STOP_ID = s.STOP_ID
+        
+            GROUP BY a.[ROUTE_ID], a.[TRIP_ID], a.WORK_DAY_TYPE_ID, a.[DIRECTION], a.[STOP_SEQUENCE], a.[STOP_ID], a.[STOP_NAME]
+            ORDER BY a.[ROUTE_ID], a.[TRIP_ID], a.WORK_DAY_TYPE_ID, a.[DIRECTION], a.[STOP_SEQUENCE], a.[STOP_ID], a.[STOP_NAME]
+        ]]><include refid="ru.armd.pbk.mappers.CommonSql.mssqlTurboMode"/>
+    </select>
+    
+</mapper>

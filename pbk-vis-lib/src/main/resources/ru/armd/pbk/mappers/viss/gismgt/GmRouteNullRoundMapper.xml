@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gismgt.GmRouteNullRoundMapper">
+	
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.gismgt.GmRouteNullRound" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into [PBK_GISMGT].[GM_ROUTE_ROUND_NULLS] (
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmFields" /><![CDATA[	
+    			, [RR_NULL_TYPE_MUID]    		
+    			, [COD]    			
+    			, [COMMENT]
+    			, [ROUTE_VARIANT_MUID]  
+    			, [PARK_1_MUID]  
+    			, [STOP_PLACE_1_MUID]
+    			, [PARK_2_MUID]  
+    			, [STOP_PLACE_2_MUID]
+    			, [PARK_3_MUID]  
+    			, [STOP_PLACE_3_MUID]    						
+            ) values (
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmValues" /><![CDATA[
+    			, #{typeMuid}    			
+    			, #{cod}    			
+    			, #{comment}
+    			, #{routeVariantMuid}  
+    			, #{park1Muid}
+    			, #{stopPlace1Muid}
+    			, #{park2Muid}
+    			, #{stopPlace2Muid}
+    			, #{park3Muid}
+    			, #{stopPlace3Muid}  			
+            )
+        ]]>      
+    </insert>
+    
+    <select id="getByMuid" resultType="ru.armd.pbk.domain.viss.gismgt.GmRouteNullRound">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[	    		
+	    		, RR_NULL_TYPE_MUID as typeId	    	
+	    		, COD as cod	    		
+	    		, COMMENT as comment
+	    		, ROUTE_VARIANT_MUID as routeVariantId
+	    		, PARK_1_MUID as park1Muid  
+    			, STOP_PLACE_1_MUID as stopPlace1Muid
+    			, PARK_2_MUID as park2Muid
+    			, STOP_PLACE_2_MUID as stopPlace2Muid
+    			, PARK_3_MUID  as park3Muid
+    			, STOP_PLACE_3_MUID as stopPlace3Muid	     		
+			from [PBK_GISMGT].[GM_ROUTE_ROUND_NULLS] a
+            where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTE_ROUND_NULLS WHERE MUID = #{muid})			
+        ]]>        
+    </select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.gismgt.GmRouteNullRound">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[	    		
+	    		, RR_NULL_TYPE_MUID as typeId	    	
+	    		, COD as cod	    		
+	    		, COMMENT as comment
+	    		, ROUTE_VARIANT_MUID as routeVariantId
+	    		, PARK_1_MUID as park1Muid  
+    			, STOP_PLACE_1_MUID as stopPlace1Muid
+    			, PARK_2_MUID as park2Muid
+    			, STOP_PLACE_2_MUID as stopPlace2Muid
+    			, PARK_3_MUID  as park3Muid
+    			, STOP_PLACE_3_MUID as stopPlace3Muid	     		
+			from [PBK_GISMGT].[GM_ROUTE_ROUND_NULLS] a
+            where ID = #{id}			
+        ]]>        
+    </select>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.gismgt.GmRouteNullRound">
+        <![CDATA[
+        	update [PBK_GISMGT].[GM_ROUTE_ROUND_NULLS]
+            set
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.updateGmFields" /><![CDATA[	    		
+	    		, RR_NULL_TYPE_MUID = #{typeMuid}	    		
+	    		, COD = #{cod}	    		
+	    		, COMMENT = #{comment}
+	    		, ROUTE_VARIANT_MUID = #{routeVariantMuid}
+	    		, PARK_1_MUID = #{park1Muid}
+    			, STOP_PLACE_1_MUID = #{stopPlace1Muid}
+    			, PARK_2_MUID = #{park2Muid}
+    			, STOP_PLACE_2_MUID = #{stopPlace2Muid}
+    			, PARK_3_MUID  = #{park3Muid}
+    			, STOP_PLACE_3_MUID = #{stopPlace3Muid}
+			where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTE_ROUND_NULLS WHERE MUID = #{muid})
+        ]]>
+    </update>    
+</mapper>

@@ -1,0 +1,315 @@
+<div ar-grid-filter parameters="gridScope.filterParams"></div>
+<div ar-grid-title parameters="gridScope.titleParams"></div>
+<div class="row">
+    <div class="col-sm-1"><i ng-style="{'color':'#ccc0da'}" class="glyphicon glyphicon-stop btn-md"></i> - Выходной</div>
+    <div class="col-sm-1"><i ng-style="{'color':'#92d050'}" class="glyphicon glyphicon-stop btn-md"></i> - Больничный</div>
+    <div class="col-sm-1"><i ng-style="{'color':'#ffc000'}" class="glyphicon glyphicon-stop btn-md"></i> - Отпуск</div>
+	<div class="col-sm-1"><i ng-style="{'color':'#0060f0'}" class="glyphicon glyphicon-stop btn-md"></i> - Иное</div>
+	<div class="col-sm-1"><i ng-style="{'color':'Black'}" class="glyphicon glyphicon-stop btn-md"></i> - Уволен/еще не принят</div>
+	<div class="col-sm-1"><i ng-style="{'color':'Red'}" class="glyphicon glyphicon-stop btn-md"></i> - Краткий отчет не заполнен (кнопку "Сохранить" не нажали)</div>
+</div>
+
+<table st-table="gridScope.grid.rows" st-pipe="gridScope.grid.loadAction" st-safe-src="gridScope.grid.rows"
+       class='table table-hover {{getRowClass == null ? "table-striped" : ""}}'>
+    <colgroup>
+        <col ng-style="{'width': '10%'}">
+        <col ng-style="{'width': '5%'}">
+        <col ng-repeat="day in days">
+        <col ng-style="{'width': '5%'}">
+    </colgroup>
+    <thead>
+        <tr>
+            <th class="grid-header" ar-st-sort="name" style="text-align: center; vertical-align: middle;" rowspan="2">
+                ФИО
+            </th>
+            <th class="grid-header" ar-st-sort="personalNumberId" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Таб №
+            </th>
+			<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                |
+            </th>
+			<th class="grid-header" style="text-align: center; vertical-align: middle;" colspan="12" ng-repeat="day in days">
+                {{getDate(day) | date: 'dd.MM.yyyy'}}
+            </th>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" colspan="12">
+                Итого за период
+            </th>
+           </tr>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2" ng-repeat-start="day in days">
+                Изъято СКМ
+            </th>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Изъято СКМО
+            </th>
+			<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Изъято ВЕСБ
+            </th>
+			<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                ЛПК
+            </th>
+			<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Проверено подвижного состава
+            </th>
+			<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Изъято нелегитимной билетной продукции
+            </th>
+			<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Высажено
+            </th>
+			<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Доставлено в ОВД
+            </th>
+			<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Количество реализованных билетов
+            </th>
+			<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Постановлений 1000
+            </th>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Постановлений 2500
+            </th>
+			<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2" ng-repeat-end>
+                |
+            </th>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Изъято СКМ
+            </th>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Изъято СКМО
+            </th>
+			 <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Изъято ВЕСБ
+            </th>
+			 <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                ЛПК
+            </th>
+			 <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Проверено подвижного состава
+            </th>
+			 <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Изъято нелегитимной билетной продукции
+            </th>
+			 <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Высажено
+            </th>
+			 <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Доставлено в ОВД
+            </th>
+			 <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Количество реализованных билетов
+            </th>
+			 <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Постановлений 1000
+            </th>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Постановлений 2500
+            </th>
+			<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                |
+            </th>
+        </tr>
+    </thead>
+    <tbody ng-show="gridScope.grid.isLoading">
+    <tr>
+        <td colspan="{{(days == null || days.length == 0 ? 1 : days.length) * 12 + 15}}" class="text-center"><img ng-src="{{'images/spinner.gif'}}"></td>
+    </tr>
+    </tbody>
+   <tbody ng-show="!gridScope.grid.isLoading && gridScope.grid.rows.length > 0 && gridScope.grid.rows[0].cnt > 0">
+    <tr ng-repeat="row in gridScope.grid.rows">
+        <td>
+            <span>{{row.employee.name}}</span>
+        </td>
+        <td>
+            <span>{{row.employee.personalNumberId}}</span>
+        </td>
+		<td>
+            <span>|</span>
+        </td>
+        <td style="text-align: center; vertical-align: middle;" ng-style="{'background-color':{{getShiftId(row.daysSummaries, day)}} == 1 ? '#ccc0da':{{getShiftId(row.daysSummaries, day)}} == 5 ? '#92d050':
+		 {{getShiftId(row.daysSummaries, day)}} == 4 ? '#ffc000':{{getShiftId(row.daysSummaries, day)}} == 8 ? '#0060f0':{{getShiftId(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Black':
+		 {{getSumByShifts(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != ''  ? 'Red':''}" ng-repeat-start="day in days">
+            <span>{{getDayExemptSkmCount(row.daysSummaries, day)}}</span>
+        </td>
+        <td style="text-align: center; vertical-align: middle;" ng-style="{'background-color':{{getShiftId(row.daysSummaries, day)}} == 1 ? '#ccc0da':{{getShiftId(row.daysSummaries, day)}} == 5 ? '#92d050':
+		 {{getShiftId(row.daysSummaries, day)}} == 4 ? '#ffc000':{{getShiftId(row.daysSummaries, day)}} == 8 ? '#0060f0':{{getShiftId(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Black':
+		 {{getSumByShifts(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Red':''}">
+            <span>{{getDayExemptSkmoCount(row.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;" ng-style="{'background-color':{{getShiftId(row.daysSummaries, day)}} == 1 ? '#ccc0da':{{getShiftId(row.daysSummaries, day)}} == 5 ? '#92d050':
+		 {{getShiftId(row.daysSummaries, day)}} == 4 ? '#ffc000':{{getShiftId(row.daysSummaries, day)}} == 8 ? '#0060f0':{{getShiftId(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Black':
+		 {{getSumByShifts(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Red':''}">
+            <span>{{getDayExemptVesbCount(row.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;" ng-style="{'background-color':{{getShiftId(row.daysSummaries, day)}} == 1 ? '#ccc0da':{{getShiftId(row.daysSummaries, day)}} == 5 ? '#92d050':
+		 {{getShiftId(row.daysSummaries, day)}} == 4 ? '#ffc000':{{getShiftId(row.daysSummaries, day)}} == 8 ? '#0060f0':{{getShiftId(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Black':
+		 {{getSumByShifts(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Red':''}">
+            <span>{{getDayLpkCount(row.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;" ng-style="{'background-color':{{getShiftId(row.daysSummaries, day)}} == 1 ? '#ccc0da':{{getShiftId(row.daysSummaries, day)}} == 5 ? '#92d050':
+		 {{getShiftId(row.daysSummaries, day)}} == 4 ? '#ffc000':{{getShiftId(row.daysSummaries, day)}} == 8 ? '#0060f0':{{getShiftId(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Black':
+		 {{getSumByShifts(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Red':''}">
+            <span>{{getDayTsCheckCount(row.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;" ng-style="{'background-color':{{getShiftId(row.daysSummaries, day)}} == 1 ? '#ccc0da':{{getShiftId(row.daysSummaries, day)}} == 5 ? '#92d050':
+		 {{getShiftId(row.daysSummaries, day)}} == 4 ? '#ffc000':{{getShiftId(row.daysSummaries, day)}} == 8 ? '#0060f0':{{getShiftId(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Black':
+		 {{getSumByShifts(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Red':''}">
+            <span>{{getDayExemptValidLessCount(row.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;" ng-style="{'background-color':{{getShiftId(row.daysSummaries, day)}} == 1 ? '#ccc0da':{{getShiftId(row.daysSummaries, day)}} == 5 ? '#92d050':
+		 {{getShiftId(row.daysSummaries, day)}} == 4 ? '#ffc000':{{getShiftId(row.daysSummaries, day)}} == 8 ? '#0060f0':{{getShiftId(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Black':
+		 {{getSumByShifts(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Red':''}">
+            <span>{{getDayPlantStowawayCount(row.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;" ng-style="{'background-color':{{getShiftId(row.daysSummaries, day)}} == 1 ? '#ccc0da':{{getShiftId(row.daysSummaries, day)}} == 5 ? '#92d050':
+		 {{getShiftId(row.daysSummaries, day)}} == 4 ? '#ffc000':{{getShiftId(row.daysSummaries, day)}} == 8 ? '#0060f0':{{getShiftId(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Black':
+		 {{getSumByShifts(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Red':''}">
+            <span>{{getDayDeliveryOvdCount(row.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;" ng-style="{'background-color':{{getShiftId(row.daysSummaries, day)}} == 1 ? '#ccc0da':{{getShiftId(row.daysSummaries, day)}} == 5 ? '#92d050':
+		 {{getShiftId(row.daysSummaries, day)}} == 4 ? '#ffc000':{{getShiftId(row.daysSummaries, day)}} == 8 ? '#0060f0':{{getShiftId(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Black':
+		 {{getSumByShifts(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Red':''}">
+            <span>{{getDayTicketSoldCount(row.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;" ng-style="{'background-color':{{getShiftId(row.daysSummaries, day)}} == 1 ? '#ccc0da':{{getShiftId(row.daysSummaries, day)}} == 5 ? '#92d050':
+		 {{getShiftId(row.daysSummaries, day)}} == 4 ? '#ffc000':{{getShiftId(row.daysSummaries, day)}} == 8 ? '#0060f0':{{getShiftId(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Black':
+		 {{getSumByShifts(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Red':''}">
+            <span>{{getDayOrdinance1000Count(row.daysSummaries, day)}}</span>
+        </td>
+        <td style="text-align: center; vertical-align: middle;" ng-style="{'background-color':{{getShiftId(row.daysSummaries, day)}} == 1 ? '#ccc0da':{{getShiftId(row.daysSummaries, day)}} == 5 ? '#92d050':
+		 {{getShiftId(row.daysSummaries, day)}} == 4 ? '#ffc000':{{getShiftId(row.daysSummaries, day)}} == 8 ? '#0060f0':{{getShiftId(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Black':
+		 {{getSumByShifts(row.daysSummaries, day)}} == 0  && {{getShiftId(row.daysSummaries, day)}} != '' ? 'Red':''}">
+            <span>{{getDayOrdinance2500Count(row.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;" ng-repeat-end>
+            <span>|</span>
+        </td>
+        <td style="text-align: center; vertical-align: middle;">
+            <span>{{row.daysTotalSummaries.exemptSkm}}</span>
+        </td>
+        <td style="text-align: center; vertical-align: middle;">
+            <span>{{row.daysTotalSummaries.exemptSkmo}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{row.daysTotalSummaries.exemptVesb}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{row.daysTotalSummaries.lpk}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{row.daysTotalSummaries.tsCheck}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{row.daysTotalSummaries.exemptValidLess}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{row.daysTotalSummaries.plantStowaway}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{row.daysTotalSummaries.deliveryOvd}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{row.daysTotalSummaries.ticketSold}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{row.daysTotalSummaries.ordinance1000}}</span>
+        </td>
+        <td style="text-align: center; vertical-align: middle;">
+            <span>{{row.daysTotalSummaries.ordinance2500}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>|</span>
+        </td>
+    </tr>
+    </tbody>
+    <tbody ng-show="!gridScope.grid.isLoading && (gridScope.grid.rows.length == 0 || gridScope.grid.rows[0].cnt == 0)">
+    <tr style="background-color: transparent;">
+        <td class="text-center" colspan="{{(days == null || days.length == 0 ? 1 : days.length) * 12 + 15}}">
+            <p class="lead">Элементы не найдены</p>
+        </td>
+    </tr>
+    </tbody>
+    <tfoot>
+    <tr  ng-show="!gridScope.grid.isLoading && gridScope.footerRecord != undefined ">
+    	<td><b>Итого</b></td> 
+		<td><b></b></td>  
+		<td><b>|</b></td>  
+    	<td style="text-align: center; vertical-align: middle;" ng-repeat-start="day in days">
+            <span>{{getDayExemptSkmCount(gridScope.footerRecord.daysSummaries, day)}}</span>
+        </td>
+        <td style="text-align: center; vertical-align: middle;">
+            <span>{{getDayExemptSkmoCount(gridScope.footerRecord.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{getDayExemptVesbCount(gridScope.footerRecord.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{getDayLpkCount(gridScope.footerRecord.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{getDayTsCheckCount(gridScope.footerRecord.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{getDayExemptValidLessCount(gridScope.footerRecord.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{getDayPlantStowawayCount(gridScope.footerRecord.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{getDayDeliveryOvdCount(gridScope.footerRecord.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{getDayTicketSoldCount(gridScope.footerRecord.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>{{getDayOrdinance1000Count(gridScope.footerRecord.daysSummaries, day)}}</span>
+        </td>
+        <td style="text-align: center; vertical-align: middle;" 
+            <span>{{getDayOrdinance2500Count(gridScope.footerRecord.daysSummaries, day)}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;" ng-repeat-end>
+            <span>|</span>
+        </td>
+    	<td style="text-align: center; vertical-align: middle;">
+            <span>{{gridScope.footerRecord.daysTotalSummaries.exemptSkm}}</span>
+        </td>
+        <td style="text-align: center; vertical-align: middle;">
+            <span>{{gridScope.footerRecord.daysTotalSummaries.exemptSkmo}}</span>
+        </td>
+		 <td style="text-align: center; vertical-align: middle;">
+            <span>{{gridScope.footerRecord.daysTotalSummaries.exemptVesb}}</span>
+        </td>
+		 <td style="text-align: center; vertical-align: middle;">
+            <span>{{gridScope.footerRecord.daysTotalSummaries.lpk}}</span>
+        </td>
+		 <td style="text-align: center; vertical-align: middle;">
+            <span>{{gridScope.footerRecord.daysTotalSummaries.tsCheck}}</span>
+        </td>
+		 <td style="text-align: center; vertical-align: middle;">
+            <span>{{gridScope.footerRecord.daysTotalSummaries.exemptValidLess}}</span>
+        </td>
+		 <td style="text-align: center; vertical-align: middle;">
+            <span>{{gridScope.footerRecord.daysTotalSummaries.plantStowaway}}</span>
+        </td>
+		 <td style="text-align: center; vertical-align: middle;">
+            <span>{{gridScope.footerRecord.daysTotalSummaries.deliveryOvd}}</span>
+        </td>
+		 <td style="text-align: center; vertical-align: middle;">
+            <span>{{gridScope.footerRecord.daysTotalSummaries.ticketSold}}</span>
+        </td>
+		 <td style="text-align: center; vertical-align: middle;">
+            <span>{{gridScope.footerRecord.daysTotalSummaries.ordinance1000}}</span>
+        </td>
+        <td style="text-align: center; vertical-align: middle;">
+            <span>{{gridScope.footerRecord.daysTotalSummaries.ordinance2500}}</span>
+        </td>
+		<td style="text-align: center; vertical-align: middle;">
+            <span>|</span>
+        </td>
+     </tr>
+    <tr>
+        <td class="text-center" colspan="{{(days == null || days.length == 0 ? 1 : days.length) * 12 + 15}}">
+            <div ar-grid-pagination rows-on-page="gridScope.colRowsOnPage" grid-scope="gridScope"></div>
+        </td>
+    </tr>
+    </tfoot>
+</table>

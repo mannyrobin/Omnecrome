@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.asdu.AsduRouteMoveTripMapper">
+   
+    <select id="insertByWorkDate">
+		<![CDATA[
+			INSERT INTO [PBK_VIS].[ASDU_ROUTE_MOVE_TRIP]
+	           ([DEPOT_NUMBER]
+	           ,[GRAFIC]
+	           ,[MR_CODE]
+	           ,[DATE])
+			(SELECT distinct 
+					[DEPOT_NUMBER]
+		           ,[GRAFIC]
+		           ,[MR_CODE]
+		           ,[DATE]
+					FROM [PBK_DB].[PBK_VIS].[ASDU_PLAN_TRIPS]
+					WHERE DATE = #{workDate, jdbcType=DATE})		
+		]]>    
+    </select>
+    
+    <delete id="deleteByWorkDate">
+		<![CDATA[
+			DELETE FROM [PBK_VIS].[ASDU_ROUTE_MOVE_TRIP]
+			WHERE cast([DATE] as DATE) = #{workDate, jdbcType=DATE}			
+		]]>
+	</delete>
+
+</mapper>

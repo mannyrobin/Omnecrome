@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.askp.AskpChecksByStopsMapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.askp.AskpStopIntervalsByHourView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <![CDATA[
+            SELECT distinct
+                t.STOP_NAME as stopName
+                , t.STOP_ID as stopId
+                , t.HOUR as hour
+                , t.TRIP_ID as tripId
+                , t.TRIP_VARIANT as tripKind
+                , t.ORDER_NUM as orderNum
+                , ISNULL(sum(t.CHECKS), 0) as checks
+                , ISNULL(sum(t.CHECKS_PAID), 0) as checksPaid
+            FROM
+                (
+                SELECT distinct
+                    t.ASDU_ROUTE_ID
+                    , t.STOP_NAME 
+                    , t.STOP_ID
+                    , DATEDIFF(HOUR, t.WORK_DATE, t.STOP_ARRIVAL_TIME) as [HOUR]
+                    , t.ASKP_CHECKS_COUNT as CHECKS
+                    , t.ASKP_CHECKS_COUNT_PAID as CHECKS_PAID
+                    , t.TRIP_ID
+                    , t.ORDER_NUM
+                    , t.GRAFIC
+                    , t.TRIP_VARIANT
+                FROM PBK_VIS.STOP_INTERVALS t
+                JOIN PBK_NSI.ROUTE_HISTS rh ON
+                    t.ASDU_ROUTE_ID = rh.ASDU_ROUTE_ID
+                    AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+                    AND rh.[HEAD_ID] = ${filter.route}
+                WHERE (#{filter.date, jdbcType=DATE} = t.WORK_DATE)
+        ]]><if test="filter.moveCode != null"><![CDATA[
+                    AND t.GRAFIC = ${filter.moveCode}
+        ]]></if><![CDATA[
+                ) t
+            GROUP BY t.STOP_NAME, t.STOP_ID, t.TRIP_ID, t.TRIP_VARIANT, t.ORDER_NUM, t.HOUR
+            ORDER BY tripId, tripKind, orderNum, stopName, stopId, hour
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.mssqlTurboMode" />
+    </select>
+
+    <update id="updateAskpCounts">
+        <![CDATA[
+            UPDATE si
+            SET
+                si.ASKP_CHECKS_COUNT = v.ASKP_CHECKS_COUNT
+            FROM PBK_VIS.STOP_INTERVALS as si
+            JOIN (
+                    SELECT
+                        si.ID
+                        , si.ASDU_ROUTE_ID
+                        , si.GRAFIC
+                        , si.STOP_ARRIVAL_TIME
+                        , count(ac.CHECK_TIME) AS ASKP_CHECKS_COUNT
+                    FROM (
+                        SELECT
+                            ID
+                            , ASDU_ROUTE_ID
+                            , GRAFIC
+                            , STOP_ARRIVAL_TIME
+                            , LEAD(STOP_ARRIVAL_TIME, 1, STOP_ARRIVAL_TIME) OVER
+                                (PARTITION BY ASDU_ROUTE_ID, GRAFIC ORDER BY STOP_ARRIVAL_TIME) as STOP_ARRIVAL_TIME_NEXT
+                        FROM PBK_VIS.STOP_INTERVALS
+                        WHERE [WORK_DATE] >= #{from, jdbcType=DATE}
+                            AND [WORK_DATE] <= #{to, jdbcType=DATE}) si
+                    JOIN PBK_NSI.ROUTE_HISTS rh ON
+                        si.ASDU_ROUTE_ID = rh.ASDU_ROUTE_ID
+                        AND (rh.V_END_DATE IS NULL OR rh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+                    JOIN (
+                    		]]><foreach item="workDate" collection="@ru.armd.pbk.utils.date.DateUtils@getDateInRange(from, to)" separator=" UNION ALL ">
+                    		<![CDATA[
+	                            SELECT
+	                                tc.ASKP_ROUTE_CODE
+	                                , tc.MOVE_CODE
+	                                , tc.CHECK_TIME
+	                            FROM ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASKP_TICKET_CHECKS tc
+	                            JOIN [PBK_NSI].[TICKET_HISTS] th ON
+	                                th.HEAD_ID = tc.TICKET_ID
+	                                AND th.V_END_DATE >= PBK_CORE.getVersionEndDate()
+	                                AND th.USE_IN_ANALYSIS = 1
+                            ]]></foreach>
+                            <![CDATA[
+                        ) ac ON
+                        ac.ASKP_ROUTE_CODE = rh.ASKP_ROUTE_CODE
+                        AND ac.MOVE_CODE = si.GRAFIC
+                        AND ac.CHECK_TIME > DATEADD(SECOND, #{d}, si.STOP_ARRIVAL_TIME) AND ac.CHECK_TIME <= DATEADD(SECOND, #{d}, si.STOP_ARRIVAL_TIME_NEXT)
+                    GROUP BY si.ID, si.ASDU_ROUTE_ID, si.GRAFIC, si.STOP_ARRIVAL_TIME
+                ) AS v ON si.ID = v.ID
+        ]]>
+    </update>
+
+    <update id="updateAskpCountsPaid">
+        <![CDATA[
+            UPDATE si
+            SET
+                si.ASKP_CHECKS_COUNT_PAID = v.ASKP_CHECKS_COUNT_PAID
+            FROM PBK_VIS.STOP_INTERVALS as si
+            JOIN (
+                    SELECT
+                        si.ID
+                        , si.ASDU_ROUTE_ID
+                        , si.GRAFIC
+                        , si.STOP_ARRIVAL_TIME
+                        , count(ac.CHECK_TIME) AS ASKP_CHECKS_COUNT_PAID
+                    FROM (
+                        SELECT
+                            ID
+                            , ASDU_ROUTE_ID
+                            , GRAFIC
+                            , STOP_ARRIVAL_TIME
+                            , LEAD(STOP_ARRIVAL_TIME, 1, STOP_ARRIVAL_TIME) OVER
+                                (PARTITION BY ASDU_ROUTE_ID, GRAFIC ORDER BY STOP_ARRIVAL_TIME) as STOP_ARRIVAL_TIME_NEXT
+                        FROM PBK_VIS.STOP_INTERVALS
+                        WHERE [WORK_DATE] >= #{from, jdbcType=DATE}
+                            AND [WORK_DATE] <= #{to, jdbcType=DATE}) si
+                    JOIN PBK_NSI.ROUTE_HISTS rh ON
+                        si.ASDU_ROUTE_ID = rh.ASDU_ROUTE_ID
+                        AND (rh.V_END_DATE IS NULL OR rh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+                    JOIN (
+                    		]]><foreach item="workDate" collection="@ru.armd.pbk.utils.date.DateUtils@getDateInRange(from, to)" separator=" UNION ALL ">
+                    		<![CDATA[
+	                            SELECT
+	                                tc.ASKP_ROUTE_CODE
+	                                , tc.MOVE_CODE
+	                                , tc.CHECK_TIME
+	                            FROM ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASKP_TICKET_CHECKS tc
+	                            JOIN [PBK_NSI].[TICKET_HISTS] th ON
+	                                th.HEAD_ID = tc.TICKET_ID
+	                                AND th.V_END_DATE >= PBK_CORE.getVersionEndDate()
+	                                AND th.USE_IN_ANALYSIS = 1
+	                            WHERE ISNULL(th.TICKET_TYPE_ID, 1) = 1
+	                        ]]></foreach>
+                            <![CDATA[
+                        ) ac ON
+                        ac.ASKP_ROUTE_CODE = rh.ASKP_ROUTE_CODE
+                        AND ac.MOVE_CODE = si.GRAFIC
+                        AND ac.CHECK_TIME > DATEADD(SECOND, #{d}, si.STOP_ARRIVAL_TIME) AND ac.CHECK_TIME <= DATEADD(SECOND, #{d}, si.STOP_ARRIVAL_TIME_NEXT)
+                    GROUP BY si.ID, si.ASDU_ROUTE_ID, si.GRAFIC, si.STOP_ARRIVAL_TIME
+                ) AS v ON si.ID = v.ID
+        ]]>
+    </update>
+</mapper>

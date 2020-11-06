@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.CountyMapper">
+
+		<sql id="fieldDomain">
+	        <![CDATA[
+				,d.[IS_DELETE] as isDelete
+			  	,dh.[CREATE_DATE] as createDate
+			  	,dh.[CREATE_USER_ID] as createUserId
+			  	,dh.[UPDATE_DATE] as updateDate
+			  	,dh.[UPDATE_USER_ID] as updateUserId
+			  	,dh.[V_START_DATE] as versionStartDate
+			  	,dh.[V_END_DATE] as versionEndDate
+			  	,dh.[HEAD_ID] as headId
+			  	,dh.[NAME] as name
+			  	,dh.[COD] as cod
+	           	,dh.[GM_DISTRICT_ID] as gmDistrictId        
+	           	,dh.[DESCRIPTION] as description	
+	           	,dh.[DEPT_ID] as departmentId
+	           	,dh.[SHORT_NAME] as shortName
+	        ]]>
+	     </sql>   
+		 
+	        
+	    <insert id="insertHead" parameterType="ru.armd.pbk.domain.HeadVersionDomain" keyProperty="id" keyColumn="id">
+	        <![CDATA[
+	        insert into PBK_NSI.CITY_COUNTIES(
+		        [IS_DELETE]
+	        ) VALUES (
+	        	#{isDelete}
+	        )
+	        ]]>
+	        <selectKey order="AFTER" resultType="long" keyProperty="id">
+	            <![CDATA[
+	              SELECT IDENT_CURRENT( 'PBK_NSI.CITY_COUNTIES' ) as id
+	            ]]>
+	        </selectKey>
+	    </insert>
+	
+		<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.County" keyProperty="id" keyColumn="id">
+			<![CDATA[
+	        insert into PBK_NSI.CITY_COUNTY_HISTS (
+	                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+	                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+	        	, [HEAD_ID]
+	        	, [NAME]        	
+	          	, [GM_DISTRICT_ID]  
+	          	, [COD]
+	          	, [DESCRIPTION]  
+	          	, [DEPT_ID]
+	          	, [SHORT_NAME]
+	        ) VALUES (
+	               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+	               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+	        	, #{headId}
+	        	, #{name}
+				, #{gmDistrictId}	
+				, #{cod}
+				, #{description}	
+				, #{departmentId}
+				, #{shortName}
+	        )
+	        ]]>
+			<selectKey order="AFTER" resultType="long" keyProperty="id">
+				<![CDATA[
+	              SELECT IDENT_CURRENT( 'PBK_NSI.CITY_COUNTY_HISTS' ) as id
+	            ]]>
+			</selectKey>
+		</insert>
+		
+		<update id="update" parameterType="ru.armd.pbk.domain.nsi.County">
+			<![CDATA[
+				UPDATE PBK_NSI.CITY_COUNTY_HISTS SET
+					]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+					]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+					,NAME = #{name}
+			  		,COD = #{cod}
+	           		,GM_DISTRICT_ID = #{gmDistrictId}
+	           		,DESCRIPTION = #{description}
+	           		,DEPT_ID = #{departmentId}
+	           		,SHORT_NAME = #{shortName}
+				WHERE
+				  ID = #{id}
+	        ]]>
+		</update>
+	    
+	    <update id="deleteSoft">
+	    	<![CDATA[
+			    UPDATE
+			    	PBK_NSI.CITY_COUNTIES
+			    SET
+			    	IS_DELETE = 1
+			    WHERE
+			    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+	    </update>
+	        
+	    <delete id="delete">
+	        <![CDATA[
+	            DELETE FROM
+	            	PBK_NSI.CITY_COUNTIES
+	            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+	    </delete>
+	    
+	    <select id="getById" resultType="ru.armd.pbk.domain.nsi.County">
+			<![CDATA[
+				SELECT
+	               dh.[ID] as id
+	               ]]><include refid="fieldDomain" /><![CDATA[
+				FROM [PBK_NSI].[CITY_COUNTIES] d JOIN [PBK_NSI].[CITY_COUNTY_HISTS] dh on (d.ID = dh.HEAD_ID)
+				WHERE 1 = 1
+	               and dh.[ID] = #{id}
+	        ]]>
+	    </select>
+	    
+	    <select id="getActual" resultType="ru.armd.pbk.domain.nsi.County">
+			<![CDATA[
+				SELECT 
+	               dh.[ID] as id
+	               ]]><include refid="fieldDomain" /><![CDATA[
+				FROM [PBK_NSI].[CITY_COUNTIES] d JOIN [PBK_NSI].[CITY_COUNTY_HISTS] dh on (d.ID = dh.HEAD_ID)
+				WHERE
+	               dh.[HEAD_ID] = #{domainId}
+				   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+	        ]]>
+		</select>
+		
+		<select id="getDomain" resultType="ru.armd.pbk.domain.nsi.County">
+			<![CDATA[
+				SELECT 
+	               dh.[ID] as id
+	               ]]><include refid="fieldDomain" /><![CDATA[
+				FROM [PBK_NSI].[CITY_COUNTIES] d JOIN [PBK_NSI].[CITY_COUNTY_HISTS] dh on (d.ID = dh.HEAD_ID)
+				WHERE
+	               #{gmId} is not null and dh.[GM_DISTRICT_ID] = #{gmId}
+				   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+	        ]]>
+		</select>
+		
+		<select id="getDomains" resultType="ru.armd.pbk.domain.nsi.County">
+			<![CDATA[
+				SELECT 
+	               dh.[ID] as id
+	               ]]><include refid="fieldDomain" /><![CDATA[
+				FROM [PBK_NSI].[CITY_COUNTIES] d JOIN [PBK_NSI].[CITY_COUNTY_HISTS] dh on (d.ID = dh.HEAD_ID)
+				WHERE
+      			   (#{deptId} is not null and dh.[DEPT_ID] = #{deptId})
+				   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+	        ]]>
+		</select>
+		
+		<select id="getGridViews" resultType="ru.armd.pbk.views.nsi.county.CountyView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+	        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+	        <![CDATA[
+	        	SELECT
+               	d.[ID] as id
+               	]]><include refid="fieldDomain" /><![CDATA[               
+				FROM [PBK_NSI].[CITY_COUNTIES] d 
+				JOIN [PBK_NSI].[CITY_COUNTY_HISTS] dh on (d.ID = dh.HEAD_ID)
+				WHERE 
+					dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+					and (#{filter.name} is null or UPPER(dh.NAME) like UPPER('%${filter.name}%')) 
+	          		and (#{filter.cod} is null or UPPER(dh.COD) like UPPER('%${filter.cod}%'))
+	          		and ((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR d.IS_DELETE = 0)
+			  
+	        ]]>
+	        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+	   </select>
+	   
+	   <select id="getHistoryViews" resultType="ru.armd.pbk.views.nsi.county.CountyHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+	        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+	        <![CDATA[
+				SELECT
+					]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+					dh.NAME as name
+			  		,dh.COD as cod
+	           		,dh.GM_DISTRICT_ID as gmDistrictId
+	           		,dh.DESCRIPTION as description
+	           		,dh.DEPT_ID as departmentId
+	           		,dh.SHORT_NAME as shortName
+				FROM
+					PBK_NSI.CITY_COUNTY_HISTS dh LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+				WHERE
+	          		dh.HEAD_ID = #{filter.countyHeadId}
+	        ]]>
+	        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+       </select>
+	    
+	   <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+	   		<![CDATA[
+	   			SELECT
+        			d.ID as id, dh.NAME as name
+        		FROM
+        			PBK_NSI.CITY_COUNTIES d JOIN PBK_NSI.CITY_COUNTY_HISTS dh on (d.ID = dh.HEAD_ID)
+        		WHERE
+        			(
+        				(#{deptId} IS NULL AND #{deptCountyId} IS NULL AND (d.IS_DELETE = 0 OR (#{currentId} IS NOT NULL AND d.ID = #{currentId}))) 
+        				OR 
+        				(d.IS_DELETE = 0 AND (#{deptId} IS NOT NULL AND (dh.DEPT_ID = #{deptId} OR dh.DEPT_ID IS NULL)))
+        				OR 
+        				(d.IS_DELETE = 0 AND (#{deptCountyId} IS NOT NULL AND dh.DEPT_ID = #{deptCountyId}))
+        				OR
+        				(d.IS_DELETE = 0 AND (#{name} IS NOT NULL AND UPPER(dh.NAME) like UPPER('%${name}%')))
+        				      				
+        			) 
+        			]]><if test="deptInId != null"><![CDATA[
+        				and dh.DEPT_ID in (${deptInId}) 	
+        			]]></if><![CDATA[  
+        			AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+		    ]]>		        
+	   </select>
+	   
+	   <select id="isExist" resultType="boolean">
+	    	<include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+   			SELECT
+   				1
+   			FROM
+   				PBK_NSI.CITY_COUNTY_HISTS
+   			WHERE
+   				(#{headId} is null OR HEAD_ID != #{headId})
+   				AND (#{cod} is null OR COD = #{cod})
+   				AND V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    		<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+    	</select>
+
+		<select id="getEgko" resultType="String">
+			SELECT [WKT_GEOM]
+			FROM [PBK_GISMGT].GM_DISTRICT_EGKOS gre
+			JOIN [PBK_GISMGT].GM_DISTRICTS gm ON gm.MUID = gre.GM_DISTRICT_MUID
+			JOIN [PBK_NSI].[CITY_COUNTY_HISTS] c on c.GM_DISTRICT_ID = gm.ID
+			WHERE c.HEAD_ID = #{id} and c.V_END_DATE >= [PBK_CORE].getVersionEndDate()			
+		</select>
+		
+</mapper>

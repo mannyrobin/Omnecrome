@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fhd:ExportEmployeeWorkModeResponse xmlns:com="http://mgt.ru/pbk/xsd/1/Common" xmlns:dept="http://mgt.ru/pbk/xsd/fhd/1/Departments" xmlns:dr="http://mgt.ru/pbk/xsd/fhd/1/DataRequest" xmlns:emp="http://mgt.ru/pbk/xsd/fhd/1/Employees" xmlns:ewm="http://mgt.ru/pbk/xsd/fhd/1/EmployeeWorkModes" xmlns:fhd="http://mgt.ru/pbk/xsd/fhd/1/MessageData" xmlns:tsv="http://mgt.ru/pbk/xsd/fhd/1/TsVenicles" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://mgt.ru/pbk/xsd/fhd/1/MessageData ../../../../../pbk-easu-fhd-lib/src/main/resources/xsd/MessageData.xsd ">
+  <ewm:employeeWorkModes>
+    <ewm:employeeWorkMode>
+      <ewm:personelNumber>1</ewm:personelNumber>
+      <ewm:workDate>2001-01-01</ewm:workDate>
+      <ewm:workModeCod>н</ewm:workModeCod>
+      <ewm:workHours>10.0</ewm:workHours>
+    </ewm:employeeWorkMode>
+    <ewm:employeeWorkMode>
+      <ewm:personelNumber>2</ewm:personelNumber>
+      <ewm:workDate>2001-01-01</ewm:workDate>
+      <ewm:workModeCod>д</ewm:workModeCod>
+      <ewm:workHours>10.0</ewm:workHours>
+    </ewm:employeeWorkMode>
+  </ewm:employeeWorkModes>
+</fhd:ExportEmployeeWorkModeResponse>

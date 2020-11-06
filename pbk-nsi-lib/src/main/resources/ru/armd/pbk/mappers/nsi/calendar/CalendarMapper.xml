@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.calendar.CalendarMapper">
+<select id="getCalendarForPeriod" resultType="ru.armd.pbk.domain.nsi.Calendar">
+	<![CDATA[
+		SELECT
+		    c.ID as id,
+		    c.COD as code,
+		    c.NAME as name,
+		    c.DESCRIPTION as description,
+		  	c.WORK_DATE as workDate,
+		  	c.WORK_DAY_TYPE_ID as workDayTypeId
+		FROM
+			PBK_NSI.WORK_DAYS c 
+		WHERE
+			(#{from} is null OR c.WORK_DATE >= #{from})
+		 	AND (#{to}   is null OR c.WORK_DATE <= #{to})
+		ORDER BY WORK_DATE 
+	]]>
+	</select>
+
+	<select id="getCalendarByDay" resultType="ru.armd.pbk.domain.nsi.Calendar">
+	<![CDATA[
+		SELECT 
+		    c.ID as id,
+		    c.COD as code,
+		    c.NAME as name,
+		    c.DESCRIPTION as description,
+		  	c.WORK_DATE as workDate,
+		  	c.WORK_DAY_TYPE_ID as workDayTypeId
+		FROM
+			PBK_NSI.WORK_DAYS c 
+		 WHERE
+		 	cast(c.WORK_DATE as DATE) = cast(#{day} as DATE) 
+	]]>
+	</select>
+	
+	<select id="getSameDayByType" resultType="ru.armd.pbk.domain.nsi.Calendar">
+		SELECT DISTINCT
+		    c.ID as id,
+		    c.COD as code,
+		    c.NAME as name,
+		    c.DESCRIPTION as description,
+		  	c.WORK_DATE as workDate,
+		  	c.WORK_DAY_TYPE_ID as workDayTypeId
+		FROM
+			PBK_NSI.WORK_DAYS c 
+		WHERE
+		 	c.WORK_DATE = (
+		 		SELECT 
+		        	<if test="isPrevious">MAX</if><if test="!isPrevious">MIN</if>(c2.WORK_DATE)
+		 		FROM PBK_NSI.WORK_DAYS c2
+		 		WHERE 
+		        	<if test="isPrevious">
+				 		c2.WORK_DATE &lt; #{workDate} 
+		        	</if>
+		        	<if test="!isPrevious">
+				 		c2.WORK_DATE > #{workDate} 
+		        	</if>
+			 		AND c2.WORK_DAY_TYPE_ID IN
+			           	<foreach collection="workDayTypes" open="(" close=")" separator="," item="workDayType">
+			           		#{workDayType}
+			           	</foreach>
+		 		)
+		 	AND c.WORK_DAY_TYPE_ID IN
+           	<foreach collection="workDayTypes" open="(" close=")" separator="," item="workDayType">
+           		#{workDayType}
+           	</foreach>
+	</select>
+	
+	<insert id="createDay" parameterType="ru.armd.pbk.domain.nsi.Calendar"
+		keyProperty="id" keyColumn="day.id">
+	    <![CDATA[
+			INSERT INTO
+				PBK_NSI.WORK_DAYS (
+			      ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+				  ,COD,
+				  NAME,
+			      DESCRIPTION,
+			  	  WORK_DATE,
+			  	  WORK_DAY_TYPE_ID
+			) VALUES (
+				  ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+				  ,#{code},
+			      #{name},
+			      #{description},
+			  	  #{workDate},
+			  	  #{workDayTypeId}
+			)
+	    ]]>
+    	<selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.WORK_DAYS' ) as id
+            ]]>
+        </selectKey>
+	</insert>
+	
+	<update id="updateDay" parameterType="ru.armd.pbk.domain.nsi.Calendar">
+		<![CDATA[
+        	UPDATE
+        		PBK_NSI.WORK_DAYS
+        	SET
+        		UPDATE_DATE = #{updateDate},
+            	UPDATE_USER_ID = #{updateUserId},
+				NAME = #{name},
+				DESCRIPTION = #{description},
+				WORK_DATE = #{workDate},
+				WORK_DAY_TYPE_ID = #{workDayTypeId}		
+        	WHERE
+        		ID = #{id}
+    	]]>
+	</update>
+</mapper>

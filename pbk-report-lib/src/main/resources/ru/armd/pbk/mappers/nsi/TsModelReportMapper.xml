@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.TsModelReportMapper">
+
+	 <select id="getReportViews" resultType="ru.armd.pbk.views.nsi.TsModelReportView">
+        <![CDATA[
+        SELECT
+               ROW_NUMBER() OVER (]]><include refid="ru.armd.pbk.mappers.CommonSql.orderBySql" /><![CDATA[) AS id,
+               t.*
+            FROM (
+				SELECT
+					ts_t.[ID] as id,
+					ts_t.[NAME] as tsTypeName,
+					ts_m.[MAKE] as make,
+					ts_m.[MODEL] as model,
+					ts_m.[PASSENGER_COUNT_MAX] as passengerCountMax,
+					ts_m.[SEAT_COUNT] as seatCount,
+					ts_m.[LENGTH] as length,
+					ts_m.[WIDTH] as width,
+					ts_m.[HEIGHT] as height	
+		        FROM
+		        	[PBK_NSI].[TS_MODELS] ts_m LEFT JOIN [PBK_NSI].[TS_CAPACITIES] ts_c ON (ts_m.TS_CAPACITY_ID = ts_c.ID) LEFT JOIN [PBK_NSI].[TS_TYPES] ts_t ON (ts_c.TS_TYPE_ID = ts_t.ID)
+		        WHERE
+		        	(#{filter.make} is null or UPPER(ts_m.MAKE) like UPPER('%${filter.make}%'))
+		        	AND (#{filter.model} is null or UPPER(ts_m.MODEL) like UPPER('%${filter.model}%'))
+		        	and (ts_m.IS_DELETE = 0)
+		        	]]><if test="filter.tsType != null"><![CDATA[
+		            	AND ts_t.ID IN (${filter.tsType})
+		        	]]></if>
+		        	<if test="filter.ids != null">
+						AND ts_m.ID IN (${filter.ids})
+					</if>
+		        ) t
+        <include refid="ru.armd.pbk.mappers.CommonSql.orderBySql_t" />
+    </select>
+    
+</mapper>

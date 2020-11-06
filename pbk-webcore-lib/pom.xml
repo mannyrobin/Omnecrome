@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<artifactId>main</artifactId>
+		<groupId>ru.armd</groupId>
+		<version>1.3.26</version>
+	</parent>
+
+	<artifactId>pbk-webcore-lib</artifactId>
+	<packaging>jar</packaging>
+
+
+	<properties>
+		<build.timestamp>${maven.build.timestamp}</build.timestamp>
+		<maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
+	</properties>
+
+	<build>
+		<finalName>${project.artifactId}</finalName>
+
+		<resources>
+			<resource>
+				<directory>${basedir}/src/main/webapp</directory>
+			</resource>
+			<resource>
+				<directory>${project.build.directory}/${project.build.finalName}</directory>
+			</resource>
+		</resources>
+
+		<plugins>
+
+			 <plugin>
+				<groupId>com.samaxes.maven</groupId>
+				<artifactId>minify-maven-plugin</artifactId>
+				<version>1.7.4</version>
+				<executions>
+					<execution>
+						<id>css-minify</id>
+						<phase>generate-resources</phase>
+						<configuration>
+							<cssSourceDir>/css/angular</cssSourceDir>
+							<cssSourceFiles>
+								<cssSourceFile>../../lib/bootstrap-datetimepicker/css/datetimepicker.css</cssSourceFile>
+								<cssSourceFile>../../lib/bootstrap/css/bootstrap.css</cssSourceFile>
+								<cssSourceFile>../../lib/bootgrid/jquery.bootgrid.css</cssSourceFile>
+								<cssSourceFile>../../lib/angular-ui-notification/angular-ui-notification.min.css</cssSourceFile>
+								<cssSourceFile>../../lib/oi-select/select.min.css</cssSourceFile>
+								<cssSourceFile>../../lib/uiCropper/ui-cropper.css</cssSourceFile>
+								<cssSourceFile>../../lib/bootstrap-touch-spin/jquery.bootstrap-touchspin.min.css</cssSourceFile>
+								<cssSourceFile>../../lib/jquery-ui/jquery-ui.min.css</cssSourceFile>
+								<cssSourceFile>../../lib/xeditable/xeditable.css</cssSourceFile>
+								<cssSourceFile>../../lib/ngprogress/ngProgress.css</cssSourceFile>
+								<cssSourceFile>fullcalendar.min.css</cssSourceFile>
+								<cssSourceFile>main.css</cssSourceFile>
+							</cssSourceFiles>
+							<cssFinalFile>webcore-style.css</cssFinalFile>
+							<jsEngine>CLOSURE</jsEngine>
+							<closureLanguage>ECMASCRIPT5</closureLanguage>
+						</configuration>
+						<goals>
+							<goal>minify</goal>
+						</goals>
+					</execution>
+					
+					<execution>
+						<id>js-minify</id>
+						<phase>generate-resources</phase>
+						<configuration>
+							<jsSourceDir>js/angular</jsSourceDir>
+							<jsSourceIncludes>
+								<jsSourceInclude>**/*.js</jsSourceInclude>
+							</jsSourceIncludes>
+							<jsFinalFile>webcore-script.js</jsFinalFile>
+							<jsEngine>CLOSURE</jsEngine>
+							<closureLanguage>ECMASCRIPT5</closureLanguage>
+						</configuration>
+						<goals>
+							<goal>minify</goal>
+						</goals>
+					</execution>
+					
+					<execution>
+						<id>lib-minify</id>
+						<phase>generate-resources</phase>
+						<configuration>
+							<jsSourceDir>lib</jsSourceDir>
+							<jsSourceFiles>
+								<jsSourceFile>jquery-1.11.3.min.js</jsSourceFile>
+								
+								<jsSourceFile>jquery-ui/jquery-ui.min.js</jsSourceFile>
+								
+								<jsSourceFile>angular/angular.min.js</jsSourceFile>
+								<jsSourceFile>angular/angular-animate.min.js</jsSourceFile>
+								<jsSourceFile>angular/angular-ui-router.js</jsSourceFile>
+								<jsSourceFile>angular/lodash.compat.js</jsSourceFile>
+								<jsSourceFile>angular/ng-map.min.js</jsSourceFile>
+								
+								<jsSourceFile>angular/restangular.js</jsSourceFile>
+								
+								<jsSourceFile>angular/angular-breadcrumb.min.js</jsSourceFile>
+								
+								<jsSourceFile>angular-ui-notification/angular-ui-notification.min.js</jsSourceFile>
+								<jsSourceFile>angular/angular-cookies.min.js</jsSourceFile>
+								<jsSourceFile>angular/angular-local-storage.min.js</jsSourceFile>
+								<jsSourceFile>oi-select/select-tpls.min.js</jsSourceFile>
+								
+								<jsSourceFile>bootstrap/js/bootstrap.min.js</jsSourceFile>
+								<jsSourceFile>bootstrap-touch-spin/jquery.bootstrap-touchspin.min.js</jsSourceFile>
+								<jsSourceFile>angular-ui-bootstrap/ui-bootstrap-tpls-0.13.3.js</jsSourceFile>
+								<!--<jsSourceFile>angular-ui-bootstrap/ui-bootstrap-0.13.3.min.js</jsSourceFile>-->
+								<jsSourceFile>moment/moment.min.js</jsSourceFile>
+								<jsSourceFile>moment/ru.js</jsSourceFile>
+								<!--<jsSourceFile>bootstrap-datetimepicker/js/datetimepicker.min.js</jsSourceFile>-->
+								<jsSourceFile>bootstrap-datetimepicker/js/datetimepicker-armada.js</jsSourceFile>
+								<jsSourceFile>angular/ya-map-2.1.min.js</jsSourceFile>
+								<jsSourceFile>angular/ui-router-tabs.js</jsSourceFile>
+								<jsSourceFile>angular/calendar.js</jsSourceFile>
+								<jsSourceFile>bower-components/fullcalendar.min.js</jsSourceFile>
+								<jsSourceFile>bower-components/gcal.js</jsSourceFile>
+								<jsSourceFile>xeditable/xeditable.min.js</jsSourceFile>
+								<jsSourceFile>ngprogress/ngprogress.min.js</jsSourceFile>
+								<jsSourceFile>uiCropper/ui-cropper.js</jsSourceFile>
+								<jsSourceFile>angular/contextMenu.js</jsSourceFile>
+							</jsSourceFiles>
+							<jsFinalFile>webcore-lib.js</jsFinalFile>
+							<jsEngine>CLOSURE</jsEngine>
+							<closureLanguage>ECMASCRIPT5</closureLanguage>
+						</configuration>
+						<goals>
+							<goal>minify</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

@@ -1,0 +1,25 @@
+<div>
+    <div ar-validation-errors></div>
+
+    <!-- FORM -->
+    <form name="roleInfoForm">
+        <h4>Основная информация</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-12'" field="fields[0]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-12'" field="fields[1]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-8'" field="fields[2]"></div>
+            <div ar-form-field col-class="'col-sm-4'" field="fields[3]"></div>
+        </div>
+    </form>
+    <!-- END FORM -->
+
+</div>
+
+<div class="pull-right" ng-if="isNotReadOnlyUser">
+    <button type="button" class="btn btn-primary" ng-click="save()" ng-disabled="roleInfoForm.$invalid || !isChange">Сохранить</button>
+    <button type="button" class="btn btn-default" ng-click="reset()">Отмена</button>
+</div>

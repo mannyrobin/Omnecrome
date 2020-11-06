@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.DepartmentReportMapper">
+
+	 <select id="getReportViews" resultType="ru.armd.pbk.views.nsi.DepartmentReportView">
+        <![CDATA[
+			SELECT
+               ROW_NUMBER() OVER (]]><include refid="ru.armd.pbk.mappers.CommonSql.orderBySql" /><![CDATA[) AS id,
+               t.*
+            FROM (
+				SELECT
+				    d.[ID] as id
+			  		,pdh.[NAME] as parentDeptId
+			  		,dh.[EASU_FHD_ID] as easuFhdId
+			  		,dh.[NAME] as name
+			  		,dh.[FULL_NAME] as fullName
+				FROM [PBK_NSI].[DEPARTMENTS] d JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+				  LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] pdh on (pdh.HEAD_ID = dh.PARENT_DEPT_ID AND pdh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate())
+				WHERE 1 = 1
+				  and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+				  and (#{filter.name} is null or UPPER(dh.NAME) like UPPER('%${filter.name}%'))
+				  and (#{filter.forPlanUse} is null or UPPER(dh.FOR_PLAN_USE) like UPPER('%${filter.forPlanUse}%'))
+				  and (d.IS_DELETE = 0)
+				  and (#{filter.deptAuthId} is null or dh.[HEAD_ID]= #{filter.deptAuthId})
+				  ]]><if test="filter.ids != null">
+					AND d.ID IN (${filter.ids})
+				</if>
+        	) t
+        	<include refid="ru.armd.pbk.mappers.CommonSql.orderBySql_t" />
+    </select>
+
+</mapper>

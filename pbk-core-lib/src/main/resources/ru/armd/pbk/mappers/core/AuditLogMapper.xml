@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.core.AuditLogMapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.core.AuditLogView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+	        <![CDATA[
+		        SELECT
+					al.ID as id,
+					al.START_DATE as startDate,
+					al.END_DATE as endDate,
+					als.NAME as state,
+					al.MESSAGE as message,
+					al.TO_DATE as toDate
+				FROM
+					PBK_AUDIT.AUDIT_LOGS al LEFT JOIN PBK_AUDIT.AUDIT_LOG_STATES als ON (al.LOG_STATE_ID = als.ID)
+	        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.core.AuditLog" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO PBK_AUDIT.AUDIT_LOGS (
+                START_DATE,
+                END_DATE,
+                TO_DATE,
+                LOG_STATE_ID,
+                MESSAGE
+            ) VALUES (
+                #{startDate}
+               ,#{endDate}
+               ,#{toDate}
+               ,#{logStateId}
+               ,#{message}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_AUDIT.AUDIT_LOGS' ) as id
+            ]]>
+		</selectKey>
+    </insert>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.core.AuditLog">
+        <![CDATA[
+	        SELECT
+	            ID as id,
+	            START_DATE as startDate,
+	            END_DATE as endDate,
+				LOG_STATE_ID as logStateId,
+				MESSAGE as message
+				TO_DATE as toDate
+	        FROM
+	        	PBK_AUDIT.AUDIT_LOGS
+	        where
+	        	ID = #{id}
+    	]]>
+    </select>
+
+</mapper>

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.plans.timesheets.PlanTimesheetMapper">
+    
+    <select id="getEmployeeForPlanTimesheetViews" resultType="ru.armd.pbk.views.plans.timesheets.EmployeePlanTimesheetsView">
+    	<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT DISTINCT
+				e.ID as id,
+				eh.NAME as name,
+				eh.PATRONUMIC as patronumic,
+				eh.SURNAME as surname,
+				eh.PERSONNEL_NUMBER as personalNumber 
+				,q.sunFactHours as sumFactHours
+				,q.sumPlanHours as sumPlanHours
+				,q.sumFactDays as sumFactDays
+				,q.sumPlanDays as sumPlanDays
+			FROM
+            [PBK_NSI].[EMPLOYEES] e
+            JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh ON e.ID = eh.HEAD_ID           
+            LEFT JOIN [PBK_NSI].[DEPARTMENTS] d ON eh.DEPT_ID = d.ID
+            LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON d.ID = dh.HEAD_ID
+			join pbk_nsi.EMP_DEPT_MOVES edm on (eh.DEPT_ID = edm.DEPT_ID and eh.HEAD_ID = edm.EMPLOYEE_ID)
+			left join (SELECT
+			ps3.EMPLOYEE_ID as EMPLOYEE_ID,
+			ps3.DEPT_ID as DEPT_ID,
+			sum(ISNULL(ps3.WORK_FACT_HOURS, 0)) as sunFactHours
+			,sum(ewm3.WORK_PLAN_HOURS) as sumPlanHours
+			,count(case when ps3.WORK_FACT_HOURS != 0 then ps3.WORK_DATE else null end) as sumFactDays
+			,count(ps3.WORK_DATE) as sumPlanDays
+			FROM
+				PBK_PLAN.PLAN_SCHEDULES ps3 JOIN PBK_NSI.EMPLOYEE_WORK_MODES ewm3 ON (ps3.EMPLOYEE_ID = ewm3.EMPLOYEE_ID AND ps3.WORK_DATE = ewm3.WORK_DATE)
+				LEFT JOIN PBK_NSI.SHIFTS s3 ON (ps3.SHIFT_ID = s3.ID)
+				JOIN PBK_NSI.EMPLOYEES e3 ON (ps3.EMPLOYEE_ID = e3.ID AND e3.IS_DELETE = 0)
+				LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh3 ON (e3.ID = eh3.HEAD_ID AND eh3.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			WHERE
+	           	ps3.SHIFT_ID not in (1,4,5)
+				AND (#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(ps3.WORK_DATE as DATE))
+	           	AND (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(ps3.WORK_DATE as DATE))
+	           AND (eh3.FIRE_DATE IS NULL OR eh3.FIRE_DATE >= cast(ps3.WORK_DATE as DATE))
+			   group by ps3.EMPLOYEE_ID, ps3.DEPT_ID) q
+				on eh.HEAD_ID = q.EMPLOYEE_ID and q.DEPT_ID = eh.DEPT_ID
+			WHERE
+          		eh.DEPT_ID = #{filter.deptId}
+            	AND ((#{filter.fio} is null or UPPER(eh.NAME) like UPPER('%${filter.fio}%')) or (UPPER(eh.SURNAME) like UPPER('%${filter.fio}%')) or (UPPER(eh.PATRONUMIC) like UPPER('%${filter.fio}%')))
+            	AND e.IS_DELETE = 0
+                AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				AND (#{filter.dateFrom, jdbcType=DATE} < cast(eh.V_END_DATE AS DATE))
+				AND (#{filter.dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+				AND (#{filter.dateFrom, jdbcType=DATE} <= cast(edm.PERIOD_end_DATE AS DATE))
+				AND (#{filter.dateTo, jdbcType=DATE} >= cast(edm.PERIOD_START_DATE AS DATE))
+				AND (eh.FIRE_DATE IS NULL OR (#{filter.dateForm, jdbcType=DATE} is null OR eh.FIRE_DATE >= #{filter.dateForm, jdbcType=DATE}))
+            	AND eh.position_name = 'Контролер пассажирского транспорта'
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+	<select id="getPlanTimesheetsForEmployees" resultType="ru.armd.pbk.domain.plans.timesheets.Timesheet">
+		<![CDATA[
+			SELECT
+				ps.ID as id,
+				ps.EMPLOYEE_ID as employeeId,
+				ps.WORK_DATE as workDate,
+				ISNULL(ps.WORK_FACT_HOURS, 0) as factHours,
+				ewm.WORK_PLAN_HOURS as planHours,
+				ps.SHIFT_ID as shiftId,
+				s.DESCRIPTION as shiftDescription
+			FROM
+				PBK_PLAN.PLAN_SCHEDULES ps LEFT JOIN PBK_NSI.EMPLOYEE_WORK_MODES ewm ON (ps.EMPLOYEE_ID = ewm.EMPLOYEE_ID AND ps.WORK_DATE = ewm.WORK_DATE)
+				LEFT JOIN PBK_NSI.SHIFTS s ON (ps.SHIFT_ID = s.ID)
+				JOIN PBK_NSI.EMPLOYEES e ON (ps.EMPLOYEE_ID = e.ID AND e.IS_DELETE = 0)
+				LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (e.ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			WHERE
+	           	ps.DEPT_ID = #{params.filter.deptId}
+	           	AND (#{params.filter.dateFrom, jdbcType=DATE} is null or #{params.filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE as DATE))
+	           	AND (#{params.filter.dateTo, jdbcType=DATE} is null or #{params.filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE as DATE))
+	           	AND ps.EMPLOYEE_ID IN
+           	]]><foreach collection="employees" open="(" close=")" separator="," item="employee">
+           		#{employee.id}
+           	</foreach>           		
+           		AND (eh.FIRE_DATE IS NULL OR eh.FIRE_DATE >= cast(ps.WORK_DATE as DATE))
+    </select>
+
+	<update id="update" parameterType="ru.armd.pbk.domain.plans.timesheets.Timesheet">
+		<![CDATA[
+			UPDATE
+				PBK_PLAN.PLAN_SCHEDULES SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				, WORK_FACT_HOURS = cast(cast(#{factHours} as varchar) as float)
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+	
+	<select id="getById" resultType="ru.armd.pbk.domain.plans.timesheets.Timesheet">
+		<![CDATA[
+			SELECT
+            	ID as id,
+            	WORK_FACT_HOURS as factHours
+			FROM
+				PBK_PLAN.PLAN_SCHEDULES
+			WHERE
+               ID = #{id}
+        ]]>
+    </select>
+    
+        <select id="getReserveList" resultType="long">
+        <![CDATA[
+            SELECT
+				ps.ID
+			FROM
+				PBK_PLAN.PLAN_SCHEDULES ps
+			WHERE
+				ps.DEPT_ID = #{filter.deptId}
+	           	AND (#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE as DATE))
+	           	AND (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE as DATE))
+	           	AND ps.SHIFT_ID IN (2, 3, 6, 7, 8, 15, 16)
+	           	AND ps.ID NOT IN (
+					SELECT
+						t.CHANGE_PLAN_SCHEDULE_ID			               
+					FROM
+						PBK_TASK.TASKS t
+					WHERE
+						t.CHANGE_PLAN_SCHEDULE_ID IS NOT NULL
+			
+					UNION
+			
+					SELECT
+						t.PLAN_SCHEDULE_ID			               
+					FROM
+						PBK_TASK.TASKS t
+					WHERE
+						t.PLAN_SCHEDULE_ID IS NOT NULL
+				)
+       ]]>
+    </select>
+    
+</mapper>

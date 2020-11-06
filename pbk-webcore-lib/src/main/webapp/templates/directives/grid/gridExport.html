@@ -1,0 +1,20 @@
+<div class="form-group btn-group">    
+    <button ar-tooltip="Выгрузить отчет" ng-click="exportAction(exportFormat)" type="button" class="btn btn-info">
+        <span class="glyphicon glyphicon-download" aria-hidden="true"></span>
+    </button>
+    
+    <div class="dropdown btn-group">
+        <button class="btn btn-default dropdown-toggle grid-select-report-format" type="button" data-toggle="dropdown"
+                aria-expanded="true">      
+            <span class="dropdown-text">{{exportFormat}}</span>      
+            <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu pull-right" role="menu" style="padding: 10px">
+            <li ng-repeat="format in exportFormats">
+                <a href="#" ng-click="selectExportFormat(format)">{{format}}</a>
+            </li>
+        </ul>
+        
+    </div>
+    
+</div>

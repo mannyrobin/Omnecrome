@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.tasks.AskpContactlessCardMapper">
+
+	<select id="getGridViews" resultType="ru.armd.pbk.views.tasks.TaskContactlessCardView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+				acc.ID as id,
+				acc.CHECK_TIME as checkTime,
+				acc.MOVE_CODE as moveCode, 
+				rh.ROUTE_NUMBER + CASE tt.[COD] WHEN '1' THEN '-А' WHEN '2' THEN '-Тб' WHEN '3' THEN '-Тр' WHEN '4' THEN '-СТр' END as routeNumber
+			FROM
+				PBK_VIS.ASKP_CONTACTLESS_CARDS acc
+				LEFT JOIN PBK_NSI.ROUTE_HISTS rh ON (acc.ROUTE_ID = rh.HEAD_ID AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+                LEFT JOIN PBK_NSI.ROUTE_TS_KINDS rtk on (rh.[ROUTE_TS_KIND_ID] = rtk.ID)
+                LEFT JOIN PBK_NSI.TS_TYPES tt on (rtk.COD = tt.COD)
+			WHERE
+				acc.TASK_ID = #{filter.taskId}
+				AND (#{filter.dateFrom, jdbcType=TIME} is null or #{filter.dateFrom, jdbcType=TIME} <= cast(acc.CHECK_TIME as TIME))
+	           	AND (#{filter.dateTo, jdbcType=TIME} is null or #{filter.dateTo, jdbcType=TIME} >= cast(acc.CHECK_TIME as TIME))
+	           	AND (#{filter.routeId} is null or rh.HEAD_ID = #{filter.routeId})
+	           	AND (#{filter.moveCode} is null or UPPER(acc.MOVE_CODE) like UPPER('%${filter.moveCode}%'))
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+	<select id="getTitle" resultType="String">
+		SELECT
+			'Проходы по БСК №' + ISNULL(cch.CARD_NUMBER, ' ') + ' контролера ' + ISNULL(eh.SURNAME, '') + ' ' + ISNULL(eh.NAME, '') + ' ' + ISNULL(eh.PATRONUMIC, '')
+		FROM
+			PBK_TASK.TASKS t LEFT JOIN PBK_PLAN.PLAN_SCHEDULES ps ON (t.PLAN_SCHEDULE_ID = ps.ID)
+			LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (ps.EMPLOYEE_ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.CONTACTLESS_CARD_HISTS cch ON (eh.CONTACTLESS_CARD_ID = cch.HEAD_ID AND cch.V_END_DATE >= PBK_CORE.getVersionEndDate())
+		WHERE
+			t.ID = #{taskId}
+	</select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.tasks.AskpContactlessCard">
+        <![CDATA[
+            INSERT INTO [PBK_VIS].[ASKP_CONTACTLESS_CARDS](
+                [WORK_DATE]
+                , [CARD_NUMBER]
+                , [CHECK_TIME]
+                , [PARK_NAME]
+                , [ROUTE_NUMBER]
+                , [MOVE_CODE]
+                , [ROUTE_ID]
+            ) VALUES(
+                #{workDate}
+                ,#{cardNumber}
+                ,#{checkTime}
+                ,#{parkName}
+                ,#{routeNumber}
+                ,#{moveCode}
+                ,#{routeId}
+            )
+        ]]>
+    </insert>
+    
+    <insert id="insertChunck" parameterType="java.util.List">
+		INSERT  		
+		INTO [PBK_VIS].[ASKP_CONTACTLESS_CARDS] 
+			(
+                [WORK_DATE]
+                , [CARD_NUMBER]
+                , [CHECK_TIME]
+                , [PARK_NAME]
+                , [ROUTE_NUMBER]
+                , [MOVE_CODE]
+                , [ROUTE_ID]
+            ) VALUES 
+            <foreach collection="list" item="element" index="index" separator=",">
+                (
+                #{element.workDate}
+                ,#{element.cardNumber}
+                ,#{element.checkTime}
+                ,#{element.parkName}
+                ,#{element.routeNumber}
+                ,#{element.moveCode}
+                ,#{element.routeId})            
+			</foreach>
+	</insert>
+
+    <update id="updateTasks">
+        <![CDATA[
+            UPDATE acc
+            SET acc.TASK_ID = t.ID
+            FROM [PBK_VIS].[ASKP_CONTACTLESS_CARDS] acc
+            JOIN (
+                SELECT t.ID, ps.WORK_DATE, ch.UID
+                FROM [PBK_NSI].[CONTACTLESS_CARD_HISTS] ch
+                JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh ON
+                    eh.[CONTACTLESS_CARD_ID] = ch.[HEAD_ID]
+                    AND #{date, jdbcType=DATE}  BETWEEN cast(eh.[V_START_DATE] as date) and cast(eh.[V_END_DATE] as date)
+                JOIN [PBK_PLAN].[PLAN_SCHEDULES] ps ON
+                    ps.EMPLOYEE_ID = eh.HEAD_ID
+                    AND #{date, jdbcType=DATE} = cast(ps.WORK_DATE as date)
+                JOIN [PBK_TASK].[TASKS] t ON
+                    ps.ID = t.PLAN_SCHEDULE_ID
+                WHERE ch.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()) t
+            ON t.UID = acc.CARD_NUMBER AND cast(t.[WORK_DATE] as date) = cast(acc.[WORK_DATE] as date)
+        ]]>
+    </update>
+    
+    <select id="getDomains" resultType="ru.armd.pbk.domain.tasks.AskpContactlessCard">
+    		<![CDATA[
+	    		SELECT
+					acc.ID as id,
+					acc.CHECK_TIME as checkTime,
+					acc.ROUTE_NUMBER as routeNumber,
+					acc.MOVE_CODE as moveCode,
+					acc.CARD_NUMBER as cardNumber,
+					acc.PARK_NAME as parkName, 
+					acc.ROUTE_ID as routeId
+				FROM
+					PBK_VIS.ASKP_CONTACTLESS_CARDS acc
+				WHERE	
+					#{workDate, jdbcType=DATE} is null or #{workDate, jdbcType=DATE} = cast(acc.WORK_DATE as DATE)
+				ORDER BY cardNumber		
+			]]>		
+    </select>
+    
+    <update	id="bind">
+    	<![CDATA[
+    		UPDATE [PBK_VIS].[ASKP_CONTACTLESS_CARDS]
+				SET TASK_ID = #{taskId} 
+			WHERE TASK_ID is null AND ID in ( 
+				SELECT apc.ID 
+				FROM [PBK_TASK].[TASKS] t 
+				JOIN [PBK_PLAN].[PLAN_SCHEDULES] ps on ps.ID = t.PLAN_SCHEDULE_ID 
+				JOIN [PBK_NSI].[EMPLOYEE_HISTS] e on (e.HEAD_ID = ps.EMPLOYEE_ID and e.V_END_DATE >= [PBK_CORE].getVersionEndDate()) 
+				JOIN [PBK_NSI].[CONTACTLESS_CARD_HISTS] conCard on (conCard.HEAD_ID = e.CONTACTLESS_CARD_ID and conCard.V_END_DATE >= PBK_CORE.getVersionEndDate()) 
+				JOIN [PBK_VIS].[ASKP_CONTACTLESS_CARDS] apc on (apc.CARD_NUMBER = conCard.UID and apc.[WORK_DATE] = ps.[WORK_DATE])
+				WHERE t.ID = #{taskId})
+		]]>
+    </update>
+    
+    <select id="getUniqueRouteCount" resultType="int">
+        SELECT count(*)
+        FROM [PBK_VIS].[ASKP_CONTACTLESS_CARDS] 
+        WHERE TASK_ID = #{taskId}
+    </select>
+    
+</mapper>
+

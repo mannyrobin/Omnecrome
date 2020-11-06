@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.core.SettingsMapper">
+    <select id="getGridViews" resultType="ru.armd.pbk.views.core.SettingView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        select
+        s.NAME as name
+        , s.ID as id
+        , s.COD as code
+        , s.DESCRIPTION as description
+        , s.VALUE as value
+        from PBK_CORE.SETTINGS s
+        where s.GROUP_ID=#{filter.settingsTab} and s.IS_SHOW = 1
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.core.Setting">
+        <![CDATA[
+            SELECT s.NAME as name
+            , s.ID as id
+            , s.COD as code
+            , s.DESCRIPTION as description
+            , s.VALUE as value
+            from PBK_CORE.SETTINGS s
+            where s.ID=#{id}
+        ]]>
+    </select>
+
+    <select id="getByCode" resultType="ru.armd.pbk.domain.core.Setting">
+        <![CDATA[
+            SELECT s.NAME as name
+            , s.ID as id
+            , s.COD as code
+            , s.DESCRIPTION as description
+            , s.VALUE as value
+            from PBK_CORE.SETTINGS s
+            where s.COD=#{code}
+        ]]>
+    </select>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.core.Setting">
+        <![CDATA[
+            update PBK_CORE.SETTINGS
+            SET VALUE=#{value}
+            WHERE ID=#{id}
+         ]]>
+    </update>
+
+	<select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        <![CDATA[
+	        SELECT *
+			FROM (SELECT 1 as id, 'АСКП' as name
+				  UNION
+				  SELECT 2 as id, 'БСК' as name) as t
+			WHERE #{id} is not null and #{id} = 2011  
+			
+			UNION     
+			
+			SELECT *
+			FROM (SELECT 1 as id, 'Да' as name
+				  UNION
+				  SELECT 2 as id, 'Нет' as name) as t
+			WHERE #{id} is not null and #{id} = 2012  
+		]]>	
+    </select>
+    
+</mapper>

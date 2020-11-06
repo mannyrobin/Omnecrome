@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.DistrictReportMapper">
+
+	 <select id="getReportViews" resultType="ru.armd.pbk.views.nsi.DistrictReportView">
+        <![CDATA[
+			SELECT
+               ROW_NUMBER() OVER (]]><include refid="ru.armd.pbk.mappers.CommonSql.orderBySql" /><![CDATA[) AS id,
+               t.*
+            FROM (
+				SELECT
+					d.[ID] as id
+	               , dh.[COD] as cod
+	               , dh.[NAME] as name
+	               , (select count(*) from PBK_NSI.CITY_DISTRICT_ROUTES r where r.CITY_DISTRICT_ID = d.id) as countRoute
+	          	   , (select count(*) from PBK_NSI.CITY_VENUE_HISTS v where v.CITY_DISTRICT_ID = d.id) as countVenues 
+	          	   , (select cdh.NAME    
+	          			FROM [PBK_NSI].[CITY_COUNTIES] cd 
+						JOIN [PBK_NSI].[CITY_COUNTY_HISTS] cdh on (cd.ID = cdh.HEAD_ID)
+						WHERE cd.ID = dh.CITY_COUNTY_ID and cdh.V_END_DATE>= [PBK_CORE].getVersionEndDate()) as countyName          
+					FROM [PBK_NSI].[CITY_DISTRICTS] d 
+					JOIN [PBK_NSI].[CITY_DISTRICT_HISTS] dh on (d.ID = dh.HEAD_ID)
+					WHERE 
+						dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+						and (#{filter.name} is null or UPPER(dh.NAME) like UPPER('%${filter.name}%'))	
+						and (#{filter.countyId} is null or dh.[CITY_COUNTY_ID] = #{filter.countyId})
+						and (d.IS_DELETE = 0)
+						]]><if test="filter.ids != null">
+							AND d.ID IN (${filter.ids})
+						</if>
+        	) t
+        	<include refid="ru.armd.pbk.mappers.CommonSql.orderBySql_t" />
+    </select>
+</mapper>

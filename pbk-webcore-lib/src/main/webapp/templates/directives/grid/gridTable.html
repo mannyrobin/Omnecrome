@@ -1,0 +1,84 @@
+<div class="row">
+    <div class="col-sm-12">
+        <table st-table="gridScope.grid.rows" st-pipe="gridScope.grid.loadAction" st-safe-src="gridScope.grid.rows"
+                class='table table-hover {{getRowClass == null ? "table-striped" : ""}}'>
+            <colgroup>
+                <col class="col-md-1" ng-show="!gridScope.hideIndexColumn">
+                <col ng-repeat="header in gridScope.headers" ng-show="gridScope.grid.isShowColumn($index)" class="{{::header.class}}">
+                <col ng-show="gridScope.buttons.show" class="col-md-1">
+            </colgroup>
+            <thead>
+                <tr> 
+                    <th ng-show="!gridScope.hideIndexColumn">
+                        <input type="checkbox" ng-model="choosenItemIds[-1]" ng-if="gridScope.addSelItemColumn && !gridScope.resetIndex" class="grid-header" ng-click="selectAll()"/> </input>
+                        <span>№</span>
+                    </th>                    
+                    <th ng-repeat="header in gridScope.headers" class="grid-header" ng-show="gridScope.grid.isShowColumn($index)"
+                            ar-st-sort="{{!header.disableSort ? header.id : ''}}">
+                        <span ar-tooltip="{{::header.iconTip}}" ng-show="header.icon != null" class="glyphicon glyphicon-{{::header.icon}}" aria-hidden="true"></span>
+                        {{::header.label}}
+                    </th>
+                    <th ng-show="gridScope.buttons.show" class="grid-header"></th>
+                </tr>
+            </thead>
+            <tbody ng-show="gridScope.grid.isLoading">
+                <tr>
+                    <td colspan="{{gridScope.grid.columnCount}}" class="text-center"><img ng-src="{{'images/spinner.gif'}}"></td>
+                </tr>
+            </tbody>
+            <tbody ng-show="!gridScope.grid.isLoading && gridScope.grid.rows.length > 0" ng-init="init()">
+                <tr ng-repeat-start="row in gridScope.grid.rows"  ng-class="getRowClass(row)">
+                    <td ng-show="!gridScope.hideIndexColumn">
+                        <input type="checkbox" ng-model="choosenItemIds[row.id]" ng-if="showSelItemColumn(row)" ng-disabled="gridScope.disabledSelItemColumn != undefined && gridScope.disabledSelItemColumn(row)" ng-click="checkSelectAll(row)"> </input>
+                        <span ng-click="row.showExternalInfo = !row.showExternalInfo; gridScope.showAdditionalInfo(row, row.showExternalInfo)" ng-if="gridScope.showAdditionalInfo">
+                   			 <i class="glyphicon"
+                           		ng-class="row.showExternalInfo ? 'glyphicon-chevron-up': 'glyphicon-chevron-down'"></i>
+                        </span>
+                        <span>{{getIndex($index)}}</span>
+                    </td>
+                   
+                    <td ng-repeat="header in gridScope.headers" ng-show="gridScope.grid.isShowColumn($index) && gridScope.grid.getType($index) == 'text'">
+                        <a ng-show="header.href != null" ng-href="{{header.href(row)}}">{{getText(row, $parent.$index, $index, true)}}</a>
+                        <a ng-if="header.hrefClick != null" ng-click="header.hrefClick(row)" style="cursor: pointer">{{getText(row, $parent.$index, $index, true)}}</a>
+                        <span ng-show="header.hrefClick == null" ng-class="getRowTextClass(row)">{{getText(row, $parent.$index, $index, false)}}</span>
+                    </td>
+                    <td ng-repeat="header in gridScope.headers" ng-show="gridScope.grid.isShowColumn($index) && gridScope.grid.getType($index) == 'checkbox'">
+                        <input ng-click="gridScope.clickCheckbox(row, $index)" type="checkbox" ng-checked="gridScope.checkedCheckbox(row, $index)" ng-disabled="gridScope.disabledCheckbox(row, $index)"/>
+                    </td>
+                    <td ng-show="gridScope.buttons.show">
+                        <div ar-grid-buttons parameters="gridScope.buttons" row="row"></div>
+                    </td>
+                </tr>
+                <tr ng-repeat-end ng-show="row.showExternalInfo">
+                    <td colspan="11" ng-if="row.showExternalInfo">
+                        <div class="container-fluid" ng-include="gridScope.grid.infoTemplate"></div>
+                    </td>
+                <tr>
+                <tr ng-show="!gridScope.grid.isLoading && gridScope.footerRecord != undefined && gridScope.footerRecord.length > 0" ng-repeat="item in gridScope.footerRecord">
+	            	<td ng-repeat="header in gridScope.headers" ng-show="gridScope.grid.isShowColumn($index)">                        
+	                     <b>{{gridScope.getFooterRecord(header.id, item)}}</b>
+	                </td>
+            	</tr>
+                <tr ng-show="!gridScope.grid.isLoading && gridScope.footerRecord != undefined && !gridScope.footerRecord.length">
+                    <td ng-repeat="header in gridScope.headers" ng-show="gridScope.grid.isShowColumn($index)">
+                        <b>{{gridScope.getFooterRecord(header.id)}}</b>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody ng-show="!gridScope.grid.isLoading && gridScope.grid.rows.length == 0">
+                <tr style="background-color: transparent;">
+                    <td class="text-center" colspan="{{gridScope.grid.columnCount}}">
+                        <p class="lead">Элементы не найдены</p>
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot>            	
+                <tr>
+                    <td class="text-center" colspan="{{gridScope.grid.columnCount}}">
+                        <div ar-grid-pagination rows-on-page="gridScope.colRowsOnPage" grid-scope="gridScope"></div>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,30 @@
+{
+	"department": {
+		"width": 21,
+		"height": 21,
+		"x": 0,
+		"y": 0,
+		"pixelRatio": 1
+	},
+	"venue": {
+		"width": 21,
+		"height": 21,
+		"x": 22,
+		"y": 0,
+		"pixelRatio": 1
+	},
+	"stop": {
+		"width": 21,
+		"height": 21,
+		"x": 44,
+		"y": 0,
+		"pixelRatio": 1
+	},
+	"stop-route": {
+		"width": 21,
+		"height": 21,
+		"x": 66,
+		"y": 0,
+		"pixelRatio": 1
+	}
+}

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So12Mapper">
+
+    <select id="getVenueShifts" resultType="ru.armd.pbk.views.report.So12VenueShiftView">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[
+        SELECT
+        	ROW_NUMBER() OVER (ORDER BY venue) AS id, *
+        FROM (SELECT distinct
+          venueShifts.venueId AS venueId
+          , cvh.NAME AS venue
+          , venueShifts.shiftId AS shiftId
+          , FORMAT(s.WORK_START_TIME, 'HH:mm') + ' - ' + FORMAT(s.WORK_END_TIME, 'HH:mm') AS shiftHours
+        FROM
+          ( SELECT
+              pv.CITY_VENUE_ID AS venueId
+              , pv.SHIFT_ID AS shiftId
+            FROM
+              PBK_PLAN.PLAN_VENUES AS pv
+              JOIN PBK_NSI.DEPARTMENT_HISTS dh ON pv.DEPT_ID = dh.HEAD_ID AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate() AND dh.FOR_PLAN_USE = 1
+              WHERE 1=1
+               ]]><if test="filter.departmentId != null">
+                 AND pv.DEPT_ID IN (${filter.departmentId})
+              </if><![CDATA[
+              and (#{filter.deptAuthId} is null or pv.DEPT_ID = #{filter.deptAuthId})
+            GROUP BY pv.CITY_VENUE_ID, pv.SHIFT_ID
+          ) AS venueShifts
+          JOIN PBK_NSI.SHIFTS s ON venueShifts.shiftId = s.ID
+          JOIN PBK_NSI.CITY_VENUE_HISTS cvh ON venueShifts.venueId = cvh.HEAD_ID AND cvh.V_END_DATE = (
+          						SELECT MAX(cvh2.V_END_DATE)
+								FROM PBK_NSI.CITY_VENUE_HISTS cvh2 
+								WHERE cvh2.HEAD_ID = cvh.HEAD_ID 
+									AND cast(cvh2.V_END_DATE as DATE) >= cast(#{filter.dateFrom} as DATE) AND cast(cvh2.V_START_DATE as DATE) <= cast(#{filter.dateTo} as DATE)
+          						)
+          LEFT JOIN PBK_NSI.CITY_VENUE_DISTRICTS cvd ON cvh.HEAD_ID = cvd.CITY_VENUE_ID AND cvd.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+          LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON cvd.CITY_DISTRICT_ID = cdh.HEAD_ID AND cdh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+          LEFT JOIN PBK_NSI.CITY_COUNTY_HISTS cch ON cdh.CITY_COUNTY_ID = cch.HEAD_ID AND cch.V_END_DATE >= [PBK_CORE].getVersionEndDate() 
+        WHERE 1=1
+        ]]><if test="filter.districtId != null">
+          AND cdh.HEAD_ID IN (${filter.districtId})
+        </if>
+          AND (#{filter.countyId} IS NULL OR cch.HEAD_ID = #{filter.countyId})) as sub
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd"/>
+    </select>
+
+    <select id="getEmployeeCountsForVenueShift" resultType="ru.armd.pbk.views.report.So12EmployeeCountView">
+        <![CDATA[
+          SELECT
+            pv.WORK_DATE AS date
+            , sum(pv.MGT_COUNT) AS employeeCount
+          FROM
+            PBK_PLAN.PLAN_VENUES AS pv
+            LEFT JOIN PBK_NSI.DEPARTMENT_HISTS dh ON pv.DEPT_ID = dh.HEAD_ID AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate() AND dh.FOR_PLAN_USE = 1
+          WHERE 1=1
+            AND pv.CITY_VENUE_ID = #{venueId}
+            AND pv.SHIFT_ID = #{shiftId}
+            AND (#{params.filter.dateFrom, jdbcType=DATE} IS NULL OR #{params.filter.dateFrom, jdbcType=DATE} <= cast(pv.WORK_DATE AS DATE))
+            AND (#{params.filter.dateTo, jdbcType=DATE} IS NULL OR #{params.filter.dateTo, jdbcType=DATE} >= cast(pv.WORK_DATE AS DATE))
+          ]]><if test="params.filter.departmentId != null">
+            AND pv.DEPT_ID IN (${params.filter.departmentId})
+          </if><![CDATA[
+            and (#{params.filter.deptAuthId} is null or pv.DEPT_ID = #{params.filter.deptAuthId})
+          group by pv.WORK_DATE
+		  order by pv.WORK_DATE
+    ]]></select>
+    
+    <select id="getGridViewTotal" resultType="ru.armd.pbk.views.report.So12EmployeeCountView">
+    	<![CDATA[
+    	SELECT
+            pv.WORK_DATE AS date
+            , sum(pv.MGT_COUNT) AS employeeCount
+          FROM
+            PBK_PLAN.PLAN_VENUES AS pv
+          WHERE  1=1
+          	]]><if test="departmentId != null">
+            	AND pv.DEPT_ID IN (${departmentId})
+          	</if><![CDATA[
+            AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= cast(pv.WORK_DATE AS DATE))
+            AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(pv.WORK_DATE AS DATE))
+            and (#{deptAuthId} is null or pv.DEPT_ID = #{deptAuthId})
+            ]]><if test="districtId != null">
+            	<![CDATA[
+          		AND pv.ID in (
+          			SELECT
+            			distinct pv1.ID
+          			FROM
+			            PBK_DB.PBK_PLAN.PLAN_VENUES AS pv1
+			          	JOIN PBK_DB.PBK_NSI.CITY_VENUE_HISTS cvh ON pv1.CITY_VENUE_ID = cvh.HEAD_ID AND cvh.V_END_DATE >= PBK_DB.[PBK_CORE].getVersionEndDate()
+						JOIN PBK_DB.PBK_NSI.DEPARTMENT_HISTS dh ON pv1.DEPT_ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_DB.[PBK_CORE].getVersionEndDate() AND dh.FOR_PLAN_USE = 1
+						JOIN PBK_DB.PBK_NSI.CITY_VENUE_DISTRICTS cvd ON cvh.HEAD_ID = cvd.CITY_VENUE_ID AND cvd.V_END_DATE >= PBK_DB.[PBK_CORE].getVersionEndDate()
+						JOIN PBK_DB.PBK_NSI.CITY_DISTRICT_HISTS cdh ON cvd.CITY_DISTRICT_ID = cdh.HEAD_ID AND cdh.V_END_DATE >= PBK_DB.[PBK_CORE].getVersionEndDate()
+					WHERE cdh.HEAD_ID IN (${districtId}) 
+						AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= cast(pv1.WORK_DATE AS DATE))
+            			AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(pv1.WORK_DATE AS DATE)) 
+          		) cdh.HEAD_ID IN (${districtId})]]>
+        	</if><if test="countyId != null">
+        	    <![CDATA[
+          		AND pv.ID in (
+          			SELECT
+            			distinct pv1.ID
+          			FROM
+			            PBK_DB.PBK_PLAN.PLAN_VENUES AS pv1
+			          	JOIN PBK_DB.PBK_NSI.CITY_VENUE_HISTS cvh ON pv1.CITY_VENUE_ID = cvh.HEAD_ID AND cvh.V_END_DATE >= PBK_DB.[PBK_CORE].getVersionEndDate()
+						JOIN PBK_DB.PBK_NSI.DEPARTMENT_HISTS dh ON pv1.DEPT_ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_DB.[PBK_CORE].getVersionEndDate() AND dh.FOR_PLAN_USE = 1
+						JOIN PBK_DB.PBK_NSI.CITY_VENUE_DISTRICTS cvd ON cvh.HEAD_ID = cvd.CITY_VENUE_ID AND cvd.V_END_DATE >= PBK_DB.[PBK_CORE].getVersionEndDate()
+						JOIN PBK_DB.PBK_NSI.CITY_DISTRICT_HISTS cdh ON cvd.CITY_DISTRICT_ID = cdh.HEAD_ID AND cdh.V_END_DATE >= PBK_DB.[PBK_CORE].getVersionEndDate()
+						JOIN PBK_DB.PBK_NSI.CITY_COUNTY_HISTS cch ON cdh.CITY_COUNTY_ID = cch.HEAD_ID AND cch.V_END_DATE >= PBK_DB.[PBK_CORE].getVersionEndDate() 
+					WHERE cch.HEAD_ID = #{countyId}
+						AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= cast(pv1.WORK_DATE AS DATE))
+            			AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(pv1.WORK_DATE AS DATE)))
+          		]]>
+        	</if><![CDATA[        	
+			group by pv.WORK_DATE
+		 	order by pv.WORK_DATE
+		 ]]>
+    </select>
+
+    <select id="getDateStart" resultType="date">
+        <![CDATA[
+          SELECT
+              isnull(#{filter.dateFrom, jdbcType=DATE}, cast('0001-01-01' AS DATE))
+        ]]>
+    </select>
+
+    <select id="getDateEnd" resultType="date">
+        <![CDATA[
+          SELECT
+              isnull(#{filter.dateTo, jdbcType=DATE}, cast('9999-12-31' AS DATE))
+        ]]>
+    </select>
+
+</mapper>

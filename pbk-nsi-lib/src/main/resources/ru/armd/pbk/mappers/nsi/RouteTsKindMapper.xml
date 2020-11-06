@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.RouteTsKindMapper">
+
+	 <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.RouteTsKindView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          select 
+          	c.id as id, 
+          	c.cod as cod,
+          	c.name as name, 
+          	c.description as description, 
+          	c.is_delete as isDelete,       
+          	ts.name as routeTsKind  
+          from PBK_NSI.ROUTE_TS_KINDS c
+          join PBK_GISMGT.GM_ROUTE_TS_KINDS ts on c.GM_ROUTE_TS_KIND_ID = ts.ID
+          WHERE (#{filter.name} is null or UPPER(c.NAME) like UPPER('%${filter.name}%')) 
+          and (#{filter.cod} is null or UPPER(c.COD) like UPPER('%${filter.cod}%'))
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <insert id="insert" parameterType="ru.armd.pbk.domain.nsi.RouteTsKind" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.ROUTE_TS_KINDS(
+        	[COD]
+        	, [NAME]
+        	, [DESCRIPTION]
+	        , [CREATE_DATE]
+	        , [CREATE_USER_ID]
+	        , [UPDATE_DATE]
+	        , [UPDATE_USER_ID]
+	        , [IS_DELETE]
+	        , [GM_ROUTE_TS_KIND_ID]
+        ) VALUES(
+        	#{cod}
+        	, #{name}
+        	, #{description}
+        	, #{createDate}
+        	, #{createUserId}
+        	, #{updateDate}
+        	, #{updateUserId}
+        	, #{isDelete}
+        	, #{routeTsKindId})
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.ROUTE_TS_KINDS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+    
+    <update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.ROUTE_TS_KINDS
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+    
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_NSI.ROUTE_TS_KINDS
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.RouteTsKind">
+    		select 
+    			ID as id,
+    			CREATE_DATE as createDate,
+		    	CREATE_USER_ID as createUserId,
+				UPDATE_DATE as updateDate,
+		    	UPDATE_USER_ID as updateUserId,
+		    	IS_DELETE as isDelete,
+		    	DESCRIPTION as description,
+		    	NAME as name,
+		    	COD as cod,
+		    	GM_ROUTE_TS_KIND_ID as routeTsKindId	            
+            from PBK_NSI.ROUTE_TS_KINDS 
+            where ID = #{id}
+    </select>
+    
+    <select id="getDomain" resultType="ru.armd.pbk.domain.nsi.RouteTsKind">
+    		select 
+    			ID as id,
+    			CREATE_DATE as createDate,
+		    	CREATE_USER_ID as createUserId,
+				UPDATE_DATE as updateDate,
+		    	UPDATE_USER_ID as updateUserId,
+		    	IS_DELETE as isDelete,
+		    	DESCRIPTION as description,
+		    	NAME as name,
+		    	COD as cod,
+		    	GM_ROUTE_TS_KIND_ID as routeTsKindId	            
+            from PBK_NSI.ROUTE_TS_KINDS 
+            where #{gmId} is not null and GM_ROUTE_TS_KIND_ID = #{gmId}
+    </select>
+    
+    <select id="getDomains" resultType="ru.armd.pbk.domain.nsi.RouteTsKind">
+    		select 
+    			ID as id,
+    			CREATE_DATE as createDate,
+		    	CREATE_USER_ID as createUserId,
+				UPDATE_DATE as updateDate,
+		    	UPDATE_USER_ID as updateUserId,
+		    	IS_DELETE as isDelete,
+		    	DESCRIPTION as description,
+		    	NAME as name,
+		    	COD as cod,
+		    	GM_ROUTE_TS_KIND_ID as routeTsKindId	            
+            from PBK_NSI.ROUTE_TS_KINDS        
+    </select>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        select distinct rt.id as id, rt.name as name
+		from PBK_NSI.ROUTE_TS_KINDS rt
+		left join PBK_NSI.ROUTE_HISTS r on r.ROUTE_TS_KIND_ID = rt.ID
+		where rt.IS_DELETE = 0 or (#{routeId} is not null and r.ID = #{routeId})
+    </select>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.nsi.RouteTsKind">
+    		UPDATE
+		    	PBK_NSI.ROUTE_TS_KINDS
+		    SET
+				UPDATE_DATE = #{updateDate},
+		    	UPDATE_USER_ID = #{updateUserId},
+		    	DESCRIPTION = #{description},
+		    	NAME = #{name},
+		    	COD = #{cod},
+		    	GM_ROUTE_TS_KIND_ID=#{routeTsKindId}	
+		    WHERE
+		    	ID = #{id}
+    </update>
+</mapper>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So7Mapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.report.So7View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <![CDATA[
+            WITH askp AS (
+                SELECT
+                    ASKP_ROUTE_CODE
+                    , WORK_DATE
+                    , ASKP_CHECKS_COUNT
+                FROM [PBK_VIS].[ASKP_TICKET_CHECKS_BY_TICKET_TYPE]
+                WHERE ((#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= WORK_DATE)
+                    AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= WORK_DATE))
+                    OR ((#{filter.dateFrom, jdbcType=DATE} IS NULL OR DATEADD(yy, -1, #{filter.dateFrom, jdbcType=DATE}) <= WORK_DATE)
+                    AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR DATEADD(yy, -1, #{filter.dateTo, jdbcType=DATE}) >= WORK_DATE))
+            )   
+            
+        ]]><include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBeginDeprecated"/><![CDATA[
+            SELECT
+                rh.id
+                , rh.branch
+                , rh.county
+                , rh.route
+                , atc_c.pass_in AS curPassengerCount
+                , atc_p.pass_in AS prevPassengerCount
+            FROM (
+                SELECT distinct
+                    rh.HEAD_ID AS id
+                    , STUFF((
+					  SELECT distinct ', ' + dh.NAME
+					  FROM [PBK_NSI].[CITY_COUNTY_HISTS] cch
+						JOIN [PBK_NSI].[CITY_DISTRICT_HISTS] cdh ON
+							cdh.CITY_COUNTY_ID = cch.HEAD_ID
+							AND (cdh.V_END_DATE IS NULL OR cdh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+						JOIN [PBK_NSI].[CITY_DISTRICT_ROUTES] cdr ON
+							cdr.CITY_DISTRICT_ID = cdh.HEAD_ID 
+							and cdr.ROUTE_ID = rh.HEAD_ID
+						JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON							
+							(dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+							AND dh.HEAD_ID = cch.DEPT_ID
+						WHERE cch.V_END_DATE >= PBK_CORE.getVersionEndDate()
+					  FOR XML PATH('')),1,2,'') as branch
+					, STUFF((
+					  SELECT distinct ', ' + case when cch.head_id in (1714, 1715) then  cch.[NAME] else cch.[SHORT_NAME] end
+					  FROM [PBK_NSI].[CITY_COUNTY_HISTS] cch
+						JOIN [PBK_NSI].[CITY_DISTRICT_HISTS] cdh ON
+							cdh.CITY_COUNTY_ID = cch.HEAD_ID
+							AND (cdh.V_END_DATE IS NULL OR cdh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+						JOIN [PBK_NSI].[CITY_DISTRICT_ROUTES] cdr ON
+							cdr.CITY_DISTRICT_ID = cdh.HEAD_ID 
+							and cdr.ROUTE_ID = rh.HEAD_ID
+						WHERE cch.V_END_DATE >= PBK_CORE.getVersionEndDate()
+					  FOR XML PATH('')),1,2,'') as county
+                    , rh.ROUTE_NUMBER AS route
+                    , rh.ASKP_ROUTE_CODE
+                FROM [PBK_NSI].[DEPARTMENTS] d
+                JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON
+                    d.ID = dh.HEAD_ID
+                    AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+                    AND dh.FOR_PLAN_USE = 1
+        ]]><if test="filter.departmentId != null"><![CDATA[
+                    AND dh.HEAD_ID IN (${filter.departmentId})
+        ]]></if><![CDATA[
+                    AND (#{filter.deptAuthId} is null or dh.HEAD_ID = #{filter.deptAuthId})
+                JOIN [PBK_NSI].[CITY_COUNTY_HISTS] cch ON
+                    cch.DEPT_ID = d.ID
+                    AND (cch.V_END_DATE IS NULL OR cch.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+                JOIN [PBK_NSI].[CITY_DISTRICT_HISTS] cdh ON
+                    cdh.CITY_COUNTY_ID = cch.HEAD_ID
+                    AND (cdh.V_END_DATE IS NULL OR cdh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+                JOIN [PBK_NSI].[CITY_DISTRICT_ROUTES] cdr ON
+                    cdr.CITY_DISTRICT_ID = cdh.HEAD_ID 
+                JOIN [PBK_NSI].[ROUTE_HISTS] rh ON
+                    cdr.ROUTE_ID = rh.HEAD_ID
+                    AND (rh.V_END_DATE IS NULL OR rh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+                WHERE 1 = 1 
+        ]]><if test="filter.routes != null"><![CDATA[
+                AND rh.HEAD_ID IN (${filter.routes})
+        ]]></if><![CDATA[) rh 
+            JOIN (
+                    SELECT ASKP_ROUTE_CODE, sum(ASKP_CHECKS_COUNT) AS pass_in
+                    FROM askp
+                    WHERE (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= WORK_DATE)
+                        AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= WORK_DATE)
+                    GROUP BY ASKP_ROUTE_CODE) atc_c ON
+                atc_c.ASKP_ROUTE_CODE = rh.ASKP_ROUTE_CODE
+            LEFT JOIN (
+                    SELECT ASKP_ROUTE_CODE, sum(ASKP_CHECKS_COUNT) AS pass_in
+                    FROM askp
+                    WHERE (#{filter.dateFrom, jdbcType=DATE} IS NULL OR DATEADD(yy, -1, #{filter.dateFrom, jdbcType=DATE}) <= WORK_DATE)
+                        AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR DATEADD(yy, -1, #{filter.dateTo, jdbcType=DATE}) >= WORK_DATE)
+                    GROUP BY ASKP_ROUTE_CODE) atc_p ON
+                atc_p.ASKP_ROUTE_CODE = rh.ASKP_ROUTE_CODE
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEndDeprecated" />
+    </select>
+
+</mapper>

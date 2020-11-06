@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.VenicleWorkDayMapper">
+	
+	<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.VenicleWorkDay" keyProperty="id" keyColumn="id">
+		<![CDATA[
+			insert into PBK_NSI.TS_VenicleWorkDay_HISTS(
+					]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[					
+				, [TS_VENICLE_ID]
+				, [WORK_DATE]
+			) VALUES (
+				   ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[				   
+				, #{venicleId}
+				, #{workDay}
+			)
+        ]]>
+         <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.TS_VENICLE_USES' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+    
+	<select id="getDomain" resultType="ru.armd.pbk.domain.nsi.VenicleWorkDay">
+		<![CDATA[
+            SELECT
+				d.[ID] as id 
+				d.[TS_VENICLE_ID] as venicleId
+				d.[WORK_DATE] as workDay               
+			FROM [PBK_NSI].[TS_VENICLE_USES] d
+            WHERE 1 = 1
+              and (#{venicleId} is not null and d.[TS_VENICLE_ID] = #{venicleId})
+              and (#{workDay} is not null and d.[WORK_DATE] = #{workDay})
+        ]]>
+	</select>
+	
+</mapper>

@@ -1,0 +1,16 @@
+<body>
+	<div id="requestSpinner" style="visibility: hidden;">
+		<div class="modal-backdrop fade in" modal-animation-class="fade" modal-in-class="in" 
+				modal-backdrop="modal-backdrop" modal-animation="true" style="z-index: 5000;">
+		</div>	
+		<div modal-render="true" tabindex="-1" role="dialog" class="modal fade ng-isolate-scope in" 
+				modal-animation-class="fade" modal-in-class="in" 
+				size="md" index="0" animate="animate" modal-animation="true" ng-style="{'z-index': 5010}" 
+				style="z-index: 5010; display: block;">
+		    <img name="requestSpinnerImg" src="images/spinner.gif" style="width: 100px; height: 100px; position: fixed; top: 50%; left: 50%; margin-top: -50px; margin-left: -50px;"/>
+		</div>
+	</div>
+	
+    <div id="header" ng-controller="HeaderCtrl" ng-include="'templates/header.html'"></div>
+    <div ng-include="'templates/footer.html'"></div>
+</body>

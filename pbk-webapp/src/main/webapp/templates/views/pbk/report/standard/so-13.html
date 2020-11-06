@@ -1,0 +1,80 @@
+<div class="panel panel-default">
+            <div class="panel-body">Для формирования отчета необходимо задать маршрут и выход  
+            </div>
+        </div>
+
+<div ar-grid-filter parameters="gridScope.filterParams"></div>
+<div ar-grid-title parameters="gridScope.titleParams"></div>
+
+<table st-table="gridScope.grid.rows" st-pipe="gridScope.grid.loadAction" st-safe-src="gridScope.grid.rows"
+       class='table table-hover {{getRowClass == null ? "table-striped" : ""}}'>
+    <colgroup>
+    	<col ng-style="{'width': '10%'}">
+        <col ng-style="{'width': '5%'}">
+        <col ng-style="{'width': '10%'}">
+        <col ng-repeat="hour in hours">
+        <col ng-style="{'width': '5%'}">
+    </colgroup>
+    <thead>
+        <tr>
+        	<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Дата
+            </th>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Код вида билета
+            </th>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Наименование вида билета
+            </th>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" colspan="{{hours.length}}">
+                Часовой интервал
+            </th>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+                Количество проходов по данному виду билета за сутки
+            </th>
+        </tr>
+        <tr>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" ng-repeat="hour in hours">
+                {{hour}}
+            </th>
+        </tr>
+    </thead>
+    <tbody ng-show="gridScope.grid.isLoading">
+    <tr>
+        <td colspan="{{24 + 3}}" class="text-center"><img ng-src="{{'images/spinner.gif'}}"></td>
+    </tr>
+    </tbody>
+    <tbody ng-show="!gridScope.grid.isLoading && gridScope.grid.rows.length > 0 && gridScope.grid.rows[0].cnt > 0">
+    <tr ng-repeat="row in gridScope.grid.rows">
+        <td>
+            <span>{{row.ticketType.workDate}}</span>
+        </td>
+        <td>
+            <span>{{row.ticketType.ticketTypeCode}}</span>
+        </td>
+        <td>
+            <span>{{row.ticketType.ticketTypeName}}</span>
+        </td>
+        <td ng-repeat="hour in hours" style="text-align: center; vertical-align: middle;">
+            <span>{{getPassCount(row.passCounts[hour])}}</span>
+        </td>
+        <td>
+            <span>{{getPassCount(row.passCounts.ticketTypeTotalPassCount)}}</span>
+        </td>
+    </tr>
+    </tbody>
+    <tbody ng-show="!gridScope.grid.isLoading && (gridScope.grid.rows.length == 0 || gridScope.grid.rows[0].cnt == 0)">
+    <tr style="background-color: transparent;">
+        <td class="text-center" colspan="{{hours.length + 3}}">
+            <p class="lead">Элементы не найдены</p>
+        </td>
+    </tr>
+    </tbody>
+    <!-- tfoot>
+    <tr>
+        <td class="text-center" colspan="{{hours.length + 3}}">
+            <div ar-grid-pagination rows-on-page="gridScope.colRowsOnPage" grid-scope="gridScope"></div>
+        </td>
+    </tr>
+    </tfoot -->
+</table>

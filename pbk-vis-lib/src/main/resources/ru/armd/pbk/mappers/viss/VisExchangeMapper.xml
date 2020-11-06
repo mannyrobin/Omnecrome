@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.VisExchangeMapper">
+
+	<select id="getGridViews" resultType="ru.armd.pbk.views.viss.VisExchangeView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+		<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+		<![CDATA[
+			SELECT 
+				e.ID as id,
+				e.WORK_DATE as workDate,
+				es.NAME as exchangeState,
+				v.NAME as vis,
+    			tt.NAME as transportType,
+    			eo.NAME as exchangeOperation,
+    			eb.NAME as exchangeObject,
+    			e.ERROR_CONTENT as errorContent,
+                e.PARAMETER as parameter
+			FROM
+				PBK_VIS.VIS_EXCHANGES e
+                LEFT JOIN PBK_VIS.VIS_EXCHANGE_CONFIGS ec ON (e.EXCHANGE_CONFIG_ID = ec.ID)
+                LEFT JOIN PBK_VIS.VIS_EXCHANGE_OPERATIONS eo ON (ec.EXCHANGE_OPERATION_ID = eo.ID)
+                LEFT JOIN PBK_VIS.VIS_TRANSPORT_TYPES tt ON (ec.TRANSPORT_TYPE_ID = tt.ID)
+				LEFT JOIN PBK_VIS.VIS_EXCHANGE_OBJECTS eb ON (ec.EXCHANGE_OBJECT_ID = eb.ID)
+                LEFT JOIN PBK_VIS.VISS v ON (eb.VIS_ID = v.ID)
+                LEFT JOIN PBK_VIS.VIS_EXCHANGE_STATES es ON (e.EXCHANGE_STATE_ID = es.ID)
+			WHERE
+				(#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(e.WORK_DATE as DATE)) AND
+                (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(e.WORK_DATE as DATE))
+				AND (#{filter.vis} is null or eb.VIS_ID = #{filter.vis})
+				AND (#{filter.transportType} is null or ec.TRANSPORT_TYPE_ID = #{filter.transportType})
+				AND (#{filter.exchangeOperation} is null or ec.EXCHANGE_OPERATION_ID = #{filter.exchangeOperation})
+				AND (#{filter.exchangeObject} is null or ec.EXCHANGE_OBJECT_ID = #{filter.exchangeObject})
+				AND (#{filter.exchangeState} is null or e.EXCHANGE_STATE_ID = #{filter.exchangeState})
+                AND (#{filter.parameter} is null or UPPER(e.PARAMETER) like UPPER('%${filter.parameter}%'))
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.VisExchange" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_VIS].[VIS_EXCHANGES] (
+                  [EXCHANGE_CONFIG_ID]
+                , [EXCHANGE_STATE_ID]
+                , [WORK_DATE]
+                , [IS_DAY_FAIL]
+                , [ERROR_CONTENT]
+                , [PARAMETER]
+            ) VALUES (
+                  #{configId}
+                , #{stateId}
+                , #{workDate}
+                , #{isDayFail}
+                , #{errorContent}
+                , #{parameter}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_VIS.VIS_EXCHANGES' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.VisExchange">
+        <![CDATA[
+            UPDATE [PBK_VIS].[VIS_EXCHANGES]
+            SET
+                 [EXCHANGE_CONFIG_ID] = #{configId}
+                ,[EXCHANGE_STATE_ID] = #{stateId}
+                ,[WORK_DATE] = #{workDate}
+                ,[IS_DAY_FAIL] = #{isDayFail}
+                ,[ERROR_CONTENT] = #{errorContent}
+                ,[PARAMETER] = #{parameter}
+            WHERE [ID] = #{id}
+        ]]>
+    </update>
+
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM [PBK_VIS].[VIS_EXCHANGES]
+            WHERE [ID] in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.VisExchange">
+        <![CDATA[
+            SELECT [ID] as id
+                  ,[EXCHANGE_CONFIG_ID] as configId
+                  ,[EXCHANGE_STATE_ID] as stateId
+                  ,[WORK_DATE] as workDate
+                  ,[IS_DAY_FAIL] as isDayFail
+                  ,[ERROR_CONTENT] as errorContent
+                  ,[PARAMETER] as parameter
+            FROM [PBK_VIS].[VIS_EXCHANGES]
+            WHERE [ID] = #{id}
+       ]]>
+    </select>
+
+    <select id="getDomains" resultType="ru.armd.pbk.domain.viss.VisExchange">
+        <![CDATA[
+            SELECT [ID] as id
+                  ,[EXCHANGE_CONFIG_ID] as configId
+                  ,[EXCHANGE_STATE_ID] as stateId
+                  ,[WORK_DATE] as workDate
+                  ,[IS_DAY_FAIL] as isDayFail
+                  ,[ERROR_CONTENT] as errorContent
+                  ,[PARAMETER] as parameter
+            FROM [PBK_VIS].[VIS_EXCHANGES]
+            WHERE 1 = 1
+              and (#{configId} is null or [EXCHANGE_CONFIG_ID] = #{configId})
+              and (#{workDate, jdbcType=DATE} is null or #{workDate, jdbcType=DATE} = cast([WORK_DATE] as DATE))
+              and ((#{parameter} is null and [PARAMETER] is null) or [PARAMETER] = #{parameter})
+        ]]>
+    </select>
+
+    <select id="isValidDay" resultType="java.lang.Integer">
+        <![CDATA[
+            SELECT sum(t.state)
+            FROM (
+                SELECT
+                  CASE
+                    WHEN EXISTS (select 1 from PBK_VIS.VIS_EXCHANGE_ATTEMPTS va where va.EXCHANGE_ID = v.ID and va.EXCHANGE_STATE_ID = 3 group by EXCHANGE_ID)
+                    THEN 1
+                    ELSE 0
+                  END state
+                FROM PBK_VIS.VIS_EXCHANGES v
+                WHERE (cast(#{workDate} as DATE) = cast(v.WORK_DATE as DATE))
+                  and v.EXCHANGE_CONFIG_ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" /><![CDATA[
+                  ) t
+            GROUP BY t.state
+        ]]>
+    </select>
+
+
+    <select id="getWorkDatesToSend" resultType="Date">
+        <![CDATA[
+            WITH dates AS (
+                SELECT CAST(CAST(#{dateFrom} As DATE) AS DATETIME) AS dt
+                UNION ALL
+                SELECT DATEADD(dd, 1, dt)
+                FROM dates s
+                WHERE DATEADD(dd, 1, dt) <= CAST(CAST(#{dateTo} As DATE) AS DATETIME))
+            SELECT d.dt
+            FROM dates d
+        ]]><if test="!force"><![CDATA[
+            WHERE d.dt not in (
+                SELECT [WORK_DATE]
+                FROM [PBK_VIS].[VIS_EXCHANGES] e
+                WHERE e.[EXCHANGE_CONFIG_ID] = #{exchangeConfigId}
+                  AND e.[EXCHANGE_STATE_ID] = #{exchangeStateId}
+                  AND (cast(#{dateFrom} as DATE) <= cast(e.WORK_DATE as DATE))
+                  AND (cast(#{dateTo} as DATE) >= cast(e.WORK_DATE as DATE)))
+        ]]></if>
+    </select>
+</mapper>

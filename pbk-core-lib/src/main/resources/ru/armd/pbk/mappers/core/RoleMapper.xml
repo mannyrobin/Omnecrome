@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.core.RoleMapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.core.RoleView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          SELECT r.NAME as name
+            , r.ID as id
+            , r.DESCRIPTION as description
+          FROM PBK_CORE.ROLES r
+          WHERE (#{filter.name} is null or UPPER(r.NAME) like UPPER('%${filter.name}%'))
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <select id="getDomains" resultType="ru.armd.pbk.domain.core.Role">
+        <![CDATA[
+            SELECT
+                ID as id
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues" /><![CDATA[
+                , [NAME]        as name              
+                , [DESCRIPTION] as description
+                , LDAP_ROLE as ldapRole
+            FROM PBK_CORE.ROLES r
+        ]]>
+    </select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.core.Role" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_CORE].[ROLES] (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+               ,[NAME]
+               ,[DESCRIPTION]
+               ,[LDAP_ROLE]
+            ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ,#{name}
+               ,#{description}
+               ,#{ldapRole}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_CORE.ROLES' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.core.Role">
+        <![CDATA[
+        update PBK_CORE.ROLES
+        SET
+            ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+            , DESCRIPTION = #{description}
+            , NAME = #{name}
+            , LDAP_ROLE = #{ldapRole}
+	 	WHERE ID = #{id}
+	 ]]>
+    </update>
+
+    <delete id="delete">
+        DELETE FROM PBK_CORE.ROLES  WHERE ID in
+        <include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.core.Role">
+        <![CDATA[
+        SELECT
+            ID as id
+            ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues" /><![CDATA[
+            , NAME as name
+            , DESCRIPTION as description
+            , LDAP_ROLE as ldapRole
+        from PBK_CORE.ROLES
+        where ID = #{id}
+    ]]>
+    </select>
+
+    <select id="getRoleNamesByUserLogin" resultType="String">
+        <![CDATA[
+          SELECT  roles.[NAME]
+          FROM [PBK_CORE].[ROLES] roles join [PBK_CORE].[USER_ROLES] usr_role on usr_role.ROLE_ID=roles.ID
+          join [PBK_CORE].USERS usr on usr.ID = usr_role.USER_ID and usr.LOGIN=#{login}
+     ]]>
+    </select>
+
+
+	<select id="isExist" resultType="boolean">
+	    <include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+   			SELECT
+   				1
+   			FROM
+   				PBK_CORE.[ROLES]
+   			WHERE
+   				(#{id} is not null AND ID = #{id})
+    	<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+    </select>
+    
+</mapper>

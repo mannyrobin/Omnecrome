@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+			http://www.springframework.org/schema/beans/spring-beans-4.2.xsd">
+
+    <import resource="mssql-datasource-context.xml"></import>
+
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="ru.armd.pbk.mappers" />
+		<property name="annotationClass" value="ru.armd.pbk.annotations.mappers.IsMapper" />
+    </bean>
+
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+        <constructor-arg index="0" ref="sqlSessionFactory" />
+    </bean>
+
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="configLocation" value="classpath:/spring-config/mybatis-config.xml" />
+        <property name="dataSource" ref="dataSource" />
+		<property name="typeAliasesPackage" value="ru.armd.pbk.domain"/>
+		<property name="mapperLocations" value="classpath*:ru/armd/pbk/mappers/CommonSql.xml" />
+    </bean>
+
+</beans>

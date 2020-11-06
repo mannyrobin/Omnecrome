@@ -1,0 +1,84 @@
+<div ar-grid-filter parameters="gridScope.filterParams"></div>
+<div ar-grid-title parameters="gridScope.titleParams"></div>
+
+<table st-table="gridScope.grid.rows" st-pipe="gridScope.grid.loadAction" st-safe-src="gridScope.grid.rows"
+       class='table table-hover {{getRowClass == null ? "table-striped" : ""}}'>
+    <colgroup>
+        <!--<col ng-style="{'width': '10%'}">-->
+        <!--<col ng-style="{'width': '6%'}">-->
+        <col ng-style="{'width': '10%'}">
+        <col ng-style="{'width': '10%'}">
+        <col ng-repeat="day in days">
+    </colgroup>
+    <thead>
+    <tr>
+        <!--<th class="grid-header" style="text-align: center; vertical-align: middle;" ar-st-sort="county" rowspan="2">-->
+            <!--Округ-->
+        <!--</th>-->
+        <!--<th class="grid-header" style="text-align: center; vertical-align: middle;" ar-st-sort="district" rowspan="2">-->
+            <!--Район-->
+        <!--</th>-->
+        <th class="grid-header" style="text-align: center; vertical-align: middle;" ar-st-sort="venue" rowspan="2">
+            Место встречи
+        </th>
+        <th class="grid-header" style="text-align: center; vertical-align: middle;" ar-st-sort="shiftHours" rowspan="2">
+            Часы работы
+        </th>
+        <th class="grid-header" style="text-align: center; vertical-align: middle;" colspan="{{days.length}}">
+            Общее количество контролеров по сменам на каждый день месяца
+        </th>
+    </tr>
+    <tr>
+        <th class="grid-header" style="text-align: center; vertical-align: middle;" ng-repeat="day in days">
+            {{getDayOfMonth(day)}}
+        </th>
+    </tr>
+    </thead>
+    <tbody ng-show="gridScope.grid.isLoading">
+    <tr>
+        <td colspan="{{(days == null || days.length == 0 ? 1 : days.length) + 2}}" class="text-center"><img ng-src="{{'images/spinner.gif'}}"></td>
+    </tr>
+    </tbody>
+    <tbody ng-show="!gridScope.grid.isLoading && gridScope.grid.rows.length > 0 && gridScope.grid.rows[0].cnt > 0">
+    <tr ng-repeat="row in gridScope.grid.rows">
+        <!--<td>-->
+            <!--<span>{{row.venue.county}}</span>-->
+        <!--</td>-->
+        <!--<td>-->
+            <!--<span>{{row.venue.district}}</span>-->
+        <!--</td>-->
+        <td>
+            <span>{{row.venue.venue}}</span>
+        </td>
+        <td>
+            <span>{{row.venue.shiftHours}}</span>
+        </td>
+        <td ng-repeat="day in days" style="text-align: center; vertical-align: middle;">
+            <span>{{getCount(row.employeeCounts, day)}}</span>
+        </td>
+    </tr>
+    </tbody>
+    <tbody ng-show="!gridScope.grid.isLoading && (gridScope.grid.rows.length == 0 || gridScope.grid.rows[0].cnt == 0)">
+    <tr style="background-color: transparent;">
+        <td class="text-center" colspan="{{(days == null || days.length == 0 ? 1 : days.length) + 2}}">
+            <p class="lead">Элементы не найдены</p>
+        </td>
+    </tr>
+    </tbody>
+    <tfoot>
+    <tr  ng-show="!gridScope.grid.isLoading">
+    	<td><b>Итого</b></td>
+    	<!--<td></td>  -->
+    	<!--<td></td>  -->
+    	<td></td>  
+    	<td ng-repeat="record in gridScope.footerRecord.employeeCounts" style="text-align: center; vertical-align: middle;">
+            <span><b>{{record.employeeCount}}</b></span>
+        </td>
+    </tr>
+    <tr>   	
+        <td class="text-center" colspan="{{(days == null || days.length == 0 ? 1 : days.length) + 2}}">
+            <div ar-grid-pagination rows-on-page="gridScope.colRowsOnPage" grid-scope="gridScope"></div>
+        </td>
+    </tr>
+    </tfoot>
+</table>

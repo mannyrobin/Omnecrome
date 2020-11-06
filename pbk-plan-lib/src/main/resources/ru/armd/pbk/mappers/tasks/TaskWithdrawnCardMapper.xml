@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.tasks.TaskWithdrawnCardMapper">
+
+	<sql id="fieldDomain">
+        <![CDATA[
+		, dh.[CREATE_DATE] as createDate
+		, dh.[CREATE_USER_ID] as createUserId
+		, dh.[UPDATE_DATE] as updateDate
+		, dh.[UPDATE_USER_ID] as updateUserId
+		, dh.[VIOLATOR_FIO] as violatorFio
+		, dh.[OWNER_FIO] as ownerFio
+		, dh.[CARD_NUMBER] as cardNumber
+		, dh.[TASK_ID] as taskId
+		, dh.[TICKET_ID] as cardId
+		, dh.[ROUTE_ID] as routeId
+		, dh.[FILE_ID] as fileId
+		, dh.[BSO_ID] as bsoId
+		, dh.[LEGITIMATE] as legitimate
+		, dh.[CHIP_NUM] as chipNum
+		]]>
+    </sql>
+
+	<select id="getGridViews" resultType="ru.armd.pbk.views.tasks.TaskWithdrawnCardView"
+			parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+		<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+		<![CDATA[
+          SELECT distinct
+          	dh.ID as id
+          	 ,dh.[CREATE_DATE] as createDate
+			 ,dh.[CREATE_USER_ID] as createUserId
+			 ,dh.[UPDATE_DATE] as updateDate
+			 ,dh.[UPDATE_USER_ID] as updateUserId
+			 ,dh.[VIOLATOR_FIO] as violatorFio
+			 ,dh.[OWNER_FIO] as ownerFio
+			 ,dh.[CARD_NUMBER] as cardNumber
+			 ,dh.[TASK_ID] as taskId
+			 ,dh.[TICKET_ID] as cardId
+			 ,dh.[ROUTE_ID] as routeId
+			 ,dh.[FILE_ID] as fileId
+			 ,dh.[BSO_ID] as bsoId
+			 ,dh.[CHIP_NUM] as chipNum
+			 ,CASE dh.[LEGITIMATE]
+				  WHEN 'true' THEN 'Да'
+				  WHEN 'false' THEN 'Нет'
+				  WHEN null THEN 'null'
+				END
+					as legitimate
+          	, ps.WORK_DATE as taskDate
+			, eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as employeeName
+          	, th.NAME as cardName
+          	, r.ROUTE_NUMBER  +' ('+gmts.NAME+')' as routeNumber 
+          	, bs.[BSO_NUMBER] as actNumber
+          	, tf.NAME as fileName
+          	, tf.STREAM_ID as streamId
+          FROM
+          	PBK_TASK.TASK_WITHDRAWN_CARDS as dh
+          	LEFT JOIN PBK_NSI.TICKET_HISTS th ON (th.[HEAD_ID] = dh.[TICKET_ID] and th.[V_END_DATE] >= [PBK_CORE].getVersionEndDate())
+			join [PBK_TASK].[TASKS] tasks on tasks.ID = dh.TASK_ID
+			join [PBK_PLAN].[PLAN_SCHEDULES] ps on tasks.PLAN_SCHEDULE_ID = ps.ID
+			left join [PBK_NSI].[EMPLOYEE_HISTS] eh ON (eh.HEAD_ID = ps.EMPLOYEE_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			left join [PBK_NSI].ROUTE_HISTS r ON (r.[HEAD_ID] = dh.ROUTE_ID and r.[V_END_DATE] >= [PBK_CORE].getVersionEndDate())
+			left join PBK_TASK.TASK_FILES tf on tf.ID = dh.FILE_ID
+			left JOIN PBK_GISMGT.GM_ROUTES gm on (r.GM_ROUTE_ID = gm.ID)
+		    left JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+		    left JOIN PBK_NSI.BSOS as bs on dh.BSO_ID = bs.ID
+          WHERE
+            (#{filter.taskId} is null or #{filter.taskId} = dh.[TASK_ID])
+            AND (#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE as DATE))
+		    AND (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE as DATE))
+		    AND (#{filter.employeeId} IS NULL OR eh.HEAD_ID = #{filter.employeeId})
+		    AND (#{filter.actNumber} is null OR (UPPER(bs.BSO_NUMBER) like UPPER('%${filter.actNumber}%')))
+		    AND (#{filter.cardNumber} is null OR (UPPER(dh.CARD_NUMBER) like UPPER('%${filter.cardNumber}%')))
+		    AND (#{filter.cardName} is null OR (UPPER(th.NAME) like UPPER('%${filter.cardName}%')))
+		    AND (#{filter.ownerFio} is null OR (UPPER(dh.OWNER_FIO) like UPPER('%${filter.ownerFio}%')))
+		    AND (#{filter.violatorFio} is null OR (UPPER(dh.VIOLATOR_FIO) like UPPER('%${filter.violatorFio}%')))
+		    AND (#{filter.routeName} is null OR (UPPER(r.ROUTE_NUMBER) like UPPER('%${filter.routeName}%')))
+            AND (#{filter.deptAuthId} IS NULL OR tasks.DEPT_ID = #{filter.deptAuthId})
+            AND (#{filter.ticketId} IS NULL OR th.HEAD_ID = #{filter.ticketId})
+            AND (#{filter.legitimate} IS NULL OR dh.LEGITIMATE = #{filter.legitimate})
+            ]]>
+		<if test="filter.routeIds != null">
+			AND r.HEAD_ID IN (${filter.routeIds})
+		</if>
+		<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd"/>
+	</select>
+
+
+	<insert id="insert" parameterType="ru.armd.pbk.domain.tasks.TaskWithdrawnCard" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        insert into PBK_TASK.TASK_WITHDRAWN_CARDS(
+        	[CREATE_DATE]
+        	, [CREATE_USER_ID]
+        	, [UPDATE_DATE]
+	        , [UPDATE_USER_ID]
+	        , [VIOLATOR_FIO]
+	        , [OWNER_FIO]
+	        , [CARD_NUMBER]
+	        , [TASK_ID]
+	        , [TICKET_ID]
+	        , [ROUTE_ID]
+	        , [BSO_ID]
+	        , [FILE_ID]
+	        , [LEGITIMATE]
+	        , [CHIP_NUM]
+        ) VALUES(
+        	#{createDate}
+        	, #{createUserId}
+        	, #{updateDate}
+        	, #{updateUserId}
+        	, #{violatorFio}
+        	, #{ownerFio}
+        	, #{cardNumber}
+        	, #{taskId}
+        	, #{cardId}
+        	, #{routeId}
+        	, #{bsoId}
+        	, #{fileId}
+        	, #{legitimate}
+        	, #{chipNum})
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_TASK.TASK_WITHDRAWN_CARDS' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+
+	<select id="getById" resultType="ru.armd.pbk.domain.tasks.TaskWithdrawnCard">
+		<![CDATA[
+    		select 
+    			dh.ID as id
+    			]]><include refid="fieldDomain"/><![CDATA[
+            from PBK_TASK.TASK_WITHDRAWN_CARDS dh
+            where dh.ID = #{id}
+            ]]>
+	</select>
+
+	<update id="update" parameterType="ru.armd.pbk.domain.tasks.TaskWithdrawnCard">
+		UPDATE
+			PBK_TASK.TASK_WITHDRAWN_CARDS
+		SET
+			[UPDATE_DATE]      = #{updateDate}
+			, [UPDATE_USER_ID] = #{updateUserId}
+			, [VIOLATOR_FIO]   = #{violatorFio}
+			, [OWNER_FIO]      = #{ownerFio}
+			, [CARD_NUMBER]    = #{cardNumber}
+			, [TASK_ID]        = #{taskId}
+			, [TICKET_ID]      = #{cardId}
+			, [ROUTE_ID]       = #{routeId}
+			, [BSO_ID]         = #{bsoId}
+			, [FILE_ID]        = #{fileId}
+			, [LEGITIMATE]     = #{legitimate}
+			, [CHIP_NUM]       = #{chipNum}
+		WHERE
+			ID = #{id}
+	</update>
+
+
+	<delete id="delete">
+		<![CDATA[
+            DELETE FROM
+            	PBK_TASK.TASK_WITHDRAWN_CARDS
+            where ID in ]]>
+		<include refid="ru.armd.pbk.mappers.CommonSql.inList"/>
+	</delete>
+
+</mapper>

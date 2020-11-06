@@ -1,0 +1,663 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.tasks.TaskMapper">
+    <select id="getPlanTaskViews" resultType="ru.armd.pbk.views.tasks.TaskView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+        	SELECT distinct
+	          	tasks.id as id,
+	            ps.WORK_DATE as taskDate,
+	            bsos.BSO_NUMBER as bsoNumber,
+	            task_states.NAME as taskState,
+	            task_types.COD as taskTypeCod,
+	            eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as employeeName,
+				eh.PERSONNEL_NUMBER as personnelNumber,
+				ceh.SURNAME + ' ' + ceh.NAME + ' ' + ceh.PATRONUMIC as changeEmployeeName,
+				s.NAME as shiftName,
+				cs.NAME as changeShiftName,
+	            dh.NAME as departmentName,
+	            cdh.NAME as districtName,
+	            ISNULL(cch.SHORT_NAME, cch.NAME) as countyName,
+				cvh.NAME as planVenueName,
+				CASE WHEN 
+			(SELECT tr.TS_CHECK_COUNT FROM [PBK_TASK].[TASK_REPORTS] tr WHERE tr.TASK_ID = tasks.id ) =
+			(SELECT CASE (SELECT VALUE
+				  FROM [PBK_CORE].[SETTINGS] 
+				  where COD = 'AUTO_CLOSE_TASK_BY') 
+			   WHEN  'АСКП' then (SELECT
+									count(*) FROM (SELECT ROUTE_ID, MOVE_CODE
+									FROM [PBK_VIS].[ASKP_PUSK_CHECKS] 
+									WHERE TASK_ID = tasks.id
+									GROUP BY ROUTE_ID, MOVE_CODE) t) 
+			   WHEN  'БСК' then (SELECT count(*)
+								 FROM [PBK_VIS].[ASKP_CONTACTLESS_CARDS] 
+								 WHERE TASK_ID = tasks.id
+								 )
+			   ELSE 0 END)
+			   AND (SELECT tr.TS_CHECK_COUNT FROM [PBK_TASK].[TASK_REPORTS] tr WHERE tr.TASK_ID = tasks.id) != 0 THEN 1 else 0 end as isEquals			   
+			   , tf.STREAM_ID as scanStreamId
+			   , tf.NAME as scanFileName
+         	FROM
+	          	[PBK_TASK].[TASKS] tasks
+				LEFT JOIN PBK_PLAN.PLAN_VENUES pv ON (tasks.PLAN_VENUE_ID = pv.ID) LEFT JOIN PBK_NSI.CITY_VENUES cv ON (pv.CITY_VENUE_ID = cv.ID)
+				LEFT JOIN PBK_NSI.CITY_VENUE_HISTS cvh ON (cv.ID = cvh.HEAD_ID) 
+	            join [PBK_PLAN].[PLAN_SCHEDULES] ps on tasks.PLAN_SCHEDULE_ID = ps.ID
+				left join [PBK_NSI].[EMPLOYEES] e on ps.EMPLOYEE_ID = e.ID
+				left join [PBK_NSI].[EMPLOYEE_HISTS] eh ON (e.ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				left join [PBK_NSI].[CITY_COUNTY_HISTS] cch ON (cch.HEAD_ID = eh.CITY_COUNTY_ID AND cch.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				LEFT JOIN PBK_NSI.SHIFTS s ON (ps.SHIFT_ID = s.ID)
+				LEFT JOIN [PBK_PLAN].[PLAN_SCHEDULES] cps ON (tasks.CHANGE_PLAN_SCHEDULE_ID = cps.ID)
+				left join [PBK_NSI].[EMPLOYEES] ce ON (cps.EMPLOYEE_ID = ce.ID)
+				left join [PBK_NSI].[EMPLOYEE_HISTS] ceh on (ce.ID = ceh.HEAD_ID  AND ceh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				LEFT JOIN PBK_NSI.SHIFTS cs ON (cps.SHIFT_ID = cs.ID)
+				left join [PBK_NSI].[DEPARTMENT_HISTS] dh ON (tasks.DEPT_ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				join [PBK_TASK].[TASK_STATES] task_states on tasks.TASK_STATE_ID = task_states.ID
+				join [PBK_TASK].[TASK_TYPES] task_types on tasks.TASK_TYPE_ID = task_types.ID
+				left join [PBK_NSI].[CITY_DISTRICT_HISTS] cdh on cdh.HEAD_ID = tasks.CITY_DISTRICT_ID and cdh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+				left join [PBK_NSI].[BSOS] bsos on tasks.BSO_ID = bsos.ID	
+				left join [PBK_TASK].[TASK_FILES] tf on tf.ID = tasks.TASK_SCAN_FILE_ID			
+         	WHERE
+				(pv.CITY_VENUE_ID IS NULL OR cvh.V_END_DATE = (
+						SELECT MAX(cvh2.V_END_DATE)
+						FROM PBK_NSI.CITY_VENUE_HISTS cvh2 
+						WHERE cvh2.HEAD_ID = cvh.HEAD_ID 
+							AND cast(cvh2.V_END_DATE as DATE) >= cast(ps.WORK_DATE as DATE) AND cast(cvh2.V_START_DATE as DATE) <= cast(ps.WORK_DATE as DATE)
+					))
+                AND (#{filter.deptAuthId} IS NULL OR tasks.DEPT_ID = #{filter.deptAuthId})
+	            AND (#{filter.deptId} IS NULL OR tasks.DEPT_ID = #{filter.deptId})
+	            AND (#{filter.departmentId} IS NULL OR tasks.DEPT_ID = #{filter.departmentId})
+	            AND (#{filter.employeeId} IS NULL OR e.ID = #{filter.employeeId})
+	            AND (#{filter.taskStateId} IS NULL OR task_states.ID = #{filter.taskStateId})
+		        AND (#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE as DATE))
+		        AND (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE as DATE))
+		        AND (#{filter.venueId} is null or #{filter.venueId} = cvh.HEAD_ID)
+		        AND (#{filter.venueName} is null OR (UPPER(cvh.NAME) like UPPER('%${filter.venueName}%')))
+		        AND (#{filter.shiftId} is null OR ps.SHIFT_ID = #{filter.shiftId})
+		        AND (#{filter.fio} is null OR UPPER(eh.NAME) like UPPER('%${filter.fio}%') or (UPPER(eh.SURNAME) like UPPER('%${filter.fio}%')) or (UPPER(eh.PATRONUMIC) like UPPER('%${filter.fio}%')))
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="canAutoCloseTask" resultType="boolean">
+    	SELECT CASE WHEN 
+			(SELECT tr.TS_CHECK_COUNT FROM [PBK_TASK].[TASK_REPORTS] tr WHERE tr.TASK_ID = #{taskId} ) =
+			(SELECT CASE (SELECT VALUE
+				  FROM [PBK_CORE].[SETTINGS] 
+				  where COD = 'AUTO_CLOSE_TASK_BY') 
+			   WHEN  'АСКП' then (SELECT
+									count(*) FROM (SELECT ROUTE_ID, MOVE_CODE
+									FROM [PBK_VIS].[ASKP_PUSK_CHECKS] 
+									WHERE TASK_ID = #{taskId}
+									GROUP BY ROUTE_ID, MOVE_CODE) t) 
+			   WHEN  'БСК' then (SELECT
+									count(*) 
+									FROM [PBK_VIS].[ASKP_CONTACTLESS_CARDS] 
+									WHERE TASK_ID = #{taskId})
+			   ELSE 0 END)
+			 AND (SELECT tr.TS_CHECK_COUNT FROM [PBK_TASK].[TASK_REPORTS] tr WHERE tr.TASK_ID = #{taskId}) != 0 THEN 1 else 0 end
+    </select>
+    
+    <select id="getGridViewByTaskId" resultType="ru.armd.pbk.views.tasks.TaskViewDomain">
+        <![CDATA[
+          select tasks.id as id,
+            sch.WORK_DATE as taskDate,
+            bsos.BSO_NUMBER as bsoNumber,
+            task_states.NAME as taskState,
+            eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as employeeName,
+			ceh.SURNAME + ' ' + ceh.NAME + ' ' + ceh.PATRONUMIC as changeEmployeeName,
+			s.NAME as shiftName,
+			cs.NAME as changeShiftName,
+            dh.NAME as departmentName,
+			cvh.NAME as planVenueName
+          from [PBK_TASK].[TASKS] tasks
+			LEFT JOIN PBK_PLAN.PLAN_VENUES pv ON (tasks.PLAN_VENUE_ID = pv.ID) LEFT JOIN PBK_NSI.CITY_VENUES cv ON (pv.CITY_VENUE_ID = cv.ID)
+			LEFT JOIN PBK_NSI.CITY_VENUE_HISTS cvh ON (cv.ID = cvh.HEAD_ID AND cvh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+            join [PBK_PLAN].[PLAN_SCHEDULES] sch on tasks.PLAN_SCHEDULE_ID = sch.ID
+			left join [PBK_NSI].[EMPLOYEES] e on sch.EMPLOYEE_ID = e.ID
+			left join [PBK_NSI].[EMPLOYEE_HISTS] eh ON (e.ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.SHIFTS s ON (sch.SHIFT_ID = s.ID)
+			LEFT JOIN [PBK_PLAN].[PLAN_SCHEDULES] csch ON (tasks.CHANGE_PLAN_SCHEDULE_ID = csch.ID)
+			left join [PBK_NSI].[EMPLOYEES] ce ON (csch.EMPLOYEE_ID = ce.ID)
+			left join [PBK_NSI].[EMPLOYEE_HISTS] ceh on (ce.ID = ceh.HEAD_ID  AND ceh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.SHIFTS cs ON (csch.SHIFT_ID = cs.ID)
+			left join [PBK_NSI].[DEPARTMENTS] d on eh.DEPT_ID = d.ID
+			left join [PBK_NSI].[DEPARTMENT_HISTS] dh ON (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			join [PBK_TASK].[TASK_STATES] task_states on tasks.TASK_STATE_ID = task_states.ID
+			left join [PBK_NSI].[BSOS] bsos on tasks.BSO_ID = bsos.ID
+          where
+            tasks.id = #{taskId}
+        ]]>
+    </select>
+
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+                PBK_TASK.TASKS
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.tasks.Task" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        INSERT INTO [PBK_TASK].[TASKS](
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+            ,[DEPT_ID]
+            ,[TASK_TYPE_ID]
+            ,[BSO_ID]
+            ,[PLAN_SCHEDULE_ID]
+            ,[PLAN_VENUE_ID]
+            ,[TASK_STATE_ID]
+            ,[WORK_START_TIME]	
+			,[WORK_END_TIME]
+			,[BREAK_START_TIME]
+			,[BREAK_END_TIME]
+			,SPECIAL_MARK
+			,SPECIAL_TASK
+			,CANCEL_REASON
+        ) VALUES(
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+            ,#{deptId}
+            ,#{taskTypeId}
+            ,#{bsoId}
+            ,#{planScheduleId}
+            ,#{planVenueId}
+            ,#{stateId}
+            ,#{workStartTime}	
+			,#{workEndTime}
+			,#{breakStartTime}
+			,#{breakEndTime}
+			,#{specialMark}
+			,#{specialTask}
+			,#{cancelReason}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_TASK.TASKS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <insert id="createTasks">
+        INSERT INTO [PBK_TASK].[TASKS](
+            <include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" />
+            ,[DEPT_ID]
+            ,[TASK_TYPE_ID]
+            ,[BSO_ID]
+            ,[PLAN_SCHEDULE_ID]
+            ,[PLAN_VENUE_ID]
+            ,[TASK_STATE_ID]
+        ) VALUES
+            <foreach collection="tasks" item="t" index="index" separator=",">
+            	(
+	            #{t.createDate}
+	            ,#{t.createUserId}
+	            ,#{t.updateDate}
+	            ,#{t.updateUserId}
+	            ,#{t.deptId}
+	            ,#{t.taskTypeId}
+	            ,#{t.bsoId}
+	            ,#{t.planScheduleId}
+	            ,#{t.planVenueId}
+	            ,#{t.stateId}
+	            )
+			</foreach>
+    </insert>
+    
+    <update id="updateTaskDistrict">
+    	<![CDATA[
+	    	UPDATE [PBK_TASK].[TASKS] SET
+	    		CITY_DISTRICT_ID = 
+	    		CASE ID
+	    		]]><foreach collection="tasks" item="value" index="key">
+	            	WHEN #{key} THEN #{value}		           
+				</foreach><![CDATA[	
+	    	END    
+	    	WHERE ID IN 
+	    	]]><foreach collection="tasks.keySet()" item="t" separator="," open="(" close=")">
+	        	#{t}		           
+			</foreach><![CDATA[
+    	]]>
+    </update>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.tasks.Task">
+        <![CDATA[
+            UPDATE [PBK_TASK].[TASKS] SET
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+                ,TASK_TYPE_ID = #{taskTypeId}
+                ,[DEPT_ID] = #{deptId}
+                ,[BSO_ID] = #{bsoId}
+                ,[PLAN_SCHEDULE_ID] = #{planScheduleId}
+                ,[CHANGE_PLAN_SCHEDULE_ID] = #{changePlanScheduleId}
+                ,[PLAN_VENUE_ID] = #{planVenueId}
+                ,[TASK_STATE_ID] = #{stateId}
+                ,[WORK_START_TIME] = #{workStartTime}
+				,[WORK_END_TIME] = #{workEndTime}
+				,[BREAK_START_TIME] = #{breakStartTime}
+				,[BREAK_END_TIME] = #{breakEndTime}
+				,SPECIAL_MARK = #{specialMark}
+				,SPECIAL_TASK = #{specialTask}
+				,CANCEL_REASON = #{cancelReason}
+				,CITY_DISTRICT_ID = #{districtId}
+            WHERE
+              ID = #{id}
+        ]]>
+    </update>
+
+    <update id="changeTasksStatus" parameterType="ru.armd.pbk.domain.tasks.Task">
+        <![CDATA[
+            UPDATE [PBK_TASK].[TASKS] SET
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+                ,[TASK_STATE_ID] = #{stateId}
+            WHERE
+               ID in ]]> <foreach item="item" index="index" collection="taskIds" open="(" separator="," close=")">
+                <![CDATA[
+                  #{item}
+                ]]>
+            </foreach>
+    </update>
+
+
+
+    <select id="getById" resultType="ru.armd.pbk.domain.tasks.Task">
+        <![CDATA[
+            SELECT
+				[ID] as id
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues" /><![CDATA[
+				,[DEPT_ID] AS deptId
+				,[TASK_TYPE_ID] AS taskTypeId
+				,[BSO_ID] AS bsoId
+				,[PLAN_SCHEDULE_ID] AS planScheduleId
+				,[CHANGE_PLAN_SCHEDULE_ID] AS changePlanScheduleId
+				,[PLAN_VENUE_ID] AS planVenueId
+				,[TASK_STATE_ID] as stateId
+				,[WORK_START_TIME] as workStartTime
+				,[WORK_END_TIME] as workEndTime
+				,[BREAK_START_TIME] as breakStartTime
+				,[BREAK_END_TIME] as breakEndTime
+				,SPECIAL_MARK as specialMark
+				,SPECIAL_TASK as specialTask
+				,ISNULL((SELECT ps.WORK_FACT_HOURS FROM PBK_PLAN.PLAN_SCHEDULES ps WHERE ps.ID = PLAN_SCHEDULE_ID), 0) as factHours
+				,CANCEL_REASON as cancelReason
+				,(SELECT ps.SHIFT_ID FROM PBK_PLAN.PLAN_SCHEDULES ps WHERE ps.ID = PLAN_SCHEDULE_ID) as shiftId
+				,CITY_DISTRICT_ID as districtId
+            FROM [PBK_TASK].[TASKS]
+            WHERE [ID] = #{id}
+       ]]>
+    </select>
+    
+    <select id="getTaskStateByTaskId" resultType="ru.armd.pbk.domain.tasks.TaskState">
+        <![CDATA[
+            SELECT
+               ts.[ID] as id
+              ,ts.[COD] AS cod
+              ,ts.[NAME] AS name
+              ,ts.[DESCRIPTION] AS description
+            FROM [PBK_TASK].[TASKS] t JOIN [PBK_TASK].[TASK_STATES] ts ON (t.TASK_STATE_ID = ts.ID)
+            WHERE t.[ID] = #{taskId}
+       ]]>
+    </select>
+
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+            t.ID as id,
+            b.BSO_NUMBER as name
+        FROM
+            PBK_TASK.TASKS t
+              JOIN PBK_PLAN.PLAN_SCHEDULES sch ON t.PLAN_SCHEDULE_ID = sch.ID
+              LEFT JOIN PBK_NSI.BSOS b ON (t.BSO_ID = b.ID)
+        WHERE
+            (#{taskDate} IS NULL OR sch.WORK_DATE = #{taskDate})
+            OR (#{currentId} IS NOT NULL AND t.ID = #{currentId})
+    </select>
+    
+    <select id="getTasksByWorkDate" resultType="ru.armd.pbk.domain.tasks.Task">
+        SELECT
+            t.ID as id
+            ,t.PLAN_VENUE_ID as planVenueId
+            ,eh.CITY_COUNTY_ID as countyId
+        FROM PBK_TASK.TASKS t
+            JOIN PBK_PLAN.PLAN_SCHEDULES ps on ps.ID = t.PLAN_SCHEDULE_ID
+            JOIN PBK_NSI.EMPLOYEE_HISTS eh ON eh.HEAD_ID = ps.EMPLOYEE_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+            JOIN PBK_TASK.TASK_STATES ts on t.TASK_STATE_ID = ts.ID
+			JOIN PBK_PLAN.PLAN_VENUES pv on pv.ID = t.PLAN_VENUE_ID
+			JOIN PBK_NSI.CITY_VENUE_HISTS cvh on cvh.HEAD_ID = pv.CITY_VENUE_ID AND cvh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+        WHERE cast(ps.WORK_DATE as DATE) = cast(#{workDate} as DATE)
+            AND ps.SHIFT_ID IN (
+              SELECT s.ID FROM PBK_NSI.SHIFTS s WHERE IS_DELETE = 0 AND COD IN ('DAY', 'I', 'II', 'III')
+            )
+            AND ps.DEPT_ID = #{deptId}
+            AND ts.COD IN ('CREATED')
+            AND cvh.TPU = 0
+    </select>
+
+    <select id="getTasksOfFiredEmployees" resultType="long">
+         <![CDATA[
+        SELECT tasks.id AS id
+        FROM [PBK_TASK].[TASKS] tasks
+            JOIN [PBK_PLAN].[PLAN_SCHEDULES] sch ON tasks.PLAN_SCHEDULE_ID = sch.ID
+            JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh ON (sch.EMPLOYEE_ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+        WHERE ((eh.FIRE_DATE < sch.WORK_DATE) AND (tasks.TASK_STATE_ID != 4))
+        ]]>
+    </select>
+
+    <select id="getTasksOfMovedDepEmployees" resultType="long">
+        <![CDATA[
+        select
+            tasks.id as id
+        from
+            [PBK_TASK].[TASKS] tasks
+                join [PBK_PLAN].[PLAN_SCHEDULES] sch on tasks.PLAN_SCHEDULE_ID = sch.ID
+                cross APPLY (select
+                                 min(V_END_DATE) OVER () endDate,
+                                 FIRST_VALUE(dept_id) OVER (ORDER BY V_END_DATE) oldDep,
+                                 LAST_VALUE(dept_id) OVER (ORDER BY V_END_DATE) newDep,
+                                 HEAD_ID as headId
+                             from
+                                 (select top 2 DEPT_ID, V_END_DATE, HEAD_ID
+                                  from [PBK_NSI].[EMPLOYEE_HISTS] eh
+                                  where sch.EMPLOYEE_ID = eh.HEAD_ID
+                                  ORDER BY eh.V_END_DATE desc, id desc) buf) t
+        where (tasks.TASK_STATE_ID != 4) AND t.endDate < sch.WORK_DATE AND t.oldDep != t.newDep AND tasks.DEPT_ID = t.oldDep
+        ]]>
+    </select>
+
+    <select id="getTasksOfChangedPlanEmployees" resultType="long">
+        <![CDATA[
+        select
+            tasks.id as id
+        from
+            [PBK_TASK].[TASKS] tasks
+                join [PBK_PLAN].[PLAN_SCHEDULES] sch on tasks.PLAN_SCHEDULE_ID = sch.ID
+                cross APPLY (select
+                                 min(V_END_DATE) OVER () endDate,
+                                 FIRST_VALUE(FOR_PLAN_USE) OVER (ORDER BY V_END_DATE) oldPlanUse,
+                                 LAST_VALUE(FOR_PLAN_USE) OVER (ORDER BY V_END_DATE) newPlanUse,
+                                 HEAD_ID as headId
+                             from
+                                 (select top 2 V_END_DATE, FOR_PLAN_USE, HEAD_ID
+                                  from [PBK_NSI].[EMPLOYEE_HISTS] eh
+                                  where sch.EMPLOYEE_ID = eh.HEAD_ID
+                                  ORDER BY eh.V_END_DATE desc, id desc) buf) t
+        where (tasks.TASK_STATE_ID != 4) AND t.endDate < sch.WORK_DATE AND t.oldPlanUse = 1 AND t.newPlanUse = 0
+        ]]>
+    </select>
+
+    <delete id="removeTasksByWorkDate">
+        <![CDATA[
+            DELETE FROM
+                PBK_TASK.TASKS
+            where ID IN (
+                    SELECT t.ID as id
+                    FROM PBK_TASK.TASKS t
+                        JOIN PBK_PLAN.PLAN_SCHEDULES ps on ps.ID = t.PLAN_SCHEDULE_ID
+                    WHERE cast(ps.WORK_DATE as DATE) = cast(#{workDate} as DATE)
+                        AND ps.DEPT_ID = #{deptId}
+                )
+        ]]>
+    </delete>
+    
+        <delete id="removeTasksByWorkDateP">
+        <![CDATA[
+            DELETE FROM
+                PBK_TASK.TASKS
+            where ID IN (
+                    SELECT t.ID as id
+                    FROM PBK_TASK.TASKS t
+                        JOIN PBK_PLAN.PLAN_SCHEDULES ps on ps.ID = t.PLAN_SCHEDULE_ID
+                    WHERE cast(ps.WORK_DATE as DATE) = cast(#{workDate} as DATE)
+                        AND ps.DEPT_ID = #{deptId}
+                )
+        ]]>
+    </delete>
+    
+    <select id="getIncorrectControllerTasks" resultType="ru.armd.pbk.domain.tasks.Task">
+        <![CDATA[
+            SELECT
+              t.[ID] as id
+              ,t.[DEPT_ID] AS deptId
+              ,t.[TASK_TYPE_ID] AS taskTypeId
+              ,t.[BSO_ID] AS bsoId
+              ,t.[PLAN_SCHEDULE_ID] AS planScheduleId
+              ,t.[CHANGE_PLAN_SCHEDULE_ID] AS changePlanScheduleId
+              ,t.[PLAN_VENUE_ID] AS planVenueId
+              ,t.[TASK_STATE_ID] AS stateId
+            FROM [PBK_TASK].[TASKS] t
+                INNER JOIN PBK_PLAN.PLAN_SCHEDULES ps1 ON ps1.ID = t.PLAN_SCHEDULE_ID
+                LEFT JOIN PBK_PLAN.PLAN_SCHEDULES ps2 ON ps2.ID = t.CHANGE_PLAN_SCHEDULE_ID
+            	JOIN PBK_TASK.TASK_STATES ts on t.TASK_STATE_ID = ts.ID
+            	LEFT JOIN PBK_DB.PBK_NSI.EMPLOYEES d ON (ps1.EMPLOYEE_ID = d.ID) LEFT JOIN PBK_DB.PBK_NSI.EMPLOYEE_HISTS dh ON (d.IS_DELETE = 0 AND d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_DB.PBK_CORE.getVersionEndDate())
+            	JOIN PBK_PLAN.PLAN_VENUES pv ON t.PLAN_VENUE_ID = pv.ID 
+            WHERE 
+                (
+                    (t.CHANGE_PLAN_SCHEDULE_ID IS NULL 
+                    	AND (
+                    		ps1.SHIFT_ID NOT IN (SELECT s.ID FROM PBK_NSI.SHIFTS s WHERE s.COD IN ('DAY', 'I', 'II', 'III', 'NIGHT'))
+                    		OR 
+                    		ps1.SHIFT_ID <> pv.SHIFT_ID
+                    	)
+                    )
+                    OR
+                    	(ps2.SHIFT_ID NOT IN (SELECT s.ID FROM PBK_NSI.SHIFTS s WHERE s.COD IN ('DAY', 'I', 'II', 'III', 'NIGHT')))
+                    OR 
+                    	(dh.FIRE_DATE <= ps1.WORK_DATE)
+                )
+                AND t.PLAN_VENUE_ID = #{planVenueId}
+	            AND ts.COD IN ('CREATED', 'IN_RESERVE')
+       ]]>
+    </select>
+    
+        <select id="getTaskDate" resultType="java.util.Date">
+        <![CDATA[
+            SELECT
+              ps.WORK_DATE
+            FROM [PBK_TASK].[TASKS] t
+                INNER JOIN PBK_PLAN.PLAN_SCHEDULES ps ON ps.ID = t.PLAN_SCHEDULE_ID
+            WHERE t.ID = #{taskId}
+       ]]>
+    </select>
+    
+    <update id="changeController" parameterType="ru.armd.pbk.domain.tasks.Task">
+        <![CDATA[
+            UPDATE
+                PBK_TASK.TASKS SET
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+                ,CHANGE_PLAN_SCHEDULE_ID = #{changePlanScheduleId}
+                ,TASK_STATE_ID = #{stateId}, CANCEL_REASON = #{cancelReason}
+            WHERE
+              ID = #{id}
+        ]]>
+    </update>
+    
+    <select id="getPlanRoutsForTask" resultType="ru.armd.pbk.domain.tasks.TaskRoute">
+        <![CDATA[
+			SELECT
+				r.ID as id,
+				tr.TASK_ID as taskId,
+				rh.ROUTE_NUMBER as routeNumber
+			FROM
+				PBK_TASK.TASK_ROUTES tr 
+				LEFT JOIN PBK_TASK.TASKS tsk ON (tr.TASK_ID = tsk.ID) 
+				LEFT JOIN PBK_PLAN.PLAN_SCHEDULES ps ON (tsk.PLAN_SCHEDULE_ID = ps.ID) 
+				LEFT JOIN PBK_NSI.ROUTES r ON (tr.ROUTE_ID = r.ID) 
+				LEFT JOIN PBK_NSI.ROUTE_HISTS rh ON (r.ID = rh.HEAD_ID)
+			WHERE
+				rh.V_END_DATE = (
+						SELECT MAX(rh2.V_END_DATE)
+						FROM PBK_NSI.ROUTE_HISTS rh2 
+						WHERE rh2.HEAD_ID = rh.HEAD_ID 
+							AND cast(rh2.V_END_DATE as DATE) >= cast(ps.WORK_DATE as DATE) AND cast(rh2.V_START_DATE as DATE) <= cast(ps.WORK_DATE as DATE)
+					)
+	           	AND tr.TASK_ID IN
+        ]]>
+           	<foreach collection="tasks" open="(" close=")" separator="," item="task">
+           		#{task.id}
+           	</foreach>
+    </select>
+    
+    <select id="getTaskByScheduleId" resultType="ru.armd.pbk.domain.tasks.Task">
+        <![CDATA[
+            SELECT
+				[ID] as id
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues" /><![CDATA[
+				,[DEPT_ID] AS deptId
+				,[TASK_TYPE_ID] AS taskTypeId
+				,[BSO_ID] AS bsoId
+				,[PLAN_SCHEDULE_ID] AS planScheduleId
+				,[CHANGE_PLAN_SCHEDULE_ID] AS changePlanScheduleId
+				,[PLAN_VENUE_ID] AS planVenueId
+				,[TASK_STATE_ID] as stateId
+				,[WORK_START_TIME] as workStartTime
+				,[WORK_END_TIME] as workEndTime
+				,[BREAK_START_TIME] as breakStartTime
+				,[BREAK_END_TIME] as breakEndTime
+            FROM [PBK_TASK].[TASKS]
+            WHERE [PLAN_SCHEDULE_ID] = #{scheduleId}
+       ]]>
+    </select>
+
+    <select id="getTasksByDate" resultType="ru.armd.pbk.domain.tasks.Task">
+    	SELECT
+				[ID] as id				
+				,[DEPT_ID] AS deptId
+				,[TASK_TYPE_ID] AS taskTypeId
+				,[BSO_ID] AS bsoId
+				,[PLAN_SCHEDULE_ID] AS planScheduleId
+				,[CHANGE_PLAN_SCHEDULE_ID] AS changePlanScheduleId
+				,[PLAN_VENUE_ID] AS planVenueId
+				,[TASK_STATE_ID] as stateId
+				,[WORK_START_TIME] as workStartTime
+				,[WORK_END_TIME] as workEndTime
+				,[BREAK_START_TIME] as breakStartTime
+				,[BREAK_END_TIME] as breakEndTime
+            FROM [PBK_TASK].[TASKS]
+            WHERE [PLAN_SCHEDULE_ID] in (
+				SELECT ps.ID
+				FROM [PBK_PLAN].[PLAN_SCHEDULES] ps
+				WHERE cast(ps.WORK_DATE as DATE) = cast(#{workDate} as DATE)
+			)
+    </select>
+
+    <update id="moveRoutes">
+        <![CDATA[
+            UPDATE PBK_TASK.TASK_ROUTES SET
+                UPDATE_DATE = GETDATE()
+                ,UPDATE_USER_ID = #{updateUserId}
+                ,TASK_ID = #{newTaskId}
+            WHERE
+              TASK_ID = #{oldTaskId}
+        ]]>
+    </update>
+    
+    <select id="getEmployeeTask" resultType="ru.armd.pbk.domain.tasks.Task">
+    	<![CDATA[
+    		SELECT
+				[ID] as id
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues" /><![CDATA[
+				,[DEPT_ID] AS deptId
+				,[TASK_TYPE_ID] AS taskTypeId
+				,[BSO_ID] AS bsoId
+				,[PLAN_SCHEDULE_ID] AS planScheduleId
+				,[CHANGE_PLAN_SCHEDULE_ID] AS changePlanScheduleId
+				,[PLAN_VENUE_ID] AS planVenueId
+				,[TASK_STATE_ID] as stateId
+				,[WORK_START_TIME] as workStartTime
+				,[WORK_END_TIME] as workEndTime
+				,[BREAK_START_TIME] as breakStartTime
+				,[BREAK_END_TIME] as breakEndTime
+				,(SELECT ps.SHIFT_ID FROM PBK_PLAN.PLAN_SCHEDULES ps WHERE ps.ID = PLAN_SCHEDULE_ID) as shiftId
+			FROM PBK_TASK.TASKS 
+			WHERE PLAN_SCHEDULE_ID = (  SELECT ps.ID as id										
+										FROM
+							           		PBK_PLAN.PLAN_SCHEDULES ps
+										WHERE
+											#{workDate} = cast(ps.WORK_DATE as DATE) AND ps.EMPLOYEE_ID = #{employeeId})
+    	]]>    	
+    </select>
+    
+    <select id="getTaskAdditionalInfoById" resultType="ru.armd.pbk.views.tasks.TaskAdditionalInfo">
+    	SELECT
+    		t.ID as id,
+			t.DEPT_ID as deptId,
+			pv.CITY_VENUE_ID as venueId
+		FROM
+			PBK_TASK.TASKS t LEFT JOIN PBK_PLAN.PLAN_VENUES pv ON (t.PLAN_VENUE_ID = pv.ID)
+		WHERE
+			t.ID = #{taskId}
+    </select>
+    
+    <select id="getTaskDistricts" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+    		SELECT distinct
+				[NAME] as name
+			    , [HEAD_ID] as ID
+			FROM [PBK_NSI].[CITY_DISTRICT_HISTS] cdh
+			JOIN [PBK_TASK].[TASK_ROUTES] tr on tr.CITY_DISTRICT_ID = cdh.HEAD_ID
+			WHERE cdh.V_END_DATE >= PBK_CORE.getVersionEndDate() and tr.TASK_ID = #{taskId}	
+    	]]><if test="districtId != null and districtId != -1">
+			UNION
+			SELECT [NAME] as name
+			    	, [HEAD_ID] as ID
+			FROM [PBK_NSI].[CITY_DISTRICT_HISTS] cdh
+			WHERE cdh.V_END_DATE >= PBK_CORE.getVersionEndDate() and cdh.HEAD_ID = #{districtId}		
+        </if>
+    </select>
+
+    <select id="getTasksForPusk" resultType="ru.armd.pbk.domain.tasks.PuskTask">
+        <![CDATA[
+    		select
+              t.id taskId,
+              ps.WORK_DATE workDate,
+              t.TASK_TYPE_ID taskType,
+              t.TASK_STATE_ID taskState,
+              eh.PERSONNEL_NUMBER personId,
+              b.BSO_NUMBER taskNumber,
+              s.id shiftId,
+              CONVERT(VARCHAR(5), s.WORK_START_TIME, 108) workTimeFrom,
+              CONVERT(VARCHAR(5), s.WORK_END_TIME, 108) workTimeTo,
+              CONVERT(VARCHAR(5), s.BREAK_START_TIME, 108) lunchTimeFrom,
+              CONVERT(VARCHAR(5), s.BREAK_END_TIME, 108) lunchTimeTo,
+              cvh.name startPlace,
+              ISNULL(STUFF((SELECT ',' + rh2.ROUTE_NUMBER
+                     from PBK_NSI.ROUTE_HISTS rh2
+                       left join PBK_TASK.TASK_ROUTES tr2 on tr2.ROUTE_ID = rh2.ID
+                       left join PBK_TASK.TASKS t2 on tr2.TASK_ID = t.ID
+                     where t2.id = t.id
+                     FOR XML PATH(''), TYPE
+                    ).value('.', 'NVARCHAR(MAX)')
+                    ,1,1,''),
+                     STUFF((SELECT ',' + cch2.NAME
+                            from PBK_NSI.CITY_COUNTY_HISTS cch2
+                            where cch2.dept_id = cch.dept_id
+                            FOR XML PATH(''), TYPE
+                           ).value('.', 'NVARCHAR(MAX)')
+                     ,1,1,'')
+              ) specialRouteNumbers
+            from PBK_TASK.TASKS t
+              left join PBK_PLAN.PLAN_SCHEDULES ps on t.PLAN_SCHEDULE_ID = ps.ID
+              left join PBK_NSI.EMPLOYEE_HISTS eh on ps.EMPLOYEE_ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+              left join PBK_NSI.BSOS b on t.BSO_ID = b.ID
+              left join PBK_NSI.SHIFTS s on ps.SHIFT_ID = s.ID
+              left join PBK_PLAN.PLAN_VENUES pv on t.PLAN_VENUE_ID = pv.id
+              left join PBK_NSI.CITY_VENUE_HISTS cvh on cvh.HEAD_ID = pv.CITY_VENUE_ID AND cvh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+              left join PBK_TASK.TASK_ROUTES tr on t.ID = tr.TASK_ID
+              left join PBK_NSI.ROUTE_HISTS rh on rh.HEAD_ID = tr.ROUTE_ID AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+              left join PBK_NSI.CITY_COUNTY_HISTS cch on t.DEPT_ID = cch.DEPT_ID AND cch.V_END_DATE >= PBK_CORE.getVersionEndDate()
+            where ps.WORK_DATE in(cast(getdate() as date), dateadd(day, 1, cast(getdate() as date)), dateadd(day, 2, cast(getdate() as date)))
+            group by
+              t.id,
+              ps.WORK_DATE,
+              t.TASK_TYPE_ID,
+              t.TASK_STATE_ID,
+              eh.PERSONNEL_NUMBER,
+              b.BSO_NUMBER,
+              s.id,
+              s.WORK_START_TIME,
+              s.WORK_END_TIME,
+              s.BREAK_START_TIME,
+              s.BREAK_END_TIME,
+              cvh.name,
+              cch.DEPT_ID
+    	]]>
+    </select>
+        
+</mapper>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration debug="true" xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+    <appender name="appender-all" class="org.apache.log4j.DailyRollingFileAppender">
+        <param name="File" value="pbk-active-mq-lib-logs/pbk-active-mq-lib-log.log"/>
+        <param name="Append" value="true"/>
+        <param name="DatePattern" value="'.'yyyy-MM-dd"/>
+        <param name="Encoding" value="UTF-8"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="[%t] - [%-5.5p] - [%d{yyyy-MM-dd}] [%d{HH:mm:ss,SSS}] - [%c:%L] %m%n"/>
+        </layout>
+    </appender>
+
+    <!-- ============= JMS ============= -->
+    <logger name="javax.jms">
+        <level value="TRACE"/>
+        <appender-ref ref="appender-all"/>
+    </logger>
+    <logger name="org.apache.activemq">
+        <level value="TRACE"/>
+        <appender-ref ref="appender-all"/>
+    </logger>
+    <logger name="org.springframework.jms">
+        <level value="TRACE"/>
+        <appender-ref ref="appender-all"/>
+    </logger>
+    <!-- ============= END JMS ============= -->
+
+    <root>
+        <priority value="TRACE"/>
+        <appender-ref ref="appender-all"/>
+    </root>
+</log4j:configuration>

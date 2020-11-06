@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.RouteReportMapper">
+
+	 <select id="getReportViews" resultType="ru.armd.pbk.views.nsi.RouteReportView">
+        <![CDATA[
+			SELECT
+               ROW_NUMBER() OVER (]]><include refid="ru.armd.pbk.mappers.CommonSql.orderBySql" /><![CDATA[) AS id,
+               t.*
+            FROM (
+				SELECT
+					d.[ID] as id
+	               , dh.[ROUTE_NUMBER] as routeNumber
+	               , dh.[ASDU_ROUTE_ID] as asduRouteId
+	               , dh.[ASKP_ROUTE_CODE] as askpRouteCode
+	               , dh.[ASMPP_ROUTE_CODE] as asmppRouteCode
+	               , dt.[NAME] as routeTsKind
+	               , dr.[ROUTE_NUMBER] as vsGsmgtNumber
+	               , STUFF((SELECT distinct ',' + cch.NAME
+						FROM [PBK_DB].[PBK_NSI].[CITY_COUNTY_HISTS] cch
+								join PBK_NSI.CITY_DISTRICT_HISTS cdh on (cch.HEAD_ID = cdh.CITY_COUNTY_ID AND cdh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+								join PBK_NSI.CITY_DISTRICT_ROUTES cdr on (cdh.HEAD_ID = cdr.CITY_DISTRICT_ID AND cdr.ROUTE_ID = dh.HEAD_ID)
+						WHERE cdr.ROUTE_ID = dh.HEAD_ID for xml path('')),1,1,'') as cities
+					, STUFF((SELECT distinct ',' + cdh.NAME
+							FROM [PBK_DB].[PBK_NSI].[CITY_DISTRICT_ROUTES] cdr
+									join PBK_NSI.CITY_DISTRICT_HISTS cdh on (cdr.CITY_DISTRICT_ID = cdh.HEAD_ID AND cdh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+							WHERE cdr.ROUTE_ID = dh.HEAD_ID for xml path('')),1,1,'') as district
+				FROM [PBK_NSI].[ROUTES] d JOIN [PBK_NSI].[ROUTE_HISTS] dh on (d.ID = dh.HEAD_ID) LEFT JOIN [PBK_NSI].[ROUTE_TS_KINDS] dt on (dh.ROUTE_TS_KIND_ID = dt.ID ) LEFT JOIN [PBK_GISMGT].[GM_ROUTES] dr on (dh.GM_ROUTE_ID = dr.ID)
+				WHERE 
+					dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+				  	and (#{filter.routeNumber} is null or UPPER(dh.ROUTE_NUMBER) like UPPER('%${filter.routeNumber}%')) 
+	          		and (#{filter.routeTsKindId} is null or dt.id = #{filter.routeTsKindId})
+	          		and (d.IS_DELETE = 0)
+	          		]]><if test="filter.ids != null">
+						AND d.ID IN (${filter.ids})
+					</if>
+        	) t
+        	<include refid="ru.armd.pbk.mappers.CommonSql.orderBySql_t" />
+    </select>
+    
+</mapper>

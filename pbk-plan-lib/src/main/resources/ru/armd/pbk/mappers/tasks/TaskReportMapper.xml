@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.tasks.TaskReportMapper">
+
+    <sql id="fieldDomain">
+        <include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues"/><![CDATA[
+            ,[TASK_ID] as taskId
+            ,[TS_CHECK_COUNT] as tsCheckCount
+            ,[TICKET_ISSUE_COUNT] as ticketIssueCount
+            ,[TICKET_SOLD_COUNT] as ticketSoldCount
+            ,[EXEMPT_SKM_COUNT] as exemptSkmCount
+            ,[EXEMPT_SKMO_COUNT] as exemptSkmoCount
+            ,[EXEMPT_VESB_COUNT] as exemptVesbCount
+            ,[EXEMPT_OTHER_LPK_COUNT] as exemptOtherLpkCount
+            ,[EXEMPT_VALIDLESS_COUNT] as exemptValidLessCount
+            ,[PLANT_STOWAWAY_COUNT] as plantStowawayCount
+            ,[DELIVERY_OVD_COUNT] as deliveryOvdCount
+            ,[DRIVER_RAPORT_COUNT] as driverRaportCount
+            ,[ORDINANCE_1000_COUNT] as ordinance1000Count
+            ,[ORDINANCE_2500_COUNT] as ordinance2500Count
+            ,[PROTOCOL_1000_COUNT] as protocol1000Count
+            ,[PROTOCOL_2500_COUNT] as protocol2500Count
+        ]]>
+    </sql>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.tasks.TaskReport" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        INSERT INTO [PBK_TASK].[TASK_REPORTS](
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+            ,[TASK_ID]
+            ,[TS_CHECK_COUNT]
+            ,[TICKET_ISSUE_COUNT]
+            ,[TICKET_SOLD_COUNT]
+            ,[EXEMPT_SKM_COUNT]
+            ,[EXEMPT_SKMO_COUNT]
+            ,[EXEMPT_VESB_COUNT]
+            ,[EXEMPT_OTHER_LPK_COUNT]
+            ,[EXEMPT_VALIDLESS_COUNT]
+            ,[PLANT_STOWAWAY_COUNT]
+            ,[DELIVERY_OVD_COUNT]
+            ,[DRIVER_RAPORT_COUNT]
+            ,[ORDINANCE_1000_COUNT]
+            ,[ORDINANCE_2500_COUNT]
+            ,[PROTOCOL_1000_COUNT]
+            ,[PROTOCOL_2500_COUNT]
+        ) VALUES(
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+            ,#{taskId}
+            ,#{tsCheckCount}
+            ,#{ticketIssueCount}
+            ,#{ticketSoldCount}
+            ,#{exemptSkmCount}
+            ,#{exemptSkmoCount}
+            ,#{exemptVesbCount}
+            ,#{exemptOtherLpkCount}
+            ,#{exemptValidLessCount}
+            ,#{plantStowawayCount}
+            ,#{deliveryOvdCount}
+            ,#{driverRaportCount}
+            ,#{ordinance1000Count}
+            ,#{ordinance2500Count}
+            ,#{protocol1000Count}
+            ,#{protocol2500Count}
+        )
+        ]]>
+    </insert>
+
+    <insert id="insertReports" parameterType="ru.armd.pbk.domain.tasks.TaskReport" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        INSERT INTO [PBK_TASK].[TASK_REPORTS] (
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+            ,[TASK_ID]
+            ,[TS_CHECK_COUNT]
+            ,[TICKET_ISSUE_COUNT]
+            ,[TICKET_SOLD_COUNT]
+            ,[EXEMPT_SKM_COUNT]
+            ,[EXEMPT_SKMO_COUNT]
+            ,[EXEMPT_VESB_COUNT]
+            ,[EXEMPT_OTHER_LPK_COUNT]
+            ,[EXEMPT_VALIDLESS_COUNT]
+            ,[PLANT_STOWAWAY_COUNT]
+            ,[DELIVERY_OVD_COUNT]
+            ,[DRIVER_RAPORT_COUNT]
+            ,[ORDINANCE_1000_COUNT]
+            ,[ORDINANCE_2500_COUNT]
+            ,[PROTOCOL_1000_COUNT]
+            ,[PROTOCOL_2500_COUNT]
+        )
+		SELECT 
+            GETDATE(), #{createUserId}, GETDATE(), #{createUserId}
+            ,t.ID
+            ,0
+            ,0
+            ,0
+            ,0
+            ,0
+            ,0
+            ,0
+            ,0
+            ,0
+            ,0
+            ,0
+            ,0
+            ,0
+            ,0
+            ,0
+        FROM PBK_TASK.TASKS t WHERE NOT EXISTS (SELECT 1 FROM [PBK_TASK].[TASK_REPORTS] tr WHERE tr.[TASK_ID] = t.ID)
+        ]]>
+    </insert>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.tasks.TaskReport">
+        <![CDATA[
+            UPDATE [PBK_TASK].[TASK_REPORTS] SET
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+                ,[TS_CHECK_COUNT] = #{tsCheckCount}
+                ,[TICKET_ISSUE_COUNT] = #{ticketIssueCount}
+                ,[TICKET_SOLD_COUNT] = #{ticketSoldCount}
+                ,[EXEMPT_SKM_COUNT] = #{exemptSkmCount}
+                ,[EXEMPT_SKMO_COUNT] = #{exemptSkmoCount}
+                ,[EXEMPT_VESB_COUNT] = #{exemptVesbCount}
+                ,[EXEMPT_OTHER_LPK_COUNT] = #{exemptOtherLpkCount}
+                ,[EXEMPT_VALIDLESS_COUNT] = #{exemptValidLessCount}
+                ,[PLANT_STOWAWAY_COUNT] = #{plantStowawayCount}
+                ,[DELIVERY_OVD_COUNT] = #{deliveryOvdCount}
+                ,[DRIVER_RAPORT_COUNT] = #{driverRaportCount}
+                ,[ORDINANCE_1000_COUNT] = #{ordinance1000Count}
+                ,[ORDINANCE_2500_COUNT] = #{ordinance2500Count}
+                ,[PROTOCOL_1000_COUNT] = #{protocol1000Count}
+                ,[PROTOCOL_2500_COUNT] = #{protocol2500Count}
+            WHERE
+              ID = #{id}
+        ]]>
+    </update>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.tasks.TaskReport">
+        <![CDATA[
+            SELECT
+                 [ID] as id
+                ]]><include refid="fieldDomain" /><![CDATA[
+            FROM [PBK_TASK].[TASK_REPORTS]
+            WHERE [TASK_ID] = #{id}
+       ]]>
+    </select>
+
+    <select id="getDomain" resultType="ru.armd.pbk.domain.tasks.TaskReport">
+        <![CDATA[
+            SELECT
+                [ID] as id
+                ]]><include refid="fieldDomain" /><![CDATA[
+            FROM [PBK_TASK].[TASK_REPORTS]
+            WHERE 1 = 1
+              AND (#{taskId} IS NULL OR [TASK_ID] = #{taskId})
+            ]]>
+    </select>
+
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+                [PBK_TASK].[TASK_REPORTS]
+            WHERE [ID] IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+
+</mapper>

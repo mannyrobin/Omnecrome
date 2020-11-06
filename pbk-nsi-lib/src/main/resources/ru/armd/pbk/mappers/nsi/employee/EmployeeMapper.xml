@@ -1,0 +1,566 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.employee.EmployeeMapper">
+
+	<sql id="fieldDomain">
+        <![CDATA[
+		  	d.[IS_DELETE] as isDelete,
+			dh.[CREATE_DATE] as createDate,
+			dh.[CREATE_USER_ID] as createUserId,
+			dh.[UPDATE_DATE] as updateDate,
+			dh.[UPDATE_USER_ID] as updateUserId,
+			dh.[V_START_DATE] as versionStartDate,
+			dh.[V_END_DATE] as versionEndDate,
+			dh.[HEAD_ID] as headId,
+           	dh.NAME as name,
+           	dh.PATRONUMIC as patronumic,
+           	dh.SURNAME as surname,
+           	dh.[EASU_FHD_ID] as easuFhdId,
+           	dh.POSITION_NAME as positionName,
+           	dh.PERSONNEL_NUMBER as personalNumber,
+           	dh.LICENSE_DETAILS as licenceDetails,
+           	dh.PHONE as phone,
+           	dh.FIRE_DATE as fireDate,
+     		dh.SEX_ID as sexId,
+     		dh.DEPT_ID as departmentId,
+			dh.USER_ID as userId,
+			dh.DVR_ID as dvrId,
+			dh.PUSK_ID as puskId,
+			dh.CONTACTLESS_CARD_ID as contCardId,
+			dh.OFFICIAL_CARD_ID as offCardId,
+			dh.DESCRIPTION as description,
+			dh.FOR_PLAN_USE as forPlanUse,
+			dh.CITY_COUNTY_ID as countyId,
+			dh.LICENSE_END_DATE as licenseEndDate
+        ]]>
+    </sql>
+    
+	<select id="getGridViews" resultType="ru.armd.pbk.views.nsi.employee.EmployeeView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          SELECT DISTINCT
+			d.id as id,
+			dh.NAME as name,
+			dh.PATRONUMIC as patronumic,
+			dh.SURNAME as surname,
+		    dh.PERSONNEL_NUMBER as personalNumber,
+		    dep_h.name as departmentName,
+		    dh.POSITION_NAME as emplPost,
+		    pusk_h.PUSK_NUMBER as puskId,
+		    offCard_h.CARD_NUMBER as offCardId,
+		    contrCard_h.CARD_NUMBER as contCardId,
+		    u.LOGIN as login,
+		    dh.FIRE_DATE as fireDate,
+		    d.IS_DELETE as isDelete
+		  FROM
+		    PBK_NSI.EMPLOYEES d LEFT JOIN PBK_NSI.EMPLOYEE_HISTS dh ON (d.ID = dh.HEAD_ID) LEFT JOIN PBK_NSI.DEPARTMENTS dep ON (dh.DEPT_ID = dep.ID)
+		    LEFT JOIN PBK_NSI.DEPARTMENT_HISTS dep_h ON (dep.ID = dep_h.HEAD_ID and dep_h.V_END_DATE >= PBK_CORE.getVersionEndDate())
+		    LEFT JOIN PBK_CORE.USERS u ON (dh.USER_ID = u.ID AND u.IS_DELETE = 0)
+			LEFT JOIN PBK_NSI.PUSKS pusk ON (dh.PUSK_ID = pusk.ID)
+		    LEFT JOIN PBK_NSI.PUSK_HISTS pusk_h on (pusk.ID = pusk_h.HEAD_ID and pusk_h.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.OFFICIAL_CARDS offCard ON (dh.OFFICIAL_CARD_ID = offCard.ID)
+		    LEFT JOIN PBK_NSI.OFFICIAL_CARD_HISTS offCard_h on (offCard.ID = offCard_h.HEAD_ID and offCard_h.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.CONTACTLESS_CARDS contrCard on (dh.CONTACTLESS_CARD_ID = contrCard.ID)
+		    LEFT JOIN PBK_NSI.CONTACTLESS_CARD_HISTS contrCard_h on (contrCard.ID = contrCard_h.HEAD_ID and contrCard_h.V_END_DATE >= PBK_CORE.getVersionEndDate())
+		  WHERE
+          	dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate() AND
+          	(#{filter.name} is null or UPPER(dh.NAME) like UPPER('%${filter.name}%')  or UPPER(dh.SURNAME) like UPPER('%${filter.name}%')  or UPPER(dh.PATRONUMIC) like UPPER('%${filter.name}%')) AND
+          	(#{filter.departmentId} is null or dep_h.HEAD_ID = #{filter.departmentId}) AND
+          	(#{filter.forPlanUse} is null or dh.FOR_PLAN_USE = #{filter.forPlanUse}) AND
+          	(#{filter.loginFilter} is null or UPPER(u.LOGIN) like UPPER('%${filter.loginFilter}%')) AND
+          	(#{filter.commonNumber} is null or UPPER(pusk_h.PUSK_NUMBER) like UPPER('%${filter.commonNumber}%') or UPPER(offCard_h.CARD_NUMBER) like UPPER('%${filter.commonNumber}%')
+          		or UPPER(contrCard_h.CARD_NUMBER) like UPPER('%${filter.commonNumber}%')
+          		or UPPER(dh.PERSONNEL_NUMBER) like UPPER('%${filter.commonNumber}%'))
+          	and ((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR d.IS_DELETE = 0)
+            and (#{filter.deptAuthId} IS NULL OR dh.DEPT_ID = #{filter.deptAuthId})
+            and (#{filter.isFireEmp} IS NULL OR (#{filter.isFireEmp} = 1 AND dh.FIRE_DATE IS NOT NULL) OR (#{filter.isFireEmp} = 0 AND dh.FIRE_DATE IS NULL))
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getHistoryViews" resultType="ru.armd.pbk.views.nsi.employee.EmployeeHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+				SELECT
+				0 as id,
+			edm.PERIOD_START_DATE as versionStartDate,
+			edm.CREATE_DATE as versionEndDate,
+			ISNULL(cu.LOGIN, '''') as createUser,
+			edm.PERIOD_START_DATE as createDate,
+			ISNULL(uu.LOGIN, '''') as updateUser,
+			edm.CREATE_DATE as updateDate,
+				dh.NAME as name,
+				dh.PATRONUMIC as patronumic,
+				dh.SURNAME as surname,
+				dh.EASU_FHD_ID as easuFhdId,
+           		dh.POSITION_NAME as positionName,
+           		dh.PERSONNEL_NUMBER as personalNumber,
+           		dh.LICENSE_DETAILS as licenceDetails,
+           		dh.PHONE as phone,
+           		dh.FIRE_DATE as fireDate,
+     			dh.SEX_ID as sexId,
+     			dh.DEPT_ID as departmentId,
+				dh.USER_ID as userId,
+				dh.DVR_ID as dvrId,
+				dh.PUSK_ID as puskId,
+				dh.CONTACTLESS_CARD_ID as contCardId,
+				dh.OFFICIAL_CARD_ID as offCardId,
+				dh.DESCRIPTION as description,
+				dh.FOR_PLAN_USE as forPlanUse,
+				dh.CITY_COUNTY_ID as cityCountyId, 
+				dh.LICENSE_END_DATE as licenseEndDate
+			FROM
+				PBK_NSI.EMPLOYEE_HISTS dh LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+				 JOIN PBK_NSI.EMP_DEPT_MOVES edm ON (edm.EMPLOYEE_ID = dh.HEAD_ID AND edm.DEPT_ID = dh.DEPT_ID)
+			WHERE
+			CONVERT(VARCHAR(19), edm.CREATE_DATE, 120)  = CONVERT(VARCHAR(19), dh.V_START_DATE, 120) AND
+          		dh.HEAD_ID = #{filter.employeeHeadId}
+				UNION ALL
+			SELECT
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+				dh.NAME as name,
+				dh.PATRONUMIC as patronumic,
+				dh.SURNAME as surname,
+				dh.EASU_FHD_ID as easuFhdId,
+           		dh.POSITION_NAME as positionName,
+           		dh.PERSONNEL_NUMBER as personalNumber,
+           		dh.LICENSE_DETAILS as licenceDetails,
+           		dh.PHONE as phone,
+           		dh.FIRE_DATE as fireDate,
+     			dh.SEX_ID as sexId,
+     			dh.DEPT_ID as departmentId,
+				dh.USER_ID as userId,
+				dh.DVR_ID as dvrId,
+				dh.PUSK_ID as puskId,
+				dh.CONTACTLESS_CARD_ID as contCardId,
+				dh.OFFICIAL_CARD_ID as offCardId,
+				dh.DESCRIPTION as description,
+				dh.FOR_PLAN_USE as forPlanUse,
+				dh.CITY_COUNTY_ID as cityCountyId, 
+				dh.LICENSE_END_DATE as licenseEndDate
+			FROM
+				PBK_NSI.EMPLOYEE_HISTS dh LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+			WHERE
+          		dh.HEAD_ID = #{filter.employeeHeadId}
+				        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <insert id="insertHead" parameterType="ru.armd.pbk.domain.HeadVersionDomain" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.EMPLOYEES(
+	        IS_DELETE
+        ) VALUES (
+        	#{isDelete}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.EMPLOYEES' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+	<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.employee.Employee" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        insert into PBK_NSI.EMPLOYEE_HISTS(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+        	,[HEAD_ID]
+        	,[EASU_FHD_ID]
+            ,[NAME]
+            ,[PATRONUMIC]
+            ,[SURNAME]
+            ,[POSITION_NAME]
+            ,[PERSONNEL_NUMBER]
+            ,[LICENSE_DETAILS]
+            ,[PHONE]
+            ,[FIRE_DATE]
+      		,[SEX_ID]
+      		,[DEPT_ID]
+			,[USER_ID]
+			,[DVR_ID]
+			,[PUSK_ID]
+			,[CONTACTLESS_CARD_ID]
+			,[OFFICIAL_CARD_ID]
+			,[DESCRIPTION]
+			,[FOR_PLAN_USE]
+			,[CITY_COUNTY_ID]
+			,[LICENSE_END_DATE]
+			,[PHOTO]
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+        	,#{headId}
+        	,#{easuFhdId}
+            ,#{name}
+            ,#{patronumic}
+            ,#{surname}
+            ,#{positionName}
+            ,#{personalNumber}
+            ,#{licenceDetails}
+            ,#{phone}
+            ,cast(#{fireDate} as date)
+            ,#{sexId}
+            ,#{departmentId}
+			,#{userId}
+			,#{dvrId}
+			,#{puskId}
+			,#{contCardId}
+			,#{offCardId}
+			,#{description}
+			,#{forPlanUse}
+			,#{countyId}
+			,cast(#{licenseEndDate} as date)
+			,#{photo}
+        )
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.EMPLOYEE_HISTS' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+
+	<update id="update" parameterType="ru.armd.pbk.domain.nsi.employee.Employee">
+		<![CDATA[
+			UPDATE PBK_NSI.EMPLOYEE_HISTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+				,NAME = #{name}
+           		,PATRONUMIC = #{patronumic}
+           		,SURNAME = #{surname}
+           		,EASU_FHD_ID = #{easuFhdId}
+           		,POSITION_NAME = #{positionName}
+           		,PERSONNEL_NUMBER = #{personalNumber}
+           		,LICENSE_DETAILS = #{licenceDetails}
+           		,PHONE = #{phone}
+           		,FIRE_DATE = cast(#{fireDate} as date)
+     			,SEX_ID = #{sexId}
+     			,DEPT_ID = #{departmentId}
+				,USER_ID = #{userId}
+				,DVR_ID = #{dvrId}
+				,PUSK_ID = #{puskId}
+				,CONTACTLESS_CARD_ID = #{contCardId}
+				,OFFICIAL_CARD_ID = #{offCardId}
+				,DESCRIPTION = #{description}
+				,FOR_PLAN_USE = #{forPlanUse}
+				,CITY_COUNTY_ID = #{countyId}
+				,LICENSE_END_DATE = cast(#{licenseEndDate} as date)
+				,PHOTO = CONVERT(varbinary(max), #{photo})
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+
+	<update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.EMPLOYEES
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+    
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_NSI.EMPLOYEES
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+
+	<select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+		SELECT
+			e.[ID] as id
+			, eh.[SURNAME] + ' ' + eh.[NAME] + ' ' + eh.[PATRONUMIC] + ' (' + eh.EASU_FHD_ID + ')' + 
+				case when eh.FIRE_DATE is null then '' else ' - У' end as name
+		FROM
+			[PBK_NSI].[EMPLOYEES] e JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh on (e.ID = eh.HEAD_ID)
+		WHERE
+			e.IS_DELETE = 0 AND eh.V_END_DATE >= [PBK_CORE].getVersionEndDate() AND
+			(#{currentId} IS NULL OR e.ID != #{currentId}) AND
+			(#{emolyeeId} IS NULL OR e.ID = #{emolyeeId})
+			]]><if test="includeFired != 1">
+		AND (#{forPlanUse} IS NULL OR eh.FOR_PLAN_USE = #{forPlanUse}) AND
+		(#{isNotFire} IS NULL OR (eh.FIRE_DATE IS NULL OR eh.FIRE_DATE > GETDATE()))
+	</if><![CDATA[
+			AND (#{departmentId} IS NULL OR #{departmentId} = '-1' OR eh.DEPT_ID = #{departmentId})
+		order by
+			eh.[SURNAME] + ' ' + eh.[NAME] + ' ' + eh.[PATRONUMIC] + ' (' + eh.EASU_FHD_ID + ')' asc
+		]]>
+	</select>
+	
+	<select id="getSelectItemsForSign" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+		SELECT
+			e.[ID] as id
+			, eh.[SURNAME] + ' ' + eh.[NAME] + ' ' + eh.[PATRONUMIC] 
+			+ case when eh.DEPT_ID in (select dh.HEAD_ID 
+					from [PBK_NSI].DEPARTMENT_HISTS dh 
+					where dh.FOR_PLAN_USE = 1) 
+			then ' ('+ eh.POSITION_NAME + ')' else '' end as name
+		FROM
+			[PBK_NSI].[EMPLOYEES] e JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh on (e.ID = eh.HEAD_ID)
+		WHERE
+			e.IS_DELETE = 0 AND eh.V_END_DATE >= [PBK_CORE].getVersionEndDate() 
+			AND (
+				(#{currentId} IS NOT NULL AND e.ID = #{currentId}) 
+				OR  eh.DEPT_ID in (
+					select dh.HEAD_ID 
+					from [PBK_NSI].DEPARTMENT_HISTS dh 
+					where UPPER(dh.FULL_NAME) like UPPER('Инф-аналитич') 
+						or UPPER(dh.FULL_NAME) like UPPER('ООК')) 
+			
+				or eh.HEAD_ID in (select eh1.HEAD_ID
+					from PBK_NSI.DEPARTMENT_HISTS dh
+					join PBK_NSI.EMPLOYEE_HISTS eh1 on dh.HEAD_ID = eh1.DEPT_ID and eh1.V_END_DATE >= PBK_CORE.getVersionEndDate()
+					where dh.FOR_PLAN_USE = 1 and dh.V_END_DATE >= PBK_CORE.getVersionEndDate() and eh1.FOR_PLAN_USE = 0 and eh1.FIRE_DATE is null and eh1.POSITION_NAME not like 'Контролер пассажирского транспорта')
+			)
+		order by
+			eh.[SURNAME] + ' ' + eh.[NAME] + ' ' + eh.[PATRONUMIC] asc
+		]]>
+	</select>
+	
+	<select id="getEmployeesOnDate" resultType="ru.armd.pbk.views.nsi.route.RouteSelectItem">
+		<![CDATA[
+		SELECT
+			e.[ID] as id
+			, eh.[SURNAME] + ' ' + eh.[NAME] + ' ' + eh.[PATRONUMIC] as name
+			, (SELECT tme.TASK_ID FROM PBK_TASK.TASK_MGT_EMPLOYEES tme WHERE tme.EMPLOYEE_ID = e.ID AND
+				tme.TASK_ID IN (
+					SELECT t2.ID 
+					FROM PBK_TASK.TASKS t
+						JOIN PBK_PLAN.PLAN_SCHEDULES ps on ps.ID = t.PLAN_SCHEDULE_ID
+						JOIN PBK_PLAN.PLAN_SCHEDULES ps2 on ps2.WORK_DATE = ps.WORK_DATE
+						JOIN PBK_TASK.TASKS t2 on ps2.ID = t2.PLAN_SCHEDULE_ID
+					WHERE t.ID = #{taskId} 
+				)
+			) as countyId
+		FROM
+			[PBK_NSI].[EMPLOYEES] e JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh on (e.ID = eh.HEAD_ID)
+		WHERE
+			e.IS_DELETE = 0 AND eh.V_END_DATE >= [PBK_CORE].getVersionEndDate() AND
+			e.ID IN (
+				SELECT ps2.EMPLOYEE_ID
+				FROM PBK_PLAN.PLAN_SCHEDULES ps
+					JOIN PBK_TASK.TASKS t on t.PLAN_SCHEDULE_ID = ps.ID
+					JOIN PBK_PLAN.PLAN_SCHEDULES ps2 on ps2.WORK_DATE = ps.WORK_DATE
+					JOIN PBK_TASK.TASKS t2 on t2.PLAN_SCHEDULE_ID = ps2.ID
+					JOIN PBK_TASK.TASK_STATES ts on t2.TASK_STATE_ID = ts.ID
+				WHERE 
+					ts.COD NOT IN ('CANCELED')
+					AND t.ID = #{taskId}
+					AND t2.ID <> #{taskId}
+			)
+		order by
+			eh.[SURNAME] + ' ' + eh.[NAME] + ' ' + eh.[PATRONUMIC] asc
+		]]>
+	</select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.employee.Employee">
+		<![CDATA[
+			SELECT
+            	dh.id as id,
+            	]]><include refid="fieldDomain" /><![CDATA[
+            FROM
+            	PBK_NSI.EMPLOYEES d JOIN PBK_NSI.EMPLOYEE_HISTS dh on (d.ID = dh.HEAD_ID)
+            WHERE
+            	dh.ID = #{id}
+        ]]>
+    </select>
+
+	<select id="getActual" resultType="ru.armd.pbk.domain.nsi.employee.Employee">
+		<![CDATA[
+			SELECT 
+				dh.id as id,
+            	]]><include refid="fieldDomain" /><![CDATA[
+            	, cast(edm.PERIOD_START_DATE as date) as periodStartDate
+            	, cast(edm.PERIOD_END_DATE as date) as periodEndDate
+            	, dh.PHOTO as photo
+			FROM
+            	PBK_NSI.EMPLOYEES d JOIN PBK_NSI.EMPLOYEE_HISTS dh on (d.ID = dh.HEAD_ID)
+            	left JOIN PBK_NSI.EMP_DEPT_MOVES edm on (d.ID = edm.EMPLOYEE_ID)
+			WHERE
+  			   dh.HEAD_ID = #{domainId}
+			   and dh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+			   and edm.PERIOD_END_DATE = (  SELECT max(PERIOD_END_DATE)
+											FROM PBK_NSI.EMP_DEPT_MOVES  
+											WHERE EMPLOYEE_ID = d.ID )
+        ]]>
+	</select>
+	
+	<select id="getDomain" resultType="ru.armd.pbk.domain.nsi.employee.Employee">
+		<![CDATA[
+			SELECT 
+				dh.id as id,
+            	]]><include refid="fieldDomain" /><![CDATA[
+			FROM
+            	PBK_NSI.EMPLOYEES d JOIN PBK_NSI.EMPLOYEE_HISTS dh on (d.ID = dh.HEAD_ID)
+			WHERE
+  			   ((#{personalNumber} is not null and dh.EASU_FHD_ID = #{personalNumber})
+  			   or (#{contId} is not null and dh.CONTACTLESS_CARD_ID = #{contId})
+  			   or (#{puskId} is not null and dh.PUSK_ID = #{puskId})
+  			   or (#{offId} is not null and dh.OFFICIAL_CARD_ID = #{offId})
+  			   or (#{dvrId} is not null and dh.DVR_ID = #{dvrId})
+  			   or (#{forPlanUse} is not null and #{fio} is not null 
+  			   		and dh.FOR_PLAN_USE = #{forPlanUse} 
+  			   		and UPPER(dh.surname + ' ' + dh.name + ' ' + dh.patronumic) LIKE UPPER('${fio}'))
+  			   or (#{forPlanUse} is not null and #{fio_e} is not null 
+  			   		and dh.FOR_PLAN_USE = #{forPlanUse} 
+  			   		and UPPER(replace(dh.surname + ' ' + dh.name + ' ' + dh.patronumic, 'ё', 'е')) LIKE UPPER('${fio_e}')))
+  			   AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+        ]]>
+	</select>
+	
+	<select id="getEmployeeByTaskId" resultType="ru.armd.pbk.domain.nsi.employee.Employee">
+		<![CDATA[
+			SELECT 
+				dh.id as id,
+            	]]><include refid="fieldDomain" /><![CDATA[
+			FROM
+            	PBK_NSI.EMPLOYEES d JOIN PBK_NSI.EMPLOYEE_HISTS dh on (d.ID = dh.HEAD_ID)
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps on ps.EMPLOYEE_ID = d.ID
+				JOIN PBK_TASK.TASKS t on t.PLAN_SCHEDULE_ID = ps.ID
+			WHERE
+				t.ID = #{taskId}
+  			    AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+        ]]>
+	</select>
+	
+	<select id="getEmployeeByDeviceId" resultType="ru.armd.pbk.domain.nsi.employee.Employee">
+		<![CDATA[
+			SELECT 
+				dh.id as id,
+            	]]><include refid="fieldDomain" /><![CDATA[
+			FROM
+            	PBK_NSI.EMPLOYEES d JOIN PBK_NSI.EMPLOYEE_HISTS dh on (d.ID = dh.HEAD_ID)
+			WHERE
+  			   ((#{contId} is not null and dh.CONTACTLESS_CARD_ID = #{contId})
+  			   or (#{puskId} is not null and dh.PUSK_ID = #{puskId})
+  			   or (#{offId} is not null and dh.OFFICIAL_CARD_ID = #{offId})
+  			   or (#{dvrId} is not null and dh.DVR_ID = #{dvrId}))
+  			   AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+        ]]>
+	</select>
+	
+	<select id="getEmployeeBySKKCardNumber" resultType="ru.armd.pbk.domain.nsi.employee.Employee">
+		<![CDATA[
+			SELECT 
+				dh.id as id,
+            	]]><include refid="fieldDomain" /><![CDATA[
+			FROM PBK_NSI.EMPLOYEES d JOIN PBK_NSI.EMPLOYEE_HISTS dh on (d.ID = dh.HEAD_ID)
+  			JOIN [PBK_NSI].[OFFICIAL_CARD_HISTS] c on (c.HEAD_ID = dh.OFFICIAL_CARD_ID and c.V_END_DATE >= PBK_CORE.getVersionEndDate())
+  			WHERE dh.V_END_DATE >= PBK_CORE.getVersionEndDate() and c.CARD_NUMBER = #{cardNumber}
+        ]]>
+	</select>
+	
+	<select id="getDomains" resultType="ru.armd.pbk.domain.nsi.employee.Employee">
+		<![CDATA[
+			SELECT 
+				dh.id as id,
+            	]]><include refid="fieldDomain" /><![CDATA[
+			FROM
+            	PBK_NSI.EMPLOYEES d JOIN PBK_NSI.EMPLOYEE_HISTS dh on (d.ID = dh.HEAD_ID)
+			WHERE
+  			  	dh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+        ]]>
+	</select>
+	
+	<select id="checkEmployeeVersion" resultType="boolean">
+		<include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+			SELECT
+				1
+			FROM
+				PBK_NSI.EMPLOYEES e LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (e.ID = eh.HEAD_ID AND e.IS_DELETE = 0 AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			WHERE
+				 (#{currentId} IS NULL OR e.ID != (SELECT e.id from PBK_NSI.EMPLOYEES e LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (e.ID = eh.HEAD_ID) where eh.ID = #{currentId}))
+				 AND (#{puskId} IS NULL OR eh.PUSK_ID = #{puskId})
+				 AND (#{dvrId} IS NULL OR eh.DVR_ID = #{dvrId})
+				 AND (#{contactlessCardId} IS NULL OR eh.CONTACTLESS_CARD_ID = #{contactlessCardId})
+				 AND (#{officialCardId} IS NULL OR eh.OFFICIAL_CARD_ID = #{officialCardId})
+		<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+	</select>
+	
+	<select id="getLastButOneFireActual" resultType="ru.armd.pbk.domain.nsi.employee.Employee">
+			<![CDATA[
+			SELECT 
+				dh.id as id,
+            	]]><include refid="fieldDomain" /><![CDATA[
+            	, cast(edm.PERIOD_START_DATE as date) as periodStartDate
+            	, cast(edm.PERIOD_END_DATE as date) as periodEndDate
+			FROM
+            	PBK_NSI.EMPLOYEES d JOIN PBK_NSI.EMPLOYEE_HISTS dh on (d.ID = dh.HEAD_ID)
+            	left JOIN PBK_NSI.EMP_DEPT_MOVES edm on (d.ID = edm.EMPLOYEE_ID)
+			WHERE
+  			   dh.HEAD_ID = #{domainId}
+			   and dh.V_END_DATE  = (SELECT max(e.V_END_DATE)
+									 FROM PBK_NSI.EMPLOYEE_HISTS e
+									 WHERE e.HEAD_ID = d.ID AND e.V_END_DATE != PBK_CORE.getVersionEndDate() AND e.FIRE_DATE is null)
+			   and edm.PERIOD_END_DATE = (  SELECT max(PERIOD_END_DATE)
+											FROM PBK_NSI.EMP_DEPT_MOVES  
+											WHERE EMPLOYEE_ID = d.ID )]]>
+	</select>
+
+	<update id="updatePhoto">
+		<![CDATA[
+			UPDATE PBK_NSI.EMPLOYEE_HISTS
+			SET
+			  PHOTO = CONVERT(varbinary(max), #{photo})
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+
+	<resultMap id="responseMap" type="ru.armd.pbk.domain.nsi.employee.Employee">
+		<result property="photo" javaType="_byte[]" column="PHOTO" jdbcType="VARBINARY"/>
+	</resultMap>
+
+	<select id="getPhotoByDomainId" resultMap="responseMap">
+		<![CDATA[
+			SELECT PHOTO photo
+			FROM
+            	PBK_NSI.EMPLOYEES d JOIN PBK_NSI.EMPLOYEE_HISTS dh on (d.ID = dh.HEAD_ID)
+            	left JOIN PBK_NSI.EMP_DEPT_MOVES edm on (d.ID = edm.EMPLOYEE_ID)
+			WHERE
+  			   dh.HEAD_ID = #{id}
+			   and dh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+			   and edm.PERIOD_END_DATE = (  SELECT max(PERIOD_END_DATE)
+											FROM PBK_NSI.EMP_DEPT_MOVES
+											WHERE EMPLOYEE_ID = d.ID )
+        ]]>
+	</select>
+
+	<update id="deletePhoto">
+		<![CDATA[
+			UPDATE PBK_NSI.EMPLOYEE_HISTS SET
+				PHOTO = null
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+
+    <select id="getPlanningEmployeeForPusk" resultType="ru.armd.pbk.domain.nsi.employee.PuskPlanningEmployee">
+        <![CDATA[
+            select
+	            eh.PERSONNEL_NUMBER personId,
+	            eh.DEPT_ID department,
+	            eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC fio,
+	            och.CARD_NUMBER skk,
+	            cch.UID bsk
+
+	        from
+	            PBK_NSI.EMPLOYEE_HISTS eh
+	            left join PBK_NSI.OFFICIAL_CARD_HISTS och on eh.OFFICIAL_CARD_ID = och.HEAD_ID AND och.V_END_DATE >= PBK_CORE.getVersionEndDate()
+	            left join PBK_NSI.CONTACTLESS_CARD_HISTS cch on eh.CONTACTLESS_CARD_ID = cch.HEAD_ID AND cch.V_END_DATE >= PBK_CORE.getVersionEndDate()
+
+	        where
+	            eh.FIRE_DATE is null
+	            AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+	            and eh.FOR_PLAN_USE = 1
+	    ]]>
+    </select>
+
+
+</mapper>

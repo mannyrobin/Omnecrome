@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:com="http://mgt.ru/pbk/xsd/1/Common"
+            xmlns:dept="http://mgt.ru/pbk/xsd/fhd/1/Departments" targetNamespace="http://mgt.ru/pbk/xsd/fhd/1/Departments"
+            elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+  <xsd:import namespace="http://mgt.ru/pbk/xsd/1/Common" schemaLocation="Common.xsd"/>
+
+  <xsd:complexType name="ExportDepartmentResponseType">
+    <xsd:sequence>
+      <xsd:element name="departments">
+        <xsd:annotation>
+          <xsd:documentation>Перечень подразделений </xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+          <xsd:sequence minOccurs="0">
+            <xsd:element name="department" maxOccurs="unbounded">
+              <xsd:annotation>
+                <xsd:documentation>Данные о подразделении</xsd:documentation>
+              </xsd:annotation>
+              <xsd:complexType>
+                <xsd:sequence>
+                  <xsd:element name="ident" type="com:TIdent" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Уникальный идентификатор</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="name" type="com:TVarchar128" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Сокращенное наименование подразделения</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="fullName" type="com:TVarchar1024" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Полное наименование подразделения</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="parentDeptId" type="com:TIdent" nillable="true" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Уникальный идентификатор головного подразделения</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:schema>

@@ -1,0 +1,29 @@
+<div>
+    <div ar-validation-errors></div>
+    <!-- FORM -->
+    <form name="taskReportForm" class="form-horizontal" autocomplete="off">
+        <div class="form-group" ng-repeat="index in fields">
+            <label for="{{index.name}}" class="control-label pull-left col-sm-4">{{index.label}}<span ng-show="index.required" class="glyphicon glyphicon-asterisk text-danger"></span></label>
+            <div class="col-sm-3">
+                <input ng-if='index.type == "text" && index.required && !index.hide' ar-focus ar-enter-focus class="form-control" id="{{index.name}}" type="{{index.inputType}}" maxlength="{{index.maxLength}}"
+                    ar-tab-index="{{$index}}"  ng-model="index.value" ng-attr-placeholder="{{index.placeholder}}" name="{{index.name}}" ng-readonly="index.readonly" required ng-focus="select($event)"/>
+                <oi-select ng-if='index.type == "multiselect"'
+                           oi-options="item.name for item in index.list track by item.id"
+                           ng-model="index.value" id="{{::index.name}}" name="{{::index.name}}" placeholder="{{::index.placeholder}}"
+                           multiple></oi-select>
+            </div>
+            <div class="col-sm-2" ng-show="{{$index}} == 1">
+            	<label for="{{index.name}}" class="control-label pull-left">Данные из АСКП: {{fields[17].value}}</label>            	
+            </div>
+            <div class="col-sm-2" ng-show="{{$index}} == 1">
+            	<label for="{{index.name}}" class="control-label pull-left">По БСК: {{fields[18].value}}</label>            	
+            </div>
+        </div>
+    </form>
+    <!-- END FORM -->
+</div>
+
+<div ng-if="item.isDelete == 0 && isNotReadOnlyUser" class="pull-right">
+    <button type="button" class="btn btn-primary" ng-click="save()" ng-disabled="taskReportForm.$invalid || !isChange">Сохранить</button>
+    <button type="button" class="btn btn-default" ng-click="reset()">Отменить изменения</button>
+</div>

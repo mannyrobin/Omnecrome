@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="cache-ehcache.xsd"
+         updateCheck="true"
+         monitoring="autodetect"
+         dynamicConfig="true"
+         maxBytesLocalHeap="256M">
+
+    <diskStore path="java.io.tmpdir"/>
+
+    <defaultCache maxElementsInMemory="500" eternal="true" overflowToDisk="false" memoryStoreEvictionPolicy="LFU" />
+    <cache name="systemCache"
+           maxBytesLocalHeap="10M"
+           eternal="false"
+           overflowToDisk="true"
+           timeToIdleSeconds="300"
+           maxEntriesLocalDisk="1000"
+           diskPersistent="false"
+           diskExpiryThreadIntervalSeconds="120"
+           memoryStoreEvictionPolicy="LFU" />
+
+</ehcache>

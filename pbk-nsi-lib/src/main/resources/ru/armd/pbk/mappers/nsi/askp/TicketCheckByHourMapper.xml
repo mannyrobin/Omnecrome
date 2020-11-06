@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.askp.TicketCheckByHourMapper">
+	
+	<insert id="insertByWorkDate">
+		<![CDATA[
+			INSERT INTO [PBK_VIS].[ASKP_TICKET_CHECKS_BY_HOUR] (
+				[WORK_DATE]
+				, [ASKP_ROUTE_CODE]
+				, [MOVE_CODE]
+				, [HOUR]
+				, [ASKP_CHECKS_COUNT]
+			)
+			SELECT 
+				[WORK_DATE]
+				, [ASKP_ROUTE_CODE]
+				, [MOVE_CODE]
+				, [HOUR]
+				, count([CHECK_TIME])
+				FROM (
+					]]><foreach item="workDate" collection="@ru.armd.pbk.utils.date.DateUtils@getDateInRange(from, to)" separator=" UNION ALL ">
+                    <![CDATA[
+					 	SELECT
+					  		#{workDate, jdbcType=DATE} as [WORK_DATE]  
+					  		,tc.[ASKP_ROUTE_CODE]
+					  		,tc.[MOVE_CODE]
+					  		,DATEDIFF(HOUR, #{workDate, jdbcType=DATE}, tc.[CHECK_TIME]) as [HOUR]
+					  		,tc.[CHECK_TIME]
+					 	FROM ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.[ASKP_TICKET_CHECKS] tc
+						JOIN [PBK_NSI].[TICKET_HISTS] th ON
+							th.HEAD_ID = tc.TICKET_ID
+							AND th.V_END_DATE >= PBK_CORE.getVersionEndDate()
+							AND th.USE_IN_ANALYSIS = 1	
+					]]></foreach>
+                    <![CDATA[				
+				) t
+			GROUP BY [WORK_DATE], [ASKP_ROUTE_CODE], [MOVE_CODE], [HOUR]
+		]]>
+	</insert>
+
+	<update id="updateRoutesId">
+		<![CDATA[
+			UPDATE a
+			SET a.[ROUTE_ID] = rh.HEAD_ID ,
+				a.ASDU_ROUTE_ID = rh.ASDU_ROUTE_ID
+			FROM [PBK_VIS].[ASKP_TICKET_CHECKS_BY_HOUR] a 
+			JOIN PBK_NSI.ROUTE_HISTS rh on a.ASKP_ROUTE_CODE = rh.ASKP_ROUTE_CODE AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+			WHERE [WORK_DATE] >= #{from, jdbcType=DATE}
+				AND [WORK_DATE] <= #{to, jdbcType=DATE}
+		]]>
+	</update>
+	
+	<delete id="deleteByWorkDate">
+		<![CDATA[
+			DELETE FROM [PBK_VIS].[ASKP_TICKET_CHECKS_BY_HOUR]
+			WHERE [WORK_DATE] >= #{from, jdbcType=DATE}
+				AND [WORK_DATE] <= #{to, jdbcType=DATE}		
+		]]>
+	</delete>
+
+</mapper>

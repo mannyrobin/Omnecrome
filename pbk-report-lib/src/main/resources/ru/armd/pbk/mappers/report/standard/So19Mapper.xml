@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So19Mapper">
+    <select id="getGridViews" resultType="ru.armd.pbk.views.report.So19View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+		<![CDATA[
+with mytable as (
+    select
+        ps.WORK_DATE workDate,
+        STUFF((SELECT ', ' + geh2.SURNAME + ' ' + LEFT(geh2.NAME, 1) + '. ' + LEFT(geh2.PATRONUMIC, 1) + '.'
+               from PBK_NSI.GKUOP_EMPLOYEE_HISTS geh2
+                        join PBK_TASK.TASK_GKUOP_EMPLOYEES tge2 on tge2.EMPLOYEE_ID = geh2.HEAD_ID
+               where tge2.TASK_ID = tge.TASK_ID and geh2.V_END_DATE >= cast('2100.01.01' as date)
+               FOR XML PATH(''), TYPE
+              ).value('.', 'NVARCHAR(MAX)')
+            ,1,2,'') gkuEmployees,
+        STUFF((SELECT ',' + geh2.GKUOP_DEPT_NAME
+               from PBK_NSI.GKUOP_EMPLOYEE_HISTS geh2
+                        join PBK_TASK.TASK_GKUOP_EMPLOYEES tge2 on tge2.EMPLOYEE_ID = geh2.HEAD_ID
+               where tge2.TASK_ID = tge.TASK_ID and geh2.V_END_DATE >= cast('2100.01.01' as date)
+               group by geh2.GKUOP_DEPT_NAME
+               FOR XML PATH(''), TYPE
+              ).value('.', 'NVARCHAR(MAX)')
+            ,1,1,'') gkuPodrName,
+        isnull(STUFF((SELECT ', ' + eh2.SURNAME + ' ' + LEFT(eh2.NAME, 1) + '. ' + LEFT(eh2.PATRONUMIC, 1) + '.'
+                      from PBK_NSI.EMPLOYEE_HISTS eh2
+                               join PBK_TASK.TASK_MGT_EMPLOYEES tme3 on tme3.EMPLOYEE_ID = eh2.HEAD_ID
+                      where tme3.TASK_ID = it.t2id and eh2.V_END_DATE >= cast('2100.01.01' as date)
+                      FOR XML PATH(''), TYPE
+                     ).value('.', 'NVARCHAR(MAX)')
+                   ,1,2,''),
+               eh.SURNAME + ' ' + LEFT(eh.NAME, 1) + '. ' + LEFT(eh.PATRONUMIC, 1) + '.'
+            ) mgtEmployees,
+        isnull(STUFF((SELECT distinct ', ' + cvh2.NAME
+               from
+                   PBK_PLAN.PLAN_SCHEDULES ps3
+                       join PBK_TASK.TASK_MGT_EMPLOYEES tme on tme.EMPLOYEE_ID = ps3.EMPLOYEE_ID
+                       JOIN PBK_TASK.TASK_MGT_EMPLOYEES tme2 on tme.TASK_ID = tme2.TASK_ID
+                       JOIN PBK_TASK.TASKS t2 on tme2.TASK_ID = t2.ID
+                       JOIN PBK_PLAN.PLAN_SCHEDULES ps2 on ps2.ID = t2.PLAN_SCHEDULE_ID and ps3.WORK_DATE = ps2.WORK_DATE
+                       join PBK_NSI.EMPLOYEE_HISTS eh on eh.HEAD_ID = tme2.EMPLOYEE_ID AND eh.V_END_DATE >= cast('2100.01.01' as date)
+                       join PBK_TASK.TASKS t3 on t3.PLAN_SCHEDULE_ID = ps3.id
+                       join PBK_PLAN.PLAN_VENUES pv2 on t3.PLAN_VENUE_ID = pv2.ID
+                       join PBK_NSI.CITY_VENUE_HISTS cvh2 on cvh2.HEAD_ID = pv2.CITY_VENUE_ID and cvh2.V_END_DATE >= cast('2100.01.01' as date)
+               where t2.ID = isnull(it.t2id, t.id)
+               group by t3.id, t2.id, cvh2.NAME
+               FOR XML PATH(''), TYPE
+              ).value('.', 'NVARCHAR(MAX)')
+            ,1,2,''), cvh.NAME) venue,
+        isnull(STUFF((SELECT distinct ', ' + rh2.ROUTE_NUMBER
+               from
+                   PBK_PLAN.PLAN_SCHEDULES ps3
+                       join PBK_TASK.TASK_MGT_EMPLOYEES tme on tme.EMPLOYEE_ID = ps3.EMPLOYEE_ID
+                       JOIN PBK_TASK.TASK_MGT_EMPLOYEES tme2 on tme.TASK_ID = tme2.TASK_ID
+                       JOIN PBK_TASK.TASKS t2 on tme2.TASK_ID = t2.ID
+                       JOIN PBK_PLAN.PLAN_SCHEDULES ps2 on ps2.ID = t2.PLAN_SCHEDULE_ID and ps3.WORK_DATE = ps2.WORK_DATE
+                       join PBK_NSI.EMPLOYEE_HISTS eh on eh.HEAD_ID = tme2.EMPLOYEE_ID AND eh.V_END_DATE >= cast('2100.01.01' as date)
+                       join PBK_TASK.TASKS t3 on t3.PLAN_SCHEDULE_ID = ps3.id
+                       join PBK_TASK.TASK_ROUTES tr2 on tr2.TASK_ID = t3.id
+                       join PBK_NSI.ROUTE_HISTS rh2 on rh2.HEAD_ID = tr2.ROUTE_ID and rh2.V_END_DATE >= cast('2100.01.01' as date)
+               where t2.ID = isnull(it.t2id, t.id)
+               group by t3.id, rh2.ROUTE_NUMBER
+               FOR XML PATH(''), TYPE
+              ).value('.', 'NVARCHAR(MAX)')
+            ,1,2,'') ,
+           STUFF((SELECT ', ' + rh2.ROUTE_NUMBER
+                  from PBK_NSI.ROUTE_HISTS rh2
+                           left join PBK_TASK.TASK_ROUTES tr2 on tr2.ROUTE_ID = rh2.HEAD_ID
+                  where tr2.TASK_ID = t.id and rh2.V_END_DATE >= cast('2100.01.01' as date)
+                  FOR XML PATH(''), TYPE
+                 ).value('.', 'NVARCHAR(MAX)')
+               ,1,2,'')
+            ) routes,
+        isnull(STUFF((SELECT distinct ', ' + cch2.SHORT_NAME
+               from
+                   PBK_PLAN.PLAN_SCHEDULES ps3
+                       join PBK_TASK.TASK_MGT_EMPLOYEES tme on tme.EMPLOYEE_ID = ps3.EMPLOYEE_ID
+                       JOIN PBK_TASK.TASK_MGT_EMPLOYEES tme2 on tme.TASK_ID = tme2.TASK_ID
+                       JOIN PBK_TASK.TASKS t2 on tme2.TASK_ID = t2.ID
+                       JOIN PBK_PLAN.PLAN_SCHEDULES ps2 on ps2.ID = t2.PLAN_SCHEDULE_ID and ps3.WORK_DATE = ps2.WORK_DATE
+                       join PBK_NSI.EMPLOYEE_HISTS eh2 on eh2.HEAD_ID = tme2.EMPLOYEE_ID AND eh2.V_END_DATE >= cast('2100.01.01' as date)
+                       join PBK_TASK.TASKS t3 on t3.PLAN_SCHEDULE_ID = ps3.id
+                       join PBK_NSI.CITY_COUNTY_HISTS cch2 on eh2.CITY_COUNTY_ID = cch2.HEAD_ID and cch2.V_END_DATE >= cast('2100.01.01' as date)
+               where t2.ID = isnull(it.t2id, t.id)
+               group by t3.id, cch2.SHORT_NAME
+               FOR XML PATH(''), TYPE
+              ).value('.', 'NVARCHAR(MAX)')
+            ,1,2,'') , cch.NAME) county,
+        s.NAME shiftName
+    from PBK_TASK.TASKS t
+             join PBK_PLAN.PLAN_SCHEDULES ps on t.PLAN_SCHEDULE_ID = ps.ID
+             left join PBK_NSI.SHIFTS s on ps.SHIFT_ID = s.ID
+             left join PBK_TASK.TASK_GKUOP_EMPLOYEES tge on t.ID = tge.TASK_ID
+             left join PBK_NSI.GKUOP_EMPLOYEE_HISTS geh on geh.HEAD_ID = tge.EMPLOYEE_ID AND geh.V_END_DATE >= cast('2100.01.01' as date)
+
+             left join (
+                select
+                    t2.id t2id, ps3.id psId
+                from
+                    PBK_PLAN.PLAN_SCHEDULES ps3
+                        join PBK_TASK.TASK_MGT_EMPLOYEES tme on tme.EMPLOYEE_ID = ps3.EMPLOYEE_ID
+                        JOIN PBK_TASK.TASK_MGT_EMPLOYEES tme2 on tme.TASK_ID = tme2.TASK_ID
+                        JOIN PBK_TASK.TASKS t2 on tme2.TASK_ID = t2.ID
+                        JOIN PBK_PLAN.PLAN_SCHEDULES ps2 on ps2.ID = t2.PLAN_SCHEDULE_ID and ps3.WORK_DATE = ps2.WORK_DATE
+                        join PBK_NSI.EMPLOYEE_HISTS eh on eh.HEAD_ID = tme2.EMPLOYEE_ID AND eh.V_END_DATE >= cast('2100.01.01' as date)) it on it.psId = ps.id
+
+            left join PBK_NSI.EMPLOYEE_HISTS eh on eh.HEAD_ID = ps.EMPLOYEE_ID AND eh.V_END_DATE >= cast('2100.01.01' as date)
+            left join PBK_NSI.CITY_COUNTY_HISTS cch on eh.CITY_COUNTY_ID = cch.HEAD_ID and cch.V_END_DATE >= cast('2100.01.01' as date)
+
+            left join PBK_TASK.TASK_ROUTES tr on tr.TASK_ID = t.id
+            left join PBK_NSI.ROUTE_HISTS rh on rh.HEAD_ID = tr.ROUTE_ID and rh.V_END_DATE >= cast('2100.01.01' as date)
+
+            left join PBK_PLAN.PLAN_VENUES pv on t.PLAN_VENUE_ID = pv.ID
+            left join PBK_NSI.CITY_VENUE_HISTS cvh on cvh.HEAD_ID = pv.CITY_VENUE_ID and cvh.V_END_DATE >= cast('2100.01.01' as date)
+        where ps.WORK_DATE >= cast(#{filter.dateFrom} as DATE) and ps.WORK_DATE <= cast(#{filter.dateTo} as DATE)]]>
+		<if test="filter.departmentId != null">
+			AND ps.DEPT_ID IN (${filter.departmentId})
+		</if>
+		<if test="filter.shiftId != null">
+			<![CDATA[
+					  and ps.shift_id IN (${filter.shiftId})
+				]]></if>
+		<![CDATA[
+			  group by ps.WORK_DATE, tge.TASK_ID, t.id, it.t2id, eh.SURNAME, eh.NAME, eh.PATRONUMIC, s.NAME, cvh.NAME, cch.NAME
+		),
+y as (
+SELECT ROW_NUMBER() OVER (ORDER BY sub.workDate, sub.mgtEmployees) AS id, sub.* FROM (
+		select distinct
+		  workDate,
+		  gkuEmployees,
+		  case
+			when
+			  CHARINDEX(',', gkuPodrName) != 0
+			  then null
+			else gkuPodrName
+		  end gkuPodrName,
+		  mgtEmployees,
+		  venue,
+		  routes,
+		  county,
+		  shiftName
+		from mytable
+) sub
+			]]>
+		<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+</mapper>

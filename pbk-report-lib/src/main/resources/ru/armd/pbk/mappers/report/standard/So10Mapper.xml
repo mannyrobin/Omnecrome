@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So10Mapper">
+  
+  	<sql id="curFilter">
+		<![CDATA[
+			AND WORK_DATE in (
+				select WORK_DATE
+					from PBK_NSI.WORK_DAYS 
+					where 
+						  ((#{filter.isWorkDate} is null) OR
+						  (#{filter.isWorkDate} = 1 AND WORK_DAY_TYPE_ID = 1) OR (#{filter.isWorkDate} = 0 AND WORK_DAY_TYPE_ID in (2, 3))) 
+						  AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= WORK_DATE)
+		                  AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= WORK_DATE)									
+					)	            
+					]]><if test="filter.departmentId != null">
+  						AND dh.HEAD_ID IN (${filter.departmentId})
+					</if><![CDATA[
+                		and (#{filter.deptAuthId} is null or dh.HEAD_ID = #{filter.deptAuthId})
+		]]>
+	</sql> 
+	
+	<sql id="prevFilter">
+		<![CDATA[
+			AND WORK_DATE in (
+				select WORK_DATE
+					from PBK_NSI.WORK_DAYS 
+					where 
+						  ((#{filter.isWorkDate} is null) OR
+						  (#{filter.isWorkDate} = 1 AND WORK_DAY_TYPE_ID = 1) OR (#{filter.isWorkDate} = 0 AND WORK_DAY_TYPE_ID in (2, 3))) 
+						  AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR DATEADD(year, -1, CONVERT(DATETIME, #{filter.dateFrom, jdbcType=DATE}, 101)) <= WORK_DATE)
+	            		  AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR DATEADD(year, -1, CONVERT(DATETIME, #{filter.dateTo, jdbcType=DATE}, 101)) >= WORK_DATE)
+					)	            
+					]]><if test="filter.departmentId != null">
+  						AND dh.HEAD_ID IN (${filter.departmentId})
+					</if><![CDATA[
+                		and (#{filter.deptAuthId} is null or dh.HEAD_ID = #{filter.deptAuthId})
+		]]>
+	</sql>
+  	
+  	<select id="getFirstRow" resultType="ru.armd.pbk.views.report.So10View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+  		<![CDATA[
+  			select id, criterion, isnull(curPeriod, 0) as curPeriod, isnull(prevPeriod, 0) as prevPeriod, curPeriod + prevPeriod as total from (
+				SELECT 1 AS id,
+				'Среднее количество ежедневно работавших контролеров' AS criterion,
+					case curWDC when 0 then 0 else curPeriod / curWDC end as curPeriod, 
+					case prevWDC when 0 then 0 else prevPeriod / prevWDC end as prevPeriod
+				FROM
+				(SELECT count(ps.EMPLOYEE_ID) AS curPeriod,
+				count(distinct WORK_DATE) as curWDC
+				FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+				JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				WHERE 1=1
+				]]><include refid="curFilter" /><![CDATA[) AS q1,
+				(SELECT count(ps.EMPLOYEE_ID) AS prevPeriod,
+				count(distinct WORK_DATE) as prevWDC
+				FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+				JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				WHERE 1=1
+				]]><include refid="prevFilter" /><![CDATA[)AS q2) as t]]>
+  	</select>
+  	
+  	<select id="getSecondRow" resultType="ru.armd.pbk.views.report.So10View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+  		<![CDATA[
+  			SELECT 2 AS id, 'Количество изъятых неправомерно используемых СКМ, СКМО' AS criterion, isnull(curPeriod, 0) as curPeriod, isnull(prevPeriod, 0) as prevPeriod, (curPeriod + prevPeriod) as total
+				FROM
+				(				
+					SELECT sum(tr.EXEMPT_SKM_COUNT) + sum(tr.EXEMPT_SKMO_COUNT) AS curPeriod
+					FROM PBK_TASK.TASKS t
+					JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+					JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+					JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+					WHERE 1=1
+						]]><include refid="curFilter" /><![CDATA[
+					) AS q1
+			CROSS JOIN
+				(
+					SELECT sum(tr.EXEMPT_SKM_COUNT) + sum(tr.EXEMPT_SKMO_COUNT) AS prevPeriod
+					FROM PBK_TASK.TASKS t
+					JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+					JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+					JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+					WHERE 1=1
+						]]><include refid="prevFilter" /><![CDATA[	
+					) AS q2 
+		]]>
+  	</select>
+  	
+  	<select id="getThridRow" resultType="ru.armd.pbk.views.report.So10View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+  		<![CDATA[
+  				SELECT id, criterion, isnull(curPeriod, 0) as curPeriod, isnull(prevPeriod, 0) as prevPeriod, total
+  				from(
+  				select id, criterion, CAST(ROUND((curP / curE), 2) AS NUMERIC(8,2)) as curPeriod,
+	 			CAST(ROUND((prevP / prevE), 2)  AS NUMERIC(8,2)) as prevPeriod, 
+				CAST(ROUND(((curP + prevP) / (curE + prevE)), 2) AS NUMERIC(8,2)) as total
+				from (
+					SELECT 3 AS id, 'Среднее количество изъятых СКМ, СКМО в расчёте на одного контролёра' AS criterion, 
+					case curWDC when 0 then 0 else (curE / curWDC) end as curE, 
+					case prevWDC when 0 then 0 else (prevE / prevWDC) end as prevE,
+					curP,
+					prevP
+				FROM
+				(SELECT CAST(sum(tr.EXEMPT_SKMO_COUNT)+sum(tr.EXEMPT_SKM_COUNT) AS NUMERIC(8,2)) as curP
+				, count(ps.EMPLOYEE_ID) AS curE
+				, count(distinct WORK_DATE) as curWDC
+				FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+				JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				WHERE 1=1
+					]]><include refid="curFilter" /><![CDATA[
+				) AS q1 ,
+				(
+				SELECT CAST(sum(tr.EXEMPT_SKMO_COUNT)+sum(tr.EXEMPT_SKM_COUNT) AS NUMERIC(8,2)) as prevP
+				, count(ps.EMPLOYEE_ID) AS prevE
+				, count(distinct WORK_DATE) as prevWDC
+				FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+				JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				WHERE 1=1  
+					]]><include refid="prevFilter" /><![CDATA[	
+				)AS q2) as t) as t]]>
+  	</select>
+  	
+  	<select id="getFourthRow" resultType="ru.armd.pbk.views.report.So10ViewFourtRow" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+  		<![CDATA[
+  		SELECT 4 AS id, 'Эффективность работы контролёров по изъятию неправомерно используемых СКМ, СКМО в расчёте на одного контролёра в сравнении с прошлым периодом (в %)' AS criterion, 
+				CASE 
+				    WHEN 0 = prevPeriod THEN 'Нет данных'
+				    WHEN prevPeriod IS NULL THEN 'Нет данных'
+				    ELSE CASE CAST(ROUND(curPeriod*100.0/prevPeriod, 2) AS NUMERIC(8,2))  - 100 WHEN 0 THEN 'Не изменилась' END
+				END AS curPeriod
+				FROM
+				(SELECT case count(distinct WORK_DATE) when 0 then 0 else CAST(sum(tr.EXEMPT_SKMO_COUNT)+sum(tr.EXEMPT_SKM_COUNT) AS NUMERIC(8,2))/(count(DISTINCT ps.EMPLOYEE_ID) / count(DISTINCT WORK_DATE)) end AS curPeriod
+				FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+				JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				WHERE 1=1
+				]]><include refid="curFilter" /><![CDATA[	) AS q1,
+				(SELECT case count(distinct WORK_DATE) when 0 then 0 else CAST(sum(tr.EXEMPT_SKMO_COUNT)+sum(tr.EXEMPT_SKM_COUNT) AS NUMERIC(8,2))/(count(DISTINCT ps.EMPLOYEE_ID) / count(DISTINCT WORK_DATE)) end AS prevPeriod
+				FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+				JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				WHERE 1=1
+					]]><include refid="prevFilter" /><![CDATA[
+				)AS q2
+        ]]>
+  	</select>
+  
+  	
+  	<select id="getSecondRowWithVesb" resultType="ru.armd.pbk.views.report.So10View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+  		<![CDATA[
+  			SELECT 2 AS id, 'Количество изъятых неправомерно используемых СКМ, СКМО, ВЕСБ' AS criterion, isnull(curPeriod, 0) as curPeriod, isnull(prevPeriod, 0) as prevPeriod, (curPeriod + prevPeriod) as total
+				FROM
+				(				
+					SELECT sum(tr.EXEMPT_SKM_COUNT) + sum(tr.EXEMPT_SKMO_COUNT) + sum(tr.EXEMPT_VESB_COUNT) AS curPeriod
+					FROM PBK_TASK.TASKS t
+					JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+					JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+					JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+					WHERE 1=1
+						]]><include refid="curFilter" /><![CDATA[
+					) AS q1
+			CROSS JOIN
+				(
+					SELECT sum(tr.EXEMPT_SKM_COUNT) + sum(tr.EXEMPT_SKMO_COUNT) + sum(tr.EXEMPT_VESB_COUNT) AS prevPeriod
+					FROM PBK_TASK.TASKS t
+					JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+					JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+					JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+					WHERE 1=1
+						]]><include refid="prevFilter" /><![CDATA[	
+					) AS q2 
+		]]>
+  	</select>
+  	
+  	<select id="getThridRowWithVesb" resultType="ru.armd.pbk.views.report.So10View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+  		<![CDATA[
+  				SELECT id, criterion, isnull(curPeriod, 0) as curPeriod, isnull(prevPeriod, 0) as prevPeriod, total
+  				from(
+  				select id, criterion, CAST(ROUND((curP / curE), 2) AS NUMERIC(8,2)) as curPeriod,
+	 			CAST(ROUND((prevP / prevE), 2)  AS NUMERIC(8,2)) as prevPeriod, 
+				CAST(ROUND(((curP + prevP) / (curE + prevE)), 2) AS NUMERIC(8,2)) as total
+				from (
+					SELECT 3 AS id, 'Среднее количество изъятых СКМ, СКМО, ВЕСБ в расчёте на одного контролёра' AS criterion, 
+					case curWDC when 0 then 0 else (curE / curWDC) end as curE, 
+					case prevWDC when 0 then 0 else (prevE / prevWDC) end as prevE,
+					curP,
+					prevP
+				FROM
+				(SELECT CAST(sum(tr.EXEMPT_SKMO_COUNT)+sum(tr.EXEMPT_SKM_COUNT)+sum(tr.EXEMPT_VESB_COUNT) AS NUMERIC(8,2)) as curP
+				, count(ps.EMPLOYEE_ID) AS curE
+				, count(distinct WORK_DATE) as curWDC
+				FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+				JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				WHERE 1=1
+					]]><include refid="curFilter" /><![CDATA[
+				) AS q1 ,
+				(
+				SELECT CAST(sum(tr.EXEMPT_SKMO_COUNT)+sum(tr.EXEMPT_SKM_COUNT)+sum(tr.EXEMPT_VESB_COUNT) AS NUMERIC(8,2)) as prevP
+				, count(ps.EMPLOYEE_ID) AS prevE
+				, count(distinct WORK_DATE) as prevWDC
+				FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+				JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				WHERE 1=1  
+					]]><include refid="prevFilter" /><![CDATA[	
+				)AS q2) as t) as t]]>
+  	</select>
+  	
+  	<select id="getFourthRowWithVesb" resultType="ru.armd.pbk.views.report.So10ViewFourtRow" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+  		<![CDATA[
+  		SELECT 4 AS id, 'Эффективность работы контролёров по изъятию неправомерно используемых СКМ, СКМО, ВЕСБ в расчёте на одного контролёра в сравнении с прошлым периодом (в %)' AS criterion, 
+				CASE 
+				    WHEN 0 = prevPeriod THEN 'Нет данных'
+				    WHEN prevPeriod IS NULL THEN 'Нет данных'
+				    ELSE CASE CAST(ROUND(curPeriod*100.0/prevPeriod, 2) AS NUMERIC(8,2))  - 100 WHEN 0 THEN 'Не изменилась' END
+				END AS curPeriod
+				FROM
+				(SELECT case count(distinct WORK_DATE) when 0 then 0 else CAST(sum(tr.EXEMPT_SKMO_COUNT)+sum(tr.EXEMPT_SKM_COUNT)+sum(tr.EXEMPT_VESB_COUNT) AS NUMERIC(8,2))/(count(DISTINCT ps.EMPLOYEE_ID) / count(DISTINCT WORK_DATE)) end AS curPeriod
+				FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+				JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				WHERE 1=1
+				]]><include refid="curFilter" /><![CDATA[	) AS q1,
+				(SELECT case count(distinct WORK_DATE) when 0 then 0 else CAST(sum(tr.EXEMPT_SKMO_COUNT)+sum(tr.EXEMPT_SKM_COUNT)+sum(tr.EXEMPT_VESB_COUNT) AS NUMERIC(8,2))/(count(DISTINCT ps.EMPLOYEE_ID) / count(DISTINCT WORK_DATE)) end AS prevPeriod
+				FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+				JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				WHERE 1=1
+					]]><include refid="prevFilter" /><![CDATA[
+				)AS q2
+        ]]>
+  	</select>
+  	
+  	<select id="getFifthRow" resultType="ru.armd.pbk.views.report.So10View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+	  	<![CDATA[
+	  		SELECT 5 AS id, 'Количество выявленных безбилетных пассажиров, которых контролёры обязали оплатить проезд' AS criterion, isnull(curPeriod, 0) as curPeriod, isnull(prevPeriod, 0) as prevPeriod, (curPeriod + prevPeriod) as total
+					FROM
+					(SELECT sum(tr.TICKET_SOLD_COUNT) AS curPeriod
+					FROM PBK_TASK.TASKS t
+					JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+					JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+					JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+					WHERE 1=1
+						]]><include refid="curFilter" /><![CDATA[
+					) AS q1,
+					(SELECT sum(tr.TICKET_SOLD_COUNT) AS prevPeriod
+					FROM PBK_TASK.TASKS t
+					JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+					JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+					JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+					WHERE 1=1
+						]]><include refid="prevFilter" /><![CDATA[	
+					)AS q2]]>
+  	</select>
+  	
+  	<select id="getSixthRow" resultType="ru.armd.pbk.views.report.So10View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+  		<![CDATA[
+  			SELECT 6 AS id, 'Проверено единиц подвижного состава' AS criterion, isnull(curPeriod, 0) as curPeriod, isnull(prevPeriod, 0) as prevPeriod, (curPeriod + prevPeriod) as total
+				FROM
+				(SELECT sum(tr.TS_CHECK_COUNT) AS curPeriod
+				FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+				JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				WHERE 1=1
+				]]><include refid="curFilter" /><![CDATA[	) AS q1,
+				(SELECT sum(tr.TS_CHECK_COUNT) AS prevPeriod
+				FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+				JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON t.DEPT_ID = dh.HEAD_ID AND dh.FOR_PLAN_USE = 1 AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				WHERE 1=1
+				]]><include refid="prevFilter" /><![CDATA[)AS q2				
+		]]>	
+  	</select>
+  	
+ </mapper>

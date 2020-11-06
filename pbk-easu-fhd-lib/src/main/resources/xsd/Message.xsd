@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+           xmlns:ds="http://www.w3.org/2000/09/xmldsig#" 
+           xmlns:msgd="http://mgt.ru/pbk/xsd/fhd/1/MessageData" 
+           xmlns:fhd="http://mgt.ru/pbk/xsd/fhd/1/Message" targetNamespace="http://mgt.ru/pbk/xsd/fhd/1/Message" 
+           elementFormDefault="qualified" attributeFormDefault="unqualified">
+  
+  <xs:import namespace="http://mgt.ru/pbk/xsd/fhd/1/MessageData" schemaLocation="MessageData.xsd"/>
+  
+  <xs:element name="RequestMessage" type="fhd:RequestMessageType">
+    <xs:annotation>
+      <xs:documentation>Запрос к ЕАСУ ФХД</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="ResponseMessage" type="fhd:ResponseMessageType">
+    <xs:annotation>
+      <xs:documentation>Ответ ЕАСУ ФХД</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  
+  <xs:complexType name="RequestMessageType">
+    <xs:sequence>
+      <xs:element ref="msgd:RequestMessageData"/>
+    </xs:sequence>
+    <xs:attribute name="Id" use="required">
+      <xs:annotation>
+        <xs:documentation>Идентификатор сообщения</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:ID">
+          <xs:maxLength value="50"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="timestamp" type="xs:dateTime" use="required">
+      <xs:annotation>
+        <xs:documentation>Дата и время формирования сообщения</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  
+  <xs:complexType name="ResponseMessageType">
+    <xs:sequence>
+      <xs:element ref="msgd:ResponseMessageData">
+        <xs:annotation>
+          <xs:documentation>Данные ответа</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="Id" use="required">
+      <xs:annotation>
+        <xs:documentation>Идентификатор сообщения</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:ID">
+          <xs:maxLength value="50"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="rqId" use="required">
+      <xs:annotation>
+        <xs:documentation>Идентификатор запроса</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:token"/>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="timestamp" type="xs:dateTime" use="required">
+      <xs:annotation>
+        <xs:documentation>Дата и время формирования сообщения</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+</xs:schema>

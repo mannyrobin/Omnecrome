@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.tasks.TaskGkuopEmployeeMapper">
+	
+	<insert id="insert" parameterType="ru.armd.pbk.domain.tasks.TaskGkuopEmployee" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        INSERT INTO
+        	PBK_TASK.TASK_GKUOP_EMPLOYEES(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+	        	,TASK_ID
+      			,EMPLOYEE_ID
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" />
+		        	,#{taskId}
+		        	,#{employeeId}
+	        	)
+	    <selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_TASK.TASK_GKUOP_EMPLOYEES' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+	
+	<delete id="deleteTaskEmployees">
+        <![CDATA[
+            DELETE FROM
+            	PBK_TASK.TASK_GKUOP_EMPLOYEES
+            WHERE
+            	TASK_ID = #{taskId}
+            	AND EMPLOYEE_ID IN ]]>
+            	<foreach collection="employeeIds" open="(" close=")" separator="," item="employeeId">
+            		#{employeeId}
+            	</foreach>
+    </delete>
+    
+    <select id="getGkuopEmployeeIdsByTaskId" resultType="long">
+    	SELECT
+    		EMPLOYEE_ID
+    	FROM
+    		PBK_TASK.TASK_GKUOP_EMPLOYEES
+    	WHERE
+    		TASK_ID = #{taskId}
+    </select>
+    
+</mapper>

@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.tasks.TaskRouteMapper">
+	
+	<insert id="insert" parameterType="ru.armd.pbk.domain.tasks.TaskRoute" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        INSERT INTO
+        	PBK_TASK.TASK_ROUTES(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+	        	,TASK_ID
+      			,ROUTE_ID
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" />
+		        	,#{taskId}
+		        	,#{routeId}
+	        	)
+	    <selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_TASK.TASK_ROUTES' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+	
+	<insert id="insertRoutes">
+		<![CDATA[
+        INSERT INTO
+        	PBK_TASK.TASK_ROUTES(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+	        	,TASK_ID
+      			,ROUTE_ID
+      			,CITY_DISTRICT_ID
+        ) VALUES
+        ]]>
+		<foreach collection="routes" item="districtId" index="routeId" open="(" close=")" separator="),(">
+			#{createDate}
+			,#{createUserId}
+			,#{createDate}
+			,#{createUserId}
+		    ,#{taskId}
+		    ,#{routeId}
+		    ,#{districtId}
+		</foreach>
+	</insert>
+
+	<insert id="insertRoute">
+		<![CDATA[
+        INSERT INTO
+        	PBK_TASK.TASK_ROUTES(
+                CREATE_DATE
+                ,CREATE_USER_ID
+                ,UPDATE_DATE
+                ,UPDATE_USER_ID
+	        	,TASK_ID
+      			,ROUTE_ID
+      			,CITY_DISTRICT_ID
+
+		) VALUES (
+		#{createDate}
+		, #{createUserId}
+		, #{createDate}
+		, #{createUserId}
+		,#{taskId}
+		,#{routeId}
+		,#{districtId}
+		)]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_TASK.TASK_ROUTES' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+
+	<delete id="deleteTaskRoutes">
+        <![CDATA[
+            DELETE FROM
+            	PBK_TASK.TASK_ROUTES
+            WHERE
+            	TASK_ID = #{taskId}
+            	AND ROUTE_ID IN ]]>
+            	<foreach collection="routeIds" open="(" close=")" separator="," item="routeId">
+            		#{routeId}
+            	</foreach>
+    </delete>
+    
+    <select id="getRouteIdsByTaskId" resultType="long">
+    	SELECT
+    		ROUTE_ID
+    	FROM
+    		PBK_TASK.TASK_ROUTES
+    	WHERE
+    		TASK_ID = #{taskId}
+    </select>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+    	SELECT
+    		tr.ROUTE_ID as id,
+    		rh.ROUTE_NUMBER  +' ('+gmts.NAME+')' as name	
+    	FROM
+    		PBK_TASK.TASK_ROUTES tr
+			join PBK_NSI.ROUTE_HISTS rh on rh.HEAD_ID = tr.ROUTE_ID
+			join PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+			join PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+    	WHERE
+    		gm.CLOSE_DATE is null AND TASK_ID = #{taskId}
+    </select>
+
+	<select id="getBskRoutes" resultType="ru.armd.pbk.core.views.SelectItem">
+    	SELECT
+    		rh.HEAD_ID as id,
+			rh.ROUTE_NUMBER +' ('+tt.NAME+')' as name
+		FROM
+			PBK_VIS.ASKP_CONTACTLESS_CARDS acc
+			JOIN PBK_NSI.ROUTE_HISTS rh ON (acc.ROUTE_ID = rh.HEAD_ID AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			JOIN PBK_NSI.ROUTE_TS_KINDS rtk on (rh.[ROUTE_TS_KIND_ID] = rtk.ID)
+			JOIN PBK_NSI.TS_TYPES tt on (rtk.COD = tt.COD)
+		WHERE
+			acc.TASK_ID = #{taskId}
+		group by rh.HEAD_ID, rh.ROUTE_NUMBER, tt.NAME
+    </select>
+      
+    <select id="getAllRoutesForTask" resultType="ru.armd.pbk.core.views.SelectItem">
+		  IF EXISTS (SELECT ID
+		  FROM [PBK_DB].[PBK_TASK].[TASK_ROUTES]
+		  WHERE TASK_ID = #{taskId}) 
+		  (SELECT
+		    		tr.ROUTE_ID as id,
+		    		rh.ROUTE_NUMBER  +' ('+gmts.NAME+')' as name	
+		    	FROM
+		    		PBK_TASK.TASK_ROUTES tr
+					join PBK_NSI.ROUTE_HISTS rh on rh.HEAD_ID = tr.ROUTE_ID
+					join PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+					join PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+		    	WHERE
+		    		gm.CLOSE_DATE is null AND TASK_ID = #{taskId}
+		    	UNION
+		    	SELECT
+						rh.HEAD_ID as id,
+						rh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name		
+				  FROM
+						PBK_NSI.CITY_VENUE_ROUTES dh 			
+						INNER JOIN PBK_NSI.ROUTES r ON (dh.ROUTE_ID = r.id)
+						INNER JOIN PBK_NSI.ROUTE_HISTS rh ON (r.ID = rh.HEAD_ID)
+						INNER JOIN PBK_NSI.CITY_VENUE_ROUTE_TYPES rth ON (dh.ROUTE_TYPE_ID = rth.ID)
+						JOIN PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+						JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+				  WHERE 
+				  	dh.V_END_DATE >= PBK_CORE.getVersionEndDate() AND
+				  	gm.CLOSE_DATE is null AND
+		          		dh.CITY_VENUE_ID =  (
+													SELECT v.CITY_VENUE_ID
+													FROM PBK_TASK.TASKS t	
+													join PBK_PLAN.PLAN_VENUES v on v.ID = t.PLAN_VENUE_ID										
+													where t.ID = #{taskId})          	
+		          		and rh.V_END_DATE >= [PBK_CORE].getVersionEndDate()) 
+				ELSE (SELECT
+			        	d.ID as id, dh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name
+			        FROM
+			        	PBK_NSI.ROUTES d
+						JOIN PBK_NSI.ROUTE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+						JOIN PBK_GISMGT.GM_ROUTES gm on (dh.GM_ROUTE_ID = gm.ID)
+						JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+			        WHERE
+			        	gm.CLOSE_DATE is null AND d.IS_DELETE = 0 AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate() AND dh.IS_NIGHT = (	SELECT case when (SELECT ps.SHIFT_ID     
+  																											   	FROM [PBK_TASK].[TASKS] t
+																												JOIN PBK_PLAN.PLAN_SCHEDULES ps on t.[PLAN_SCHEDULE_ID] = ps.ID
+																												WHERE t.ID = #{taskId}) = 3 THEN 1 ELSE 0 END))
+
+    	
+    </select>
+      
+    <select id="getDomains" resultType="ru.armd.pbk.domain.tasks.TaskRoute">
+		<![CDATA[
+			SELECT d.[TASK_ID] as taskId
+		      , d.[ROUTE_ID] as routeId
+		      , d.[CITY_DISTRICT_ID] as districtId
+		  	FROM [PBK_TASK].[TASK_ROUTES] d
+		  	WHERE #{taskId} = d.TASK_ID
+        ]]>
+	</select>
+    
+    <select id="getTaskRoutesForType" resultType="ru.armd.pbk.core.views.SelectItem">
+	<![CDATA[
+		  SELECT
+				rh.HEAD_ID as id,
+				rh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name		
+		  FROM
+				PBK_NSI.CITY_VENUE_ROUTES dh 			
+				INNER JOIN PBK_NSI.ROUTES r ON (dh.ROUTE_ID = r.id)
+				INNER JOIN PBK_NSI.ROUTE_HISTS rh ON (r.ID = rh.HEAD_ID)
+				INNER JOIN PBK_NSI.CITY_VENUE_ROUTE_TYPES rth ON (dh.ROUTE_TYPE_ID = rth.ID)
+				JOIN PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+				JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+		  WHERE gm.CLOSE_DATE is null
+		  		AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate() 
+				AND dh.CITY_VENUE_ID =  (
+											SELECT v.CITY_VENUE_ID
+											FROM PBK_TASK.TASKS t	
+											join PBK_PLAN.PLAN_VENUES v on v.ID = t.PLAN_VENUE_ID										
+											where t.ID = #{taskId})
+          		and (#{typeId} is null or #{typeId} = dh.ROUTE_TYPE_ID) 
+          		and rh.V_END_DATE >= [PBK_CORE].getVersionEndDate() 
+    ]]>
+	</select>
+    
+    <delete id="deleteZeroMoveRoutesByDate">
+    <![CDATA[
+   	 	DELETE 
+  		FROM [PBK_DB].[PBK_TASK].[TASK_ROUTES]
+  		WHERE TASK_ID in (SELECT t.ID
+					FROM PBK_TASK.TASKS t with (nolock)
+					JOIN PBK_PLAN.PLAN_SCHEDULES ps with (nolock)  on t.PLAN_SCHEDULE_ID = ps.ID
+					WHERE cast(ps.WORK_DATE as DATE) = cast(#{date} as DATE))
+					AND ROUTE_ID in (SELECT rh.HEAD_ID
+									 FROM PBK_NSI.ROUTE_HISTS rh 
+									 WHERE rh.V_END_DATE >= PBK_CORE.getVersionEndDate() and rh.ROUTE_MOVE_COUNT = 0)
+    ]]>
+    </delete>
+    
+    <delete id="removeTasksRoutesByWorkDate">
+        <![CDATA[
+            DELETE FROM
+                PBK_TASK.TASK_ROUTES
+            where TASK_ID IN (
+                    SELECT t.ID as id
+                    FROM PBK_TASK.TASKS t with (nolock)
+                        JOIN PBK_PLAN.PLAN_SCHEDULES ps with (nolock) on ps.ID = t.PLAN_SCHEDULE_ID
+                        JOIN PBK_TASK.TASK_STATES ts with (nolock) on t.TASK_STATE_ID = ts.ID
+                    WHERE cast(ps.WORK_DATE as DATE) = cast(#{workDate} as DATE)
+                        AND ps.DEPT_ID = #{deptId}
+                        AND ts.COD IN ('CREATED')
+                )
+        ]]>
+    </delete>
+
+	<select id="removeTasksRoutesByWorkDateP" statementType="CALLABLE" parameterType="java.util.HashMap">
+		<![CDATA[
+            exec [dbo].[removeTasksRoutesByWorkDate]
+                #{deptId, mode=IN},
+                #{workDate, mode=IN, jdbcType=DATE}
+       ]]>
+	</select>
+</mapper>

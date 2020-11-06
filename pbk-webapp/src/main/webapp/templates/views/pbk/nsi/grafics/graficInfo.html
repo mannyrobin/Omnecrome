@@ -1,0 +1,25 @@
+<div>
+    <div ar-validation-errors></div>
+
+    <!-- FORM -->
+    <form name="graficInfoForm">
+        <h4>Основная информация</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-3'" field="fields[0]"></div>
+            <div ar-form-field col-class="'col-sm-9'" field="fields[1]"></div>
+        </div>
+        <h4>График</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-3'" field="fields[2]"></div>
+            <div ar-form-field col-class="'col-sm-3'" field="fields[3]"></div>
+            <div ar-form-field col-class="'col-sm-3'" field="fields[4]"></div>
+            <div ar-form-field col-class="'col-sm-3'" field="fields[5]"></div>
+        </div>
+    </form>
+    <!-- END FORM -->
+</div>
+
+<div ng-if="isNotReadOnlyUser" class="pull-right">
+    <button type="button" class="btn btn-primary" ng-click="save()" ng-disabled="graficInfoForm.$invalid || !isChange">Сохранить</button>
+    <button type="button" class="btn btn-default" ng-click="reset()">Отменить изменения</button>
+</div>

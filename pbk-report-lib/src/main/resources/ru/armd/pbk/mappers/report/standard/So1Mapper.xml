@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So1Mapper">
+
+    <select id="getEmployees" resultType="ru.armd.pbk.views.report.So1EmployeeView">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[
+          SELECT
+            e.ID AS id
+            , eh.SURNAME AS surname
+            , eh.NAME AS name
+            , eh.PATRONUMIC AS patronumic
+            , eh.PERSONNEL_NUMBER AS personalNumber
+            , eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC AS fio
+            , dh.NAME as departmentName
+          FROM
+            [PBK_NSI].[EMPLOYEES] e
+            LEFT JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh ON e.ID = eh.HEAD_ID
+            LEFT JOIN [PBK_NSI].[DEPARTMENTS] d ON eh.DEPT_ID = d.ID
+            LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON d.ID = dh.HEAD_ID
+          WHERE 1=1
+            AND e.IS_DELETE = 0
+            AND dh.FOR_PLAN_USE = 1        
+            AND (eh.V_END_DATE IS NULL OR eh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+          ]]><if test="filter.departmentId != null">
+            AND d.ID IN (${filter.departmentId})
+          </if><![CDATA[
+            and (#{filter.deptAuthId} is null or d.ID = #{filter.deptAuthId})
+            AND (eh.FIRE_DATE IS NULL AND eh.FOR_PLAN_USE = 1 OR (#{filter.dateFrom, jdbcType=DATE} is not null AND eh.FIRE_DATE >= #{filter.dateFrom, jdbcType=DATE}))
+          ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd"/>
+    </select>
+
+    <select id="getScheduleForEmployee" resultType="ru.armd.pbk.views.report.So1ShiftView">
+        <![CDATA[
+          SELECT
+            convert(VARCHAR(10), ps.WORK_DATE, 120) as date,
+            case when ps.SHIFT_ID = 8 and t.ID is not null then  
+					ISNULL( (SELECT  s.ID
+							FROM PBK_NSI.SHIFTS s
+							WHERE 
+								s.COD in ('DAY', 'NIGHT',  'I',  'II', 'III')
+								AND DATEPART(hour, s.WORK_END_TIME) = DATEPART(hour, t.WORK_END_TIME) and DATEPART(hour, s.WORK_START_TIME) = DATEPART(hour, t.WORK_START_TIME)
+								AND DATEPART(minute, s.WORK_END_TIME) = DATEPART(minute, t.WORK_END_TIME) and DATEPART(minute, s.WORK_END_TIME) = DATEPART(minute, t.WORK_END_TIME)), ps.SHIFT_ID)				
+			else ps.SHIFT_ID end as shiftId,
+            ps.SHIFT_MODE_ID as shiftMode,
+            s.DESCRIPTION as shiftDescription,
+            /*ps.IS_RESERVE*/ 0 as isReserve /* пока isReserve в нерабочем состоянии */
+          FROM
+            PBK_PLAN.PLAN_SCHEDULES ps
+            LEFT JOIN [PBK_NSI].[DEPARTMENTS] d ON ps.DEPT_ID = d.ID
+            LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON d.ID = dh.HEAD_ID
+            LEFT JOIN PBK_NSI.SHIFTS s ON (ps.SHIFT_ID = s.ID)
+            LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (ps.EMPLOYEE_ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+            LEFT JOIN PBK_TASK.TASKS t on t.PLAN_SCHEDULE_ID = ps.ID   
+          WHERE 1=1
+            AND dh.FOR_PLAN_USE = 1
+            AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (#{params.filter.dateFrom, jdbcType=DATE} IS NULL OR #{params.filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+            AND (#{params.filter.dateTo, jdbcType=DATE} IS NULL OR #{params.filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+          ]]><if test="params.filter.departmentId != null">
+            AND ps.DEPT_ID IN (${params.filter.departmentId})
+          </if><![CDATA[
+            AND ps.EMPLOYEE_ID = #{employeeId}
+            and (#{params.filter.deptAuthId} is null or ps.DEPT_ID = #{params.filter.deptAuthId})
+            AND (eh.FIRE_DATE IS NULL AND eh.FOR_PLAN_USE = 1 OR eh.FIRE_DATE >= cast(ps.WORK_DATE as DATE))
+        ]]>
+    </select>
+
+    <select id="getDateStart" resultType="date">
+        <![CDATA[
+          SELECT
+              isnull(#{filter.dateFrom, jdbcType=DATE}, cast('0001-01-01' AS DATE))
+        ]]>
+    </select>
+
+    <select id="getDateEnd" resultType="date">
+        <![CDATA[
+          SELECT
+              isnull(#{filter.dateTo, jdbcType=DATE}, cast('9999-12-31' AS DATE))
+        ]]>
+    </select>
+
+</mapper>

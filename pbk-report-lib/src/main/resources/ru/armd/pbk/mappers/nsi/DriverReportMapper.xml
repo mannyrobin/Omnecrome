@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.DriverReportMapper">
+
+	 <select id="getReportViews" resultType="ru.armd.pbk.views.nsi.DriverReportView">
+        <![CDATA[
+			SELECT
+                row_number() over(]]><include refid="ru.armd.pbk.mappers.CommonSql.orderBySql" /><![CDATA[) as id,
+                t.*
+            FROM (
+				SELECT
+	               d.[ID] as id
+	               , dh.[SURNAME] as surname
+	               , dh.[NAME] as name
+	               , dh.[PATRONUMIC] as patronumic
+	               , dh.[PERSONNEL_NUMBER] as personalNumber               
+				FROM [PBK_NSI].[TS_DRIVERS] d JOIN [PBK_NSI].[TS_DRIVER_HISTS] dh on (d.ID = dh.HEAD_ID)
+				WHERE d.IS_DELETE = 0 and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+					and ((#{filter.fio} is null or UPPER(dh.NAME) like UPPER('%${filter.fio}%')) or (UPPER(dh.SURNAME) like UPPER('%${filter.fio}%')) or (UPPER(dh.PATRONUMIC) like UPPER('%${filter.fio}%')))
+	              	and (#{filter.personalNumber} is null or UPPER(dh.PERSONNEL_NUMBER) like UPPER('%${filter.personalNumber}%'))
+	              	and (d.IS_DELETE = 0)
+	              	]]><if test="filter.ids != null">
+						AND d.ID IN (${filter.ids})
+					</if>
+	        ) t
+        <include refid="ru.armd.pbk.mappers.CommonSql.orderBySql_t" />
+    </select>
+    
+</mapper>

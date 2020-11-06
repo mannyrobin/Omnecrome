@@ -1,0 +1,46 @@
+<div class="modal-header" draggable-modal>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="close()">
+        <span aria-hidden="true">&times;</span>
+    </button>
+    <h4 class="modal-title">{{title}}</h4>
+</div>
+
+<div class="modal-body">
+    <div ar-validation-errors></div>
+
+    <!-- FORM -->
+    <form name="tsModelForm">
+        <h4>Основная информация</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[0]"></div>
+            <div ar-form-field col-class="'col-sm-6'" field="fields[1]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-12'" field="fields[2]"></div>
+        </div>
+        <h4>Вместимость пассажиров</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[3]"></div>
+            <div ar-form-field col-class="'col-sm-6'" field="fields[4]"></div>
+        </div>
+        <h4>Габариты</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-3'" field="fields[5]"></div>
+            <div ar-form-field col-class="'col-sm-3'" field="fields[6]"></div>
+            <div ar-form-field col-class="'col-sm-3'" field="fields[7]"></div>
+            <div ar-form-field col-class="'col-sm-3'" field="fields[8]"></div>
+        </div>
+        <h4>Дополнительная информация</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[9]"></div>
+            <div ar-form-field col-class="'col-sm-6'" field="fields[10]"></div>
+        </div>
+    </form>
+    <!-- END FORM -->
+
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-primary" ng-click="save()" ng-disabled="tsModelForm.$invalid">Сохранить</button>
+    <button type="button" class="btn btn-default" ng-click="close()">Закрыть</button>
+</div>

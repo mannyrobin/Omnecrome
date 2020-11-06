@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So13Mapper">
+
+    <select id="getTicketTypes" resultType="ru.armd.pbk.views.report.So13View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <![CDATA[
+        	SELECT
+                att.TICKET_NAME as ticketTypeName
+				, att.TICKET_CODE as ticketTypeCode
+                , att.[ASKP_CHECKS_COUNT] AS countByHour
+                , cast(att.WORK_DATE as DATE) as workDate
+            FROM [PBK_VIS].[ASKP_TICKET_CHECKS_BY_TICKET] att
+			
+            WHERE 
+            	 1=1 AND (#{filter.routeId} IS NOT NULL AND #{filter.routeId} = att.ROUTE_ID)
+            	 AND (#{filter.moveCode} IS NOT NULL AND #{filter.moveCode} = att.MOVE_CODE)
+                 AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= att.WORK_DATE)
+                 AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= att.WORK_DATE)
+
+        ]]>
+    </select>
+</mapper>

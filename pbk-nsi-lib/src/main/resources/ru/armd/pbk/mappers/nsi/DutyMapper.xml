@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.DutyMapper">
+    
+	 <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.DutyView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+         <![CDATA[
+			SELECT
+               d.[ID] as id
+               , d.[WORK_DATE] as workDate
+          	   , d.[EASU_FHD_ROUTE_CODE] as easuFhdRouteCode
+          	   , d.[TS_DEPO_NUMBER] as tsDepoNumber
+          	   , d.[DRIVER_PERSONNEL_NUMBER] as driverPersonalNumber
+          	   , d.[MOVE_CODE] as moveCode
+          	   , d.[MOVE_START_TIME] as moveStartTime
+      		   , d.[MOVE_END_TIME] as moveEndTime
+			FROM [PBK_VIS].[FHD_TRIP_ORDERS] d
+			WHERE 
+				(#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(d.WORK_DATE as DATE)) AND
+                (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(d.WORK_DATE as DATE)) AND
+			    (#{filter.moveCode} is null or UPPER(d.MOVE_CODE) like UPPER('%${filter.moveCode}%')) AND 
+				(#{filter.easuFhdRouteCode} is null or UPPER(d.EASU_FHD_ROUTE_CODE) like UPPER('%${filter.easuFhdRouteCode}%')) AND 
+				(#{filter.tsDepoNumber} is null or UPPER(d.TS_DEPO_NUMBER) like UPPER('%${filter.tsDepoNumber}%')) AND 
+				(#{filter.driverPersonalNumber} is null or UPPER(d.DRIVER_PERSONNEL_NUMBER) like UPPER('%${filter.driverPersonalNumber}%'))
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+	<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.Duty" keyProperty="id" keyColumn="id">
+		insert into PBK_VIS.FHD_TRIP_ORDERS (
+               [WORK_DATE]
+          	   , [EASU_FHD_ROUTE_CODE]
+          	   , [TS_DEPO_NUMBER]
+          	   , [DRIVER_PERSONNEL_NUMBER]
+          	   , [MOVE_CODE]
+          	   , [MOVE_START_TIME]
+      		   , [MOVE_END_TIME]
+        ) VALUES (
+               cast(#{workDate} as date)
+          	   ,#{easuFhdRouteCode}
+          	   ,#{tsDepoNumber}
+          	   ,#{driverPersonalNumber}
+          	   ,#{moveCode}
+          	   ,#{moveStartTime}
+      		   ,#{moveEndTime}
+        )
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_VIS.FHD_TRIP_ORDERS' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+	
+	<update id="update" parameterType="ru.armd.pbk.domain.nsi.Duty">
+			UPDATE PBK_VIS.FHD_TRIP_ORDERS SET
+			   [WORK_DATE] = #{workDate}
+          	   , [EASU_FHD_ROUTE_CODE] = #{easuFhdRouteCode}
+          	   , [TS_DEPO_NUMBER] = #{tsDepoNumber}
+          	   , [DRIVER_PERSONNEL_NUMBER] = #{driverPersonalNumber}
+          	   , [MOVE_CODE] = #{moveCode}
+          	   , [MOVE_START_TIME] = #{moveStartTime}
+      		   , [MOVE_END_TIME] = #{moveEndTime}
+			WHERE
+			  ID = #{id}
+    </update>
+       
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_VIS.FHD_TRIP_ORDERS
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.Duty">
+		<![CDATA[
+			SELECT
+               d.[ID] as id
+               , [WORK_DATE] as workDate
+          	   , [EASU_FHD_ROUTE_CODE] as easuFhdRouteCode
+          	   , [TS_DEPO_NUMBER] as tsDepoNumber
+          	   , [DRIVER_PERSONNEL_NUMBER] as driverPersonalNumber
+          	   , [MOVE_CODE] as moveCode
+          	   , [MOVE_START_TIME] as moveStartTime
+      		   , [MOVE_END_TIME] as moveEndTime
+			FROM [PBK_VIS].[FHD_TRIP_ORDERS] d 
+			WHERE 1 = 1
+               and d.[ID] = #{id}
+        ]]>
+    </select>
+
+</mapper>

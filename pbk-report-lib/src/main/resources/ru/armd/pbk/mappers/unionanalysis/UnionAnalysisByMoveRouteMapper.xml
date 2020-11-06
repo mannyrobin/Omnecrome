@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.unionanalysis.UnionAnalysisByMoveRouteMapper">
+    
+    <select id="getGridViews" resultType="ru.armd.pbk.views.unionanalysis.UnionAnalysisByMoveRouteView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[                          
+            SELECT sub.ROUTE_ID as asduRouteId
+				   , agr.ROUTE_TYPE + '-' + agr.ROUTE_SHORT_NAME as routeName
+				   , agr.ROUTE_SHORT_NAME + ' (' + agr.NAME + ')' as routeFilterName	
+				   , sub.GRAFIC as grafic
+				   , sub.askpPassengersCount as askpPassengersCount
+				   , sub.asmppPassengersIncludedCount as asmppPassengersIncludedCount
+				   , sub.asmppPassengersLeftCount as asmppPassengersLeftCount
+				   , sub.asmppPassengersTransportedCount as  asmppPassengersTransportedCount
+			FROM (
+				SELECT asmpp.GRAFIC, asmpp.ROUTE_ID, asmpp.asmppPassengersIncludedCount, asmpp.asmppPassengersLeftCount, asmpp.asmppPassengersTransportedCount, askp.askpPassengersCount
+				FROM
+				(SELECT  asmpp.[ROUTE_ID]
+					, asmpp.[GRAFIC] 
+					, ISNULL(sum([PASSENGERSINCLUDED]), 0) as asmppPassengersIncludedCount
+			        , ISNULL(sum([PASSENGERSLEFT]), 0) as asmppPassengersLeftCount
+			        , ISNULL(sum([TRANSPORTED]), 0) as asmppPassengersTransportedCount
+					
+			  	FROM (SELECT distinct route_id, grafic,
+						                      stop_sequence, stop_id,
+						                      PASSENGERSINCLUDED, PASSENGERSLEFT,TRANSPORTED,
+						                      [TIME]
+                        FROM [PBK_VIS].[ASMPP_STOPS] asmpp
+	   		 	       WHERE 1 = 1
+      					 AND #{filter.workDate, jdbcType=DATE} <=  cast(asmpp.WORK_DATE as datetime) + cast(cast(asmpp.time as time) as datetime) - CAST('03:00:00' as datetime)
+      					 AND DATEADD(day, 1, #{filter.workDate, jdbcType=DATE}) >=  cast(asmpp.WORK_DATE as datetime) + cast(cast(asmpp.time as time) as datetime) - CAST('03:00:00' as datetime)) asmpp
+			    GROUP BY asmpp.[ROUTE_ID], asmpp.[GRAFIC]) as asmpp
+				LEFT JOIN (
+					SELECT ISNULL(sum(si.ASKP_CHECKS_COUNT), 0) as askpPassengersCount
+					, si.GRAFIC 
+					, si.ASDU_ROUTE_ID
+				FROM [PBK_VIS].[STOP_INTERVALS] si
+				WHERE si.WORK_DATE = #{filter.workDate, jdbcType=DATE}
+				group by si.ASDU_ROUTE_ID, si.[GRAFIC]
+				) as askp on asmpp.ROUTE_ID = askp.ASDU_ROUTE_ID and asmpp.GRAFIC = askp.GRAFIC) sub
+			  JOIN (
+					SELECT distinct a.ROUTE_ID, a.ROUTE_SHORT_NAME, g.NAME, a.ROUTE_TYPE		
+					FROM PBK_VIS.ASDU_GTFS_ROUTES a
+					JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS g on a.ROUTE_TYPE = g.SHORT_NAME
+					JOIN PBK_NSI.ROUTE_TS_KINDS rtk on rtk.GM_ROUTE_TS_KIND_ID = g.ID
+					WHERE 1 = 1 
+						AND #{filter.workDate, jdbcType=DATE} = a.WORK_DATE 
+					]]>
+					<if test="filter.tsType != null and filter.tsType != '-1'">
+						<![CDATA[ 
+							AND rtk.ID IN (${filter.tsType}) 
+						]]>
+        			</if>
+        			<if test="filter.routes != null and filter.routes != '-1'">
+						<![CDATA[ 
+							AND a.ROUTE_ID IN (${filter.routes}) 
+						]]>
+        			</if><![CDATA[ 		 	
+			  ) agr on sub.ROUTE_ID = agr.ROUTE_ID           
+        ]]><include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd"/>
+		<include refid="ru.armd.pbk.mappers.CommonSql.mssqlTurboMode"/>
+    </select>
+    
+</mapper>

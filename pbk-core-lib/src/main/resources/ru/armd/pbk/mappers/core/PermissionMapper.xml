@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.core.PermissionMapper">
+
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+        perm.ID as id,
+        perm.NAME as name
+        FROM
+        [PBK_CORE].[PERMISSIONS] perm
+        WHERE
+        perm.ID NOT IN (SELECT [PERMISSION_ID] FROM [PBK_CORE].[ROLE_PERMISSIONS] role_perm where role_perm.[ROLE_ID]=#{roleId})
+    </select>
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.core.PermissionView">
+        <![CDATA[
+          SELECT pr.NAME as name
+          , pr.ID as id
+          , pr.COD as cod
+          , pr.DESCRIPTION as description
+          FROM [PBK_CORE].[PERMISSIONS] pr
+          WHERE (#{filter.roleId} is null or pr.ID not in (
+          		 SELECT perm.[ID] as id            
+          		 FROM [PBK_CORE].[PERMISSIONS] perm inner join [PBK_CORE].[ROLE_PERMISSIONS] role_perm on perm.ID = role_perm.PERMISSION_ID
+          		 WHERE role_perm.ROLE_ID = #{filter.roleId}))
+        ]]>
+    </select>
+
+    <select id="getPermissionsByUserLogin" resultType="String">
+        <![CDATA[
+          SELECT DISTINCT perms.COD
+          FROM [PBK_CORE].[USERS] usr join [PBK_CORE].[USER_ROLES] usr_rols on (usr.ID = usr_rols.USER_ID and usr.LOGIN=#{login})
+          join [PBK_CORE].[ROLE_PERMISSIONS] rol_perm on usr_rols.ROLE_ID = rol_perm.ROLE_ID
+          join [PBK_CORE].[PERMISSIONS] perms on perms.ID = rol_perm.PERMISSION_ID
+        ]]>
+    </select>
+</mapper>

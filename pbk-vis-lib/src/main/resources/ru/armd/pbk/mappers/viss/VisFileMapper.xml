@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.VisFileMapper">
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.VisFile">
+        <![CDATA[
+            SELECT
+                 [ID] as id
+	    		,[CREATE_DATE] as createDate
+			    ,[CREATE_USER_ID] as createUserId
+                ,[NAME] as name
+                ,[SIZE] as size
+                ,[DESCRIPTION] as description
+                ,[STREAM_ID] as streamId
+            FROM [PBK_VIS].[VIS_FILES]
+            WHERE [ID] = #{id}
+       ]]>
+    </select>
+
+    <select id="getDomains" resultType="ru.armd.pbk.domain.viss.VisFile">
+        <![CDATA[
+            SELECT
+                 [ID] as id
+	    		,[CREATE_DATE] as createDate
+			    ,[CREATE_USER_ID] as createUserId
+                ,[NAME] as name
+                ,[SIZE] as size
+                ,[DESCRIPTION] as description
+                ,[STREAM_ID] as streamId
+            FROM [PBK_VIS].[VIS_FILES]
+            WHERE 1 = 1
+              and (#{name} is null or [NAME] = #{name})
+              and (#{exchangeAttemptId} is null or ID in (
+                  select [FILE_ID] from [PBK_VIS].[VIS_EXCHANGE_ATTEMPTS] where #{exchangeAttemptId} = ID))
+              and (#{exchangeResultId} is null or ID in (
+                  select [FILE_ID] from [PBK_VIS].[VIS_EXCHANGE_RESULTS] where #{exchangeResultId} = ID))
+        ]]>
+    </select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.VisFile" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_VIS].[VIS_FILES] (
+                [CREATE_DATE]
+                ,[CREATE_USER_ID]
+                ,[NAME]
+                ,[SIZE]
+                ,[DESCRIPTION]
+                ,[STREAM_ID]
+            ) VALUES (
+                #{createDate}
+                , #{createUserId}
+                , #{name}
+                , #{size}
+                , #{description}
+                , #{streamId}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_VIS.VIS_FILES' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+</mapper>

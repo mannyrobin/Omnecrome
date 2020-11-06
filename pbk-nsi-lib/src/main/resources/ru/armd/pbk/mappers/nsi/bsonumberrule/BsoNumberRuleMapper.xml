@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.bsonumberrule.BsoNumberRuleMapper">
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.bsonumberrule.BsoNumberRuleView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          select bnr.id as id,
+            dh.NAME as departmentName,
+            bt.NAME as bsoTypeName,
+            bnr.SEQ_CURR_VALUE as increment,
+            bnr.BRANCH_CODE as branchCode,
+            bnr.DEPT_CODE as deptCode
+          from [PBK_NSI].[BSO_NUMBER_RULES] bnr
+          left join [PBK_NSI].[DEPARTMENTS] d on bnr.DEPT_ID = d.ID
+          left join [PBK_NSI].[DEPARTMENT_HISTS] dh on d.ID = dh.HEAD_ID
+          left join [PBK_NSI].[BSO_TYPES] bt on bnr.BSO_TYPE_ID = bt.ID
+          where
+            (dh.V_END_DATE is null or dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()) AND
+            (#{filter.bsoTypeId} is null or #{filter.bsoTypeId} = bnr.BSO_TYPE_ID) AND
+            (#{filter.departmentId} is null or #{filter.departmentId} = bnr.DEPT_ID)
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.nsi.bsonumberrule.BsoNumberRule" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        INSERT INTO [PBK_NSI].[BSO_NUMBER_RULES](
+            [UPDATE_DATE]
+            ,[UPDATE_USER_ID]
+            ,[BSO_TYPE_ID]
+            ,[BSO_TYPE_CODE]
+            ,[BRANCH_ID]
+            ,[BRANCH_CODE]
+            ,[DEPT_ID]
+            ,[DEPT_CODE]
+            ,[SEQ_CURR_VALUE]
+            ,[YEAR]
+        ) VALUES(
+            #{updateDate}
+            ,#{updateUserId}
+            ,#{bsoTypeId}
+            ,#{bsoTypeCode}
+            ,#{branchId}
+            ,#{branchCode}
+            ,#{departmentId}
+            ,#{departmentCode}
+            ,#{increment}
+            ,NULL
+        )
+        ]]>
+    </insert>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.nsi.bsonumberrule.BsoNumberRule">
+        <![CDATA[
+            UPDATE [PBK_NSI].[BSO_NUMBER_RULES] SET
+                [UPDATE_DATE] = #{updateDate}
+                ,[UPDATE_USER_ID] = #{updateUserId}
+                ,[BSO_TYPE_ID] = #{bsoTypeId}
+                ,[BSO_TYPE_CODE] = #{bsoTypeCode}
+                ,[BRANCH_ID] = #{branchId}
+                ,[BRANCH_CODE] = #{branchCode}
+                ,[DEPT_ID] = #{departmentId}
+                ,[DEPT_CODE] = #{departmentCode}
+                ,[SEQ_CURR_VALUE] = #{increment}
+            WHERE
+              ID = #{id}
+        ]]>
+    </update>
+
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+                PBK_NSI.BSO_NUMBER_RULES
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.bsonumberrule.BsoNumberRule">
+        <![CDATA[
+            SELECT
+                 [ID] as id
+                ,[UPDATE_DATE] as updateDate
+                ,[UPDATE_USER_ID] as updateUserId
+                ,[BSO_TYPE_ID] as bsoTypeId
+                ,[BSO_TYPE_CODE] as bsoTypeCode
+                ,[BRANCH_ID] as branchId
+                ,[BRANCH_CODE] as branchCode
+                ,[DEPT_ID] as departmentId
+                ,[DEPT_CODE] as departmentCode
+                ,[SEQ_CURR_VALUE] as increment
+            FROM [PBK_NSI].[BSO_NUMBER_RULES]
+            WHERE [ID] = #{id}
+       ]]>
+    </select>
+
+    <select id="getDomains" resultType="ru.armd.pbk.domain.nsi.bsonumberrule.BsoNumberRule">
+        <![CDATA[
+            SELECT
+                 [ID] as id
+                ,[UPDATE_DATE] as updateDate
+                ,[UPDATE_USER_ID] as updateUserId
+                ,[BSO_TYPE_ID] as bsoTypeId
+                ,[BSO_TYPE_CODE] as bsoTypeCode
+                ,[BRANCH_ID] as branchId
+                ,[BRANCH_CODE] as branchCode
+                ,[DEPT_ID] as departmentId
+                ,[DEPT_CODE] as departmentCode
+                ,[SEQ_CURR_VALUE] as increment
+            FROM [PBK_NSI].[BSO_NUMBER_RULES]
+            WHERE 1 = 1
+              and (#{bsoTypeId} IS NULL OR [BSO_TYPE_ID] = #{bsoTypeId})
+              and (#{departmentId} IS NULL OR [DEPT_ID] = #{departmentId})
+              and (#{branchId} IS NULL OR [BRANCH_ID] = #{branchId})
+       ]]>
+    </select>
+
+    <select id="getBsosByRule" resultType="ru.armd.pbk.domain.nsi.bso.Bso">
+        <![CDATA[
+          SELECT
+            b.ID AS id
+            , b.BSO_NUMBER_RULE_ID AS bsoNumberRuleId
+            , b.IS_USE AS isUsed
+          FROM
+            PBK_NSI.BSOS b
+            LEFT JOIN PBK_NSI.BSO_NUMBER_RULES bnr ON b.BSO_NUMBER_RULE_ID = bnr.ID
+          WHERE 1=1
+			AND b.BSO_NUMBER_RULE_ID = #{ruleId}
+        ]]>
+    </select>
+    
+    <select id="getLastNumberForRule" resultType="java.lang.Long">
+        <![CDATA[
+			WITH 
+			numbers AS
+			(
+			SELECT DISTINCT CAST(SUBSTRING(b.BSO_NUMBER,  DATALENGTH(CAST(#{code} AS VARCHAR))+1
+												         , (DATALENGTH(b.BSO_NUMBER) - DATALENGTH(CAST(#{code} AS VARCHAR))))
+			                AS DECIMAL(19,0)) AS num
+			FROM PBK_NSI.BSOS AS b 
+			WHERE b.BSO_NUMBER_RULE_ID = #{ruleId}
+			AND b.BSO_NUMBER LIKE(CASE WHEN (CAST(#{code} AS VARCHAR) NOT LIKE '0%') THEN '[^0]%'
+			                                    ELSE CONCAT(CAST(#{code} AS VARCHAR),'%') END)
+			AND DATALENGTH(b.BSO_NUMBER) <= DATALENGTH(CAST(#{code} AS VARCHAR)) + 19
+			AND SUBSTRING(b.BSO_NUMBER,  DATALENGTH(CAST(#{code} AS VARCHAR))+1
+												         , (DATALENGTH(b.BSO_NUMBER) - DATALENGTH(CAST(#{code} AS VARCHAR)))) LIKE '[^0]%'
+			),
+			groups AS
+			(SELECT
+			ROW_NUMBER() OVER (ORDER BY num) AS rn,
+			 num - ROW_NUMBER() OVER (ORDER BY num) AS grp,
+			 num
+			FROM numbers
+			)
+			SELECT last
+			FROM(
+			SELECT 
+			COUNT(*) AS cnt, MIN(num) AS start, MAX(num) AS last
+			FROM groups
+			GROUP BY grp
+			) AS qq
+			WHERE #{incr} BETWEEN start AND last
+        ]]>
+    </select>
+
+</mapper>

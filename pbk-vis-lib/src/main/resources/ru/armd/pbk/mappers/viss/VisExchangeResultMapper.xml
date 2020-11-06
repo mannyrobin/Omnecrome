@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.VisExchangeResultMapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.viss.VisExchangeResultView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+            SELECT 
+                ea.ID as id, 
+                ea.RESULT_DATE as resultDate,
+                es.NAME as exchangeState,
+                ea.COMMENT as comment,
+                ef.NAME as fileName,
+                ef.STREAM_ID as fileStreamId
+            FROM
+                PBK_VIS.VIS_EXCHANGE_RESULTS ea
+                LEFT JOIN PBK_VIS.VIS_EXCHANGE_STATES es ON (ea.EXCHANGE_STATE_ID = es.ID)
+                LEFT JOIN PBK_VIS.VIS_FILES ef ON (ea.FILE_ID = ef.ID)
+            WHERE
+                (#{filter.exchangeAttemptId} is null or ea.EXCHANGE_ATTEMPT_ID = #{filter.exchangeAttemptId})
+                AND (#{filter.exchangeState} is null or ea.EXCHANGE_STATE_ID = #{filter.exchangeState})
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.VisExchangeResult" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_VIS].[VIS_EXCHANGE_RESULTS] (
+                 [EXCHANGE_ATTEMPT_ID]
+                ,[RESULT_DATE]
+                ,[EXCHANGE_STATE_ID]
+                ,[FILE_ID]
+                ,[COMMENT]
+            ) VALUES (
+                  #{exchangeAttemptId}
+                , #{resultDate}
+                , #{exchangeStateId}
+                , #{fileId}
+                , #{comment}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_VIS.VIS_EXCHANGE_RESULTS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.VisExchangeResult">
+        <![CDATA[
+            UPDATE [PBK_VIS].[VIS_EXCHANGE_RESULTS]
+            SET
+                 [EXCHANGE_ATTEMPT_ID]  = #{exchangeAttemptId}
+                ,[RESULT_DATE]          = #{resultDate}
+                ,[EXCHANGE_STATE_ID]    = #{exchangeStateId}
+                ,[FILE_ID]              = #{fileId}
+                ,[COMMENT]              = #{comment}
+            WHERE [ID] = #{id}
+        ]]>
+    </update>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.VisExchangeResult">
+        <![CDATA[
+            SELECT [ID] as id
+                  ,[EXCHANGE_ATTEMPT_ID]  as exchangeAttemptId
+                  ,[RESULT_DATE]          as resultDate
+                  ,[EXCHANGE_STATE_ID]    as exchangeStateId
+                  ,[FILE_ID]              as fileId
+                  ,[COMMENT]              as comment
+            FROM [PBK_VIS].[VIS_EXCHANGE_RESULTS]
+            WHERE [ID] = #{id}
+       ]]>
+    </select>
+
+    <select id="getDomains" resultType="ru.armd.pbk.domain.viss.VisExchangeResult">
+        <![CDATA[
+            SELECT [ID] as id
+                  ,[EXCHANGE_ATTEMPT_ID]  as exchangeAttemptId
+                  ,[RESULT_DATE]          as resultDate
+                  ,[EXCHANGE_STATE_ID]    as exchangeStateId
+                  ,[FILE_ID]              as fileId
+                  ,[COMMENT]              as comment
+            FROM [PBK_VIS].[VIS_EXCHANGE_RESULTS]
+            WHERE 1 = 1
+              and (#{exchangeAttemptId} is null or [EXCHANGE_ATTEMPT_ID] = #{exchangeAttemptId})
+              and (#{resultDate, jdbcType=DATE} is null or #{resultDate, jdbcType=DATE} = cast([RESULT_DATE] as DATE))
+        ]]>
+    </select>
+</mapper>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object-messages xmlns="http://mappl.ru/2015/XMLSchema/GISMGT">
+  <object-message>
+    <header>
+      <messageIdent>messageIdent1</messageIdent>
+      <operation>CREATE</operation>
+      <objectType>TRoadSurfaceType</objectType>
+      <identSet>
+        <componentId>
+          <component>component1</component>
+          <componentIdent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true" />
+        </componentId>
+        <componentId>
+          <component>component2</component>
+          <componentIdent>componentIdent1</componentIdent>
+        </componentId>
+        <componentId>
+          <component>component3</component>
+          <componentIdent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true" />
+        </componentId>
+      </identSet>
+      <timestamp>1900-01-01T01:01:01+03:00</timestamp>
+      <priority>1</priority>
+      <targetList>
+        <target>target1</target>
+        <target>target2</target>
+        <target>target3</target>
+      </targetList>
+      <source>source1</source>
+      <security>anyType</security>
+    </header>
+    <body>
+      <TAgencyOrganizationForm>
+        <muid>20</muid>
+        <name xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true" />
+        <code xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true" />
+      </TAgencyOrganizationForm>
+    </body>
+  </object-message>
+</object-messages>

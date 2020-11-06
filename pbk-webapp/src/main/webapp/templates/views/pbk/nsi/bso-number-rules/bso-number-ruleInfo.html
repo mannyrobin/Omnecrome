@@ -1,0 +1,32 @@
+<div>
+    <div ar-validation-errors></div>
+    
+    <!-- FORM -->
+    <form name="bsoNumberRuleInfoForm">
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-md-8'" field="fields[0]"></div>
+            <div ar-form-field col-class="'col-md-4'" field="fields[1]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-md-8'" field="fields[2]"></div>
+            <div ar-form-field col-class="'col-md-4'" field="fields[3]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-md-8'" field="fields[5]"></div>
+            <!--<div ar-form-field col-class="'col-md-4'" field="fields[2]"></div>-->
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-md-12'" field="fields[4]"></div>
+        </div>
+        <!--<div class="row form-group">-->
+            <!--<div ar-form-field col-class="'col-md-12'" field="fields[5]"></div>-->
+        <!--</div>-->
+    </form>
+    <!-- END FORM -->
+    
+</div>
+
+<div ng-if="item.isDelete == 0 && isNotReadOnlyUser" class="pull-right">
+    <button type="button" class="btn btn-primary" ng-click="save()" ng-disabled="bsoNumberRuleInfoForm.$invalid || !isChange">Сохранить</button>
+    <button type="button" class="btn btn-default" ng-click="reset()">Отменить изменения</button>
+</div>

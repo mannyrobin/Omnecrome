@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:com="http://mgt.ru/pbk/xsd/1/Common"
+            xmlns:tsv="http://mgt.ru/pbk/xsd/fhd/1/TsVenicles" targetNamespace="http://mgt.ru/pbk/xsd/fhd/1/TsVenicles"
+            elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+  <xsd:import namespace="http://mgt.ru/pbk/xsd/1/Common" schemaLocation="Common.xsd"/>
+
+  <xsd:complexType name="ExportTsVenicleResponseType">
+    <xsd:sequence>
+      <xsd:element name="venicles">
+        <xsd:annotation>
+          <xsd:documentation>Перечень ТС </xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+          <xsd:sequence minOccurs="0">
+            <xsd:element name="venicle" maxOccurs="unbounded">
+              <xsd:annotation>
+                <xsd:documentation>Данные о ТС</xsd:documentation>
+              </xsd:annotation>
+              <xsd:complexType>
+                <xsd:sequence>
+                  <xsd:element name="ident" type="com:TIdent" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Уникальный идентификатор</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="depoNumber" type="com:TVarchar1024" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Гаражный номер</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="kind" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Вид ТС</xsd:documentation>
+                    </xsd:annotation>
+                    <xsd:simpleType>
+                      <xsd:restriction base="com:TVarchar32">
+                        <xsd:enumeration value="Автобус">
+                          <xsd:annotation>
+                            <xsd:documentation>Автобус</xsd:documentation>
+                          </xsd:annotation>
+                        </xsd:enumeration>
+                        <xsd:enumeration value="Трамвай">
+                          <xsd:annotation>
+                            <xsd:documentation>Трамвай</xsd:documentation>
+                          </xsd:annotation>
+                        </xsd:enumeration>
+                        <xsd:enumeration value="Троллейбус">
+                          <xsd:annotation>
+                            <xsd:documentation>Троллейбус</xsd:documentation>
+                          </xsd:annotation>
+                        </xsd:enumeration>
+                      </xsd:restriction>
+                    </xsd:simpleType>
+                  </xsd:element>
+                  <xsd:element name="capacity" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Вместимость ТС</xsd:documentation>
+                    </xsd:annotation>
+                    <xsd:simpleType>
+                      <xsd:restriction base="com:TVarchar32">
+                        <xsd:enumeration value="МВ">
+                          <xsd:annotation>
+                            <xsd:documentation>Автобус МВ</xsd:documentation>
+                          </xsd:annotation>
+                        </xsd:enumeration>
+                        <xsd:enumeration value="СВ">
+                          <xsd:annotation>
+                            <xsd:documentation>Автобус СВ</xsd:documentation>
+                          </xsd:annotation>
+                        </xsd:enumeration>
+                        <xsd:enumeration value="СВ">
+                          <xsd:annotation>
+                            <xsd:documentation>Автобус СВ</xsd:documentation>
+                          </xsd:annotation>
+                        </xsd:enumeration>
+                        <xsd:enumeration value="БВ">
+                          <xsd:annotation>
+                            <xsd:documentation>Автобус БВ</xsd:documentation>
+                          </xsd:annotation>
+                        </xsd:enumeration>
+                        <xsd:enumeration value="ОБВ">
+                          <xsd:annotation>
+                            <xsd:documentation>Автобус ОБВ</xsd:documentation>
+                          </xsd:annotation>
+                        </xsd:enumeration>
+                        <xsd:enumeration value="ОД">
+                          <xsd:annotation>
+                            <xsd:documentation>Трамвай ОД</xsd:documentation>
+                          </xsd:annotation>
+                        </xsd:enumeration>
+                        <xsd:enumeration value="ДВ">
+                          <xsd:annotation>
+                            <xsd:documentation>Трамвай ДВ</xsd:documentation>
+                          </xsd:annotation>
+                        </xsd:enumeration>
+                      </xsd:restriction>
+                    </xsd:simpleType>
+                  </xsd:element>
+                  <xsd:element name="passengerMaxCount" type="com:TCount" nillable="true" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Максимальная вместимость в пассажирах</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="make" type="com:TVarchar256" nillable="true" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Марка ТС</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="model" type="com:TVarchar256" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Модель ТС</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="useStartDate" type="com:TDate" nillable="true" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Дата начала эксплуатации ТС. YYYY.MM.DD  – заполняется, если дата начала эксплуатации ТС попадает в период запроса</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="useEndDate" type="com:TDate" nillable="true" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Дата окончания эксплуатации ТС. YYYY.MM.DD  – заполняется, если дата окончания эксплуатации ТС попадает в период запроса</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:schema>

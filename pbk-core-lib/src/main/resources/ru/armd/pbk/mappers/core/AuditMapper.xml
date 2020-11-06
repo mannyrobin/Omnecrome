@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.core.AuditMapper">
+
+    <select id="getAuditTypesSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        <![CDATA[
+          select id as id, NAME as name from PBK_AUDIT.AUDIT_TYPES
+        ]]>
+    </select>
+
+    <select id="getAuditLevelsSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        <![CDATA[
+          select id as id, NAME as name from PBK_AUDIT.AUDIT_LEVELS
+        ]]>
+    </select>
+
+    <select id="getAuditOperationsSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        <![CDATA[
+          select id as id, NAME as name from PBK_AUDIT.AUDIT_OBJ_OPERATIONS
+        ]]>
+    </select>
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.core.AuditView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+        select
+                a.ID as id
+                , a.CREATE_DATE as createDate
+                , a.CREATE_USER_INFO +'(ip:'+a.USER_IP_ADDRESS+')' as createUserInfo
+                , at.NAME + ': ' + isnull(aoo.NAME, '') as auditTypeName
+                , a.AUDIT_LEVEL_ID as auditLevelId
+                , al.NAME as auditLevel
+                , a.MESSAGE as message
+                , a.USER_IP_ADDRESS as userIPAddress
+            from PBK_AUDIT.AUDITS a
+              join PBK_AUDIT.AUDIT_TYPES at on (a.AUDIT_TYPE_ID = at.ID)
+              join PBK_AUDIT.AUDIT_LEVELS al on (a.AUDIT_LEVEL_ID = al.ID)
+              left join PBK_AUDIT.AUDIT_OBJ_OPERATIONS aoo on (a.OBJ_OPERATION_ID = aoo.ID)
+            where
+                (#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(a.CREATE_DATE as DATE)) AND
+                (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(a.CREATE_DATE as DATE)) AND
+                ]]>
+        <if test="filter.typeId != null">
+            at.ID IN (${filter.typeId}) AND
+        </if>
+        <if test="filter.lvlId != null">
+            al.ID IN (${filter.lvlId}) AND
+        </if>
+                <![CDATA[
+			    (#{filter.createUserInfo} is null or UPPER(a.CREATE_USER_INFO) like UPPER('%${filter.createUserInfo}%'))
+
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.core.Audit" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_AUDIT].[AUDITS] (
+                [CREATE_DATE]
+               ,[CREATE_USER_ID]
+               ,[AUDIT_TYPE_ID]
+               ,[AUDIT_LEVEL_ID]
+               ,[MESSAGE]
+               ,[USER_IP_ADDRESS]
+               ,[OBJ_OPERATION_ID]
+               ,[OBJ_INFO]
+               ,[STACK_TRACE]
+               ,[THREAD_INFO]
+               ,[CREATE_USER_INFO]
+            ) VALUES (
+                #{createDate}
+               ,#{createUserId}
+               ,#{auditTypeId}
+               ,#{auditLevelId}
+               ,#{message}
+               ,#{userIPAddress}
+               ,#{objOperationId}
+               ,#{objInfo}
+               ,#{stackTrace}
+               ,#{threadInfo}
+               ,#{createUserInfo}
+            )
+        ]]>
+    </insert>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.core.Audit">
+        <![CDATA[
+        SELECT
+            ID as id
+            ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectCreateAuditValues" /><![CDATA[
+            , AUDIT_TYPE_ID as auditTypeId
+            , AUDIT_LEVEL_ID as auditLevelId
+            , OBJ_OPERATION_ID as objOperationId
+            , OBJ_INFO as objInfo
+            , MESSAGE as message
+            , USER_IP_ADDRESS as userIPAddress
+            , STACK_TRACE as stackTrace
+            , THREAD_INFO as threadInfo
+            , CREATE_USER_INFO as createUserInfo
+        from PBK_AUDIT.AUDITS
+        where ID = #{id}
+
+    ]]>
+    </select>
+    
+    <select id="getCountOldValues" resultType="long">
+			SELECT
+				count(ID)
+			FROM
+				PBK_DB.PBK_AUDIT.AUDITS
+			WHERE
+				DATEDIFF(DAY, CREATE_DATE, GETDATE()) >= (SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2005)
+    </select>
+    
+    <delete id="removeOldValues">
+    	DELETE
+    	FROM
+    		PBK_DB.PBK_AUDIT.AUDITS
+    	WHERE
+    		ID IN (
+	    		SELECT TOP 100000
+	  				ID
+				FROM
+					PBK_DB.PBK_AUDIT.AUDITS
+				WHERE
+					DATEDIFF(DAY, CREATE_DATE, GETDATE()) >= (SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2005)
+				)
+    </delete>
+
+</mapper>

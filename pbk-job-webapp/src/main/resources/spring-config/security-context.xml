@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/security
+			http://www.springframework.org/schema/security/spring-security-4.0.xsd
+       ">
+    <bean id="passwordEncoder" class="org.springframework.security.crypto.password.StandardPasswordEncoder">
+        <constructor-arg value="PBK" />
+    </bean>
+
+    <security:authentication-manager id="authenticationManager">
+        <security:authentication-provider ref="pbkSystemAuthProvider">
+
+        </security:authentication-provider>
+        <security:authentication-provider ref="pbkLdapAuthProvider">
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+    <bean id="pbkSystemAuthProvider" class="ru.armd.pbk.authtoken.PbkSystemAuthProvider">
+        <property name="passwordEncoder" ref="passwordEncoder"/>
+        <property name="userDetailsService" ref="userDetailsService"/>
+    </bean>
+
+    <bean id="pbkLdapAuthProvider" class="ru.armd.pbk.authtoken.LdapAuthenticationProvider">
+        <property name="passwordEncoder" ref="passwordEncoder"/>
+    </bean>
+
+<!--
+    <security:http
+            realm="Protected API"
+            use-expressions="true"
+            auto-config="false"
+            create-session="stateless"
+            entry-point-ref="unauthorizedEntryPoint"
+            authentication-manager-ref="authenticationManager"
+            pattern="/api/pbk/auth"
+            security="none">
+    </security:http>
+-->
+    <security:http
+            realm="Protected API"
+            use-expressions="true"
+            auto-config="false"
+            create-session="stateless"
+            entry-point-ref="unauthorizedEntryPoint"
+            authentication-manager-ref="authenticationManager"
+            pattern="/**">
+        <security:csrf disabled="true"/>
+        <security:custom-filter ref="authenticationTokenProcessingFilter" position="FORM_LOGIN_FILTER" />
+        <security:intercept-url pattern="/main" access="permitAll" />
+        <security:intercept-url pattern="/api/pbk/info/version" access="permitAll" />
+        <security:intercept-url pattern="/api/pbk/auth" access="permitAll" method="GET"/>
+
+
+
+        <!-- Авторизуются дальше на уровне контроллеров -->
+        <security:intercept-url pattern="/api/pbk/**" access="permitAll" />
+    </security:http>
+
+    <bean id="unauthorizedEntryPoint" class="ru.armd.pbk.authtoken.UnauthorizedEntryPoint" />
+
+    <bean class="ru.armd.pbk.authtoken.AuthenticationTokenProcessingFilter" id="authenticationTokenProcessingFilter">
+    </bean>
+
+    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass"
+                  value="org.springframework.security.core.context.SecurityContextHolder"/>
+        <property name="targetMethod" value="setStrategyName"/>
+        <property name="arguments"><list><value>MODE_GLOBAL</value></list></property>
+    </bean>
+</beans>

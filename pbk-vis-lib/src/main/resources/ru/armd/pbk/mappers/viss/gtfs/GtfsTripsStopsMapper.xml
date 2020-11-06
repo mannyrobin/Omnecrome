@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gtfs.GtfsTripsStopsMapper">
+
+	<insert id="insertChunck" parameterType="java.util.List">
+		INSERT
+		INTO [PBK_VIS].[ASDU_GTFS_TRIPS_STOPS]
+		(
+		[WORK_DATE]
+		,[ROUTE_ID]
+		,[ROUTE_SHORT_NAME]
+		,[REG_NUM]
+		,[ROUTE_TYPE]
+		,[TRIP_ID]
+		,[TRIP_SHORT_NAME]
+		,[DIRECTION_ID]
+		,[START_DATE]
+		,[END_DATE]
+		,[STOP_SEQUENCE]
+		,[STOP_ID]
+		) VALUES
+		<foreach collection="list" item="element" index="index"
+			separator=",">
+			<![CDATA[
+				(#{element.workDate}
+				,#{element.routeId}
+				,#{element.routeShortName}
+				,#{element.regNum}
+				,#{element.routeType}
+				,#{element.tripId}
+				,#{element.tripShortName}
+				,#{element.directionId}
+				,#{element.startDate}
+				,#{element.endDate, jdbcType=DATE}
+				,#{element.stopSequence}
+				,#{element.stopId})
+			]]>
+		</foreach>
+	</insert>
+
+</mapper>

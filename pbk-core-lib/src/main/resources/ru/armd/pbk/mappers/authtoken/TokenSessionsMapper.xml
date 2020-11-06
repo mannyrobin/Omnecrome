@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.authtoken.TokenSessionsMapper">
+
+    <insert id="addSession" parameterType="ru.armd.pbk.domain.authtoken.TokenSession" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO PBK_CORE.SESSIONS (
+              [CREATE_DATE]
+              ,[UPDATE_DATE]
+              ,[SESSION_ID]
+              ,[SESSION_TOKEN]
+              ,[USER_LOGIN]
+              ,[REMOTE_ADDRESS]
+              ,[IP_ADDRESS]
+              ,[SESSION_TIME_ZONE]
+            ) VALUES (
+                #{createDate}
+               ,#{updateDate}
+               ,#{sessionId}
+               ,#{sessionToken}
+               ,#{userLogin}
+               ,#{remoteAddress}
+               ,#{ipAddress}
+               ,#{sessionTimeZone}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_CORE.SESSIONS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <select id="getSessionBySessionId" resultType="ru.armd.pbk.domain.authtoken.TokenSession">
+        <![CDATA[
+             select
+                  ID as id
+                  ,CREATE_DATE as createDate
+                  ,UPDATE_DATE as updateDate
+                  ,SESSION_ID as sessionId
+                  ,SESSION_TOKEN as sessionToken
+                  ,USER_LOGIN as userLogin
+                  ,REMOTE_ADDRESS as remoteAddress
+                  ,IP_ADDRESS as ipAddress
+                  ,SESSION_TIME_ZONE as sessionTimeZone
+            from PBK_CORE.SESSIONS
+            where SESSION_ID = #{sessionId}
+       ]]>
+    </select>
+
+    <update id="updateSession" parameterType="ru.armd.pbk.domain.authtoken.TokenSession">
+        <![CDATA[
+            update PBK_CORE.SESSIONS
+            set
+                 UPDATE_DATE = #{updateDate}
+            where SESSION_TOKEN = #{sessionToken}
+        ]]>
+    </update>
+
+    <delete id="deleteSessionBySessionId">
+        <![CDATA[
+            delete from PBK_CORE.SESSIONS
+            where SESSION_ID = #{sessionId} ]]>
+    </delete>
+
+    <delete id="cleanSessions">
+        <![CDATA[
+            delete from PBK_CORE.SESSIONS
+        ]]>
+    </delete>
+
+    <delete id="cleanOldSessions">
+        <![CDATA[
+            delete from PBK_CORE.SESSIONS where UPDATE_DATE < #{criteriaDate}
+        ]]>
+    </delete>
+    
+    <select id="getOldSessions" resultType="ru.armd.pbk.domain.authtoken.TokenSession">
+        <![CDATA[
+             select
+                  ID as id
+                  ,CREATE_DATE as createDate
+                  ,UPDATE_DATE as updateDate
+                  ,SESSION_ID as sessionId
+                  ,SESSION_TOKEN as sessionToken
+                  ,USER_LOGIN as userLogin
+                  ,REMOTE_ADDRESS as remoteAddress
+                  ,IP_ADDRESS as ipAddress
+                  ,SESSION_TIME_ZONE as sessionTimeZone
+            from PBK_CORE.SESSIONS
+            where UPDATE_DATE < #{criteriaDate}
+       ]]>
+    </select>
+    
+    <select id="checkAndProlongToken" statementType="CALLABLE" parameterType="java.util.HashMap">
+        <![CDATA[
+            exec PBK_CORE.checkAndProlongToken
+                #{sessionId, mode=IN},
+                #{updateDate, mode=IN},
+                #{result, javaType=Boolean, jdbcType=INTEGER, mode=OUT}
+       ]]>
+    </select>
+
+</mapper>

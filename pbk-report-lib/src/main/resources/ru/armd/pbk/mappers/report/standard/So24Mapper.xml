@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So24Mapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.report.So24View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[
+        select *
+        FROM (
+          SELECT
+	          	tasks.id as id,
+	            ps.WORK_DATE as taskDate,
+	            bsos.BSO_NUMBER as bsoNumber,
+	            task_states.NAME as taskState,
+	            eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as employeeName,
+				eh.PERSONNEL_NUMBER as personnelNumber,
+				s.NAME as shiftName,
+	            dh.NAME as departmentName,
+	            CASE WHEN (select distinct acc.TASK_ID from PBK_VIS.ASKP_CONTACTLESS_CARDS acc where acc.TASK_ID = tasks.id) is not null THEN 1 else 0 end as isBsk,
+                CASE WHEN (task_states.NAME in ('Создано', 'В работе', 'Выполнено')) THEN 0 else 1 end as isClosed,
+                CASE WHEN (select distinct dr.TASK_ID from PBK_VIS.DVR_RECORDS dr where dr.TASK_ID = tasks.id) is not null THEN 1 else 0 end as isVideo
+         	FROM
+	          	[PBK_TASK].[TASKS] tasks
+	            join [PBK_PLAN].[PLAN_SCHEDULES] ps on tasks.PLAN_SCHEDULE_ID = ps.ID
+				left join [PBK_NSI].[EMPLOYEES] e on ps.EMPLOYEE_ID = e.ID
+				left join [PBK_NSI].[EMPLOYEE_HISTS] eh ON (e.ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				LEFT JOIN PBK_NSI.SHIFTS s ON (ps.SHIFT_ID = s.ID)
+				left join [PBK_NSI].[DEPARTMENT_HISTS] dh ON (tasks.DEPT_ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				join [PBK_TASK].[TASK_STATES] task_states on tasks.TASK_STATE_ID = task_states.ID
+				left join [PBK_NSI].[BSOS] bsos on tasks.BSO_ID = bsos.ID
+         	WHERE 1=1
+		        AND (#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE as DATE))
+		        AND (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE as DATE))
+		        AND task_states.NAME in ('Создано', 'В работе', 'Выполнено', 'Закрыто')
+		        ]]><if test="filter.departmentId != null">
+                    AND dh.HEAD_ID IN (${filter.departmentId})
+                </if><![CDATA[
+                ]]><if test="filter.employeeId != null">
+                    AND eh.HEAD_ID IN (${filter.employeeId})
+                </if><![CDATA[
+        ) t
+        where t.isBsk = 0 or t.isVideo = 0 or t.isClosed = 0
+                ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+</mapper>

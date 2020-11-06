@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.department.DepartmentMapper">
+
+    <sql id="fieldDomain">
+        <![CDATA[
+		  ,d.[IS_DELETE] as isDelete
+		  ,dh.[CREATE_DATE] as createDate
+		  ,dh.[CREATE_USER_ID] as createUserId
+		  ,dh.[UPDATE_DATE] as updateDate
+		  ,dh.[UPDATE_USER_ID] as updateUserId
+		  ,dh.[V_START_DATE] as versionStartDate
+		  ,dh.[V_END_DATE] as versionEndDate
+		  ,dh.[HEAD_ID] as headId
+		  ,dh.[PARENT_DEPT_ID] as parentDeptId
+		  ,dh.[EASU_FHD_ID] as easuFhdId
+		  ,dh.[NAME] as name
+		  ,dh.[FULL_NAME] as fullName
+		  ,dh.[DESCRIPTION] as description
+		  ,dh.[FOR_PLAN_USE] as forPlanUse
+		  ,dh.[EMPLOYEE_SIGN_ID] as employeeSignId
+		  ,dh.[WKT_GEOM] as wktGeom
+		  ,dh.[PLAN_COUNT] as planCount
+        ]]>
+    </sql>
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.department.DepartmentView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+               d.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+               , pdh.[NAME] as parentName
+			FROM [PBK_NSI].[DEPARTMENTS] d JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+			  LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] pdh on (pdh.HEAD_ID = dh.PARENT_DEPT_ID AND pdh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate())
+			WHERE 1 = 1
+			  and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+			  and (#{filter.name} is null or UPPER(dh.NAME) like UPPER('%${filter.name}%'))
+			  and (#{filter.forPlanUse} is null or UPPER(dh.FOR_PLAN_USE) like UPPER('%${filter.forPlanUse}%'))
+			  and ((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR d.IS_DELETE = 0)
+			  and (#{filter.deptAuthId} is null or dh.[HEAD_ID]= #{filter.deptAuthId})
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+	<select id="getHistoryViews" resultType="ru.armd.pbk.views.nsi.department.DepartmentHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+				dh.NAME as name
+				,dh.FULL_NAME as fullName
+		        ,dh.DESCRIPTION as description
+		        ,dh.FOR_PLAN_USE as forPlanUse
+				,COALESCE(dh.PLAN_COUNT, 0) as planCount
+			FROM
+				PBK_NSI.DEPARTMENT_HISTS dh LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+			WHERE
+          		dh.HEAD_ID = #{filter.departmentHeadId}
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <insert id="insertHead" parameterType="ru.armd.pbk.domain.HeadVersionDomain" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.DEPARTMENTS(
+	        [IS_DELETE]
+        ) VALUES (
+        	#{isDelete}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.DEPARTMENTS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.nsi.department.Department" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.DEPARTMENT_HISTS(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+        	, [HEAD_ID]
+			, [PARENT_DEPT_ID]
+			, [EASU_FHD_ID]
+			, [NAME]
+			, [FULL_NAME]
+			, [DESCRIPTION]
+			, [FOR_PLAN_USE]
+			, [EMPLOYEE_SIGN_ID]
+			, [WKT_GEOM]
+			, [PLAN_COUNT]
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+        	, #{headId}
+        	, #{parentDeptId}
+        	, #{easuFhdId}
+        	, #{name}
+        	, #{fullName}
+        	, #{description}
+        	, #{forPlanUse}
+        	, #{employeeSignId}
+        	, #{wktGeom}
+			, #{planCount}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.DEPARTMENT_HISTS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.nsi.department.Department">
+        <![CDATA[
+			UPDATE PBK_NSI.DEPARTMENT_HISTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+				,PARENT_DEPT_ID = #{parentDeptId}
+		        ,EASU_FHD_ID = #{easuFhdId}
+		        ,NAME = #{name}
+		        ,FULL_NAME = #{fullName}
+		        ,DESCRIPTION = #{description}
+		        ,FOR_PLAN_USE = #{forPlanUse}
+		        ,EMPLOYEE_SIGN_ID = #{employeeSignId}
+		        ,WKT_GEOM = #{wktGeom}
+				,PLAN_COUNT = #{planCount}
+			WHERE
+			  ID = #{id}
+        ]]>
+    </update>
+
+    <update id="deleteSoft">
+        <![CDATA[
+		    UPDATE
+		    	PBK_NSI.DEPARTMENTS
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_NSI.DEPARTMENTS
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+        	d.[ID] as id
+          , dh.[NAME] as name
+        FROM
+        	[PBK_NSI].[DEPARTMENTS] d JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+        WHERE
+        	(d.IS_DELETE = 0 AND (#{deprecatedId} IS NULL OR d.ID != #{deprecatedId}) 
+        	AND (#{forPlanUse} IS NULL OR dh.FOR_PLAN_USE = #{forPlanUse}) 
+        	OR (#{currentId} IS NOT NULL AND d.ID = #{currentId})) 
+        	AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+            and (#{deptAuthId} is null or dh.[HEAD_ID]= #{deptAuthId})
+            AND (#{hasEmployee} is null or exists(select id
+				from PBK_NSI.EMPLOYEE_HISTS eh 
+			  	where eh.DEPT_ID = dh.HEAD_ID and eh.V_END_DATE >= PBK_CORE.getVersionEndDate()))	
+    </select>
+    
+   	<select id="getSelectItemsByName" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+        	d.[ID] as id
+          , dh.[NAME] as name
+        FROM
+        	[PBK_NSI].[DEPARTMENTS] d JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+        WHERE
+        	(d.IS_DELETE = 0 AND dh.FOR_PLAN_USE = 1 OR #{currentId} IS NOT NULL AND #{currentId} = d.ID)
+        	AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+            and (#{deptAuthId} is null or dh.[HEAD_ID]= #{deptAuthId})
+    </select>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.department.Department">
+        <![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[DEPARTMENTS] d JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+				dh.[ID] = #{id}
+        ]]>
+    </select>
+
+    <select id="getActual" resultType="ru.armd.pbk.domain.nsi.department.Department">
+        <![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[DEPARTMENTS] d JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+               dh.[HEAD_ID] = #{domainId}
+			   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>
+    
+    <select id="getDomain" resultType="ru.armd.pbk.domain.nsi.department.Department">
+        <![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[DEPARTMENTS] d JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+               (#{easuFhdId} is not null and dh.[EASU_FHD_ID] = #{easuFhdId})
+			   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>
+    
+    <select id="getDomains" resultType="ru.armd.pbk.domain.nsi.department.Department">
+        <![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[DEPARTMENTS] d JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+               dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>    
+    
+    <select id="getIds" resultType="long">
+        <![CDATA[
+			SELECT
+               dh.[ID] as id
+			FROM [PBK_NSI].[DEPARTMENTS] d JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+               dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>    
+    	
+	<select id="isExist" resultType="boolean">
+	    <include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+   			SELECT
+   				1
+   			FROM
+   				PBK_NSI.DEPARTMENT_HISTS
+   			WHERE
+   				(#{headId} is null OR HEAD_ID != #{headId})
+   				AND (#{easuFhdId} is null OR EASU_FHD_ID = #{easuFhdId})
+   				AND V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    	<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+    </select>
+    
+     <select id="getDepartmentByScheduleId" resultType="ru.armd.pbk.domain.nsi.department.Department">
+        <![CDATA[
+			SELECT
+               d.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM PBK_PLAN.PLAN_SCHEDULES ps LEFT JOIN [PBK_NSI].[DEPARTMENTS] d ON (ps.DEPT_ID = d.ID) JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+               ps.[ID] = #{scheduleId}
+			   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>
+    
+    <select id="getSelectItemForMap" resultType="ru.armd.pbk.core.views.SelectItem">
+    	SELECT DISTINCT
+			dh.HEAD_ID as id,
+			dh.NAME as name
+		FROM
+			PBK_NSI.DEPARTMENT_HISTS dh LEFT JOIN PBK_NSI.CITY_VENUE_HISTS dvh ON (dh.HEAD_ID = dvh.DEPT_ID)
+			LEFT JOIN PBK_NSI.CITY_COUNTY_HISTS cch ON (dh.HEAD_ID = cch.DEPT_ID)
+			LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON (cch.HEAD_ID = cdh.CITY_COUNTY_ID)
+		WHERE
+			dh.V_END_DATE >= PBK_CORE.getVersionEndDate() AND dvh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+			AND (#{venueId} IS NULL OR dvh.HEAD_ID = #{venueId})
+			AND (#{routeId} is null OR cdh.HEAD_ID IN (SELECT CITY_DISTRICT_ID FROM PBK_NSI.CITY_DISTRICT_ROUTES WHERE ROUTE_ID = #{routeId} AND V_END_DATE >= [PBK_CORE].getVersionEndDate()))
+    </select>
+    
+    <select id="getByVenueId" resultType="ru.armd.pbk.domain.nsi.department.Department">
+        <![CDATA[
+        	SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[DEPARTMENTS] d JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.CITY_VENUE_HISTS cvh ON (dh.HEAD_ID = cvh.DEPT_ID AND cvh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			WHERE
+				cvh.HEAD_ID = #{id}
+        ]]>
+    </select>
+</mapper>

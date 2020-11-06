@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.bsotype.BsoTypeMapper">
+
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+        bt.[ID] as id
+        , bt.[NAME] as name
+        FROM
+        [PBK_NSI].[BSO_TYPES] bt
+    </select>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.bsotype.BsoType">
+        <![CDATA[
+            SELECT
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectDictionaryValuesWithId" /><![CDATA[
+            FROM
+                [PBK_NSI].[BSO_TYPES]
+            WHERE
+                [ID] = #{id}
+        ]]>
+    </select>
+
+</mapper>

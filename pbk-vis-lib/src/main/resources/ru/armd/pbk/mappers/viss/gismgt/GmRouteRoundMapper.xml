@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gismgt.GmRouteRoundMapper">
+	
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.gismgt.GmRouteRound" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into [PBK_GISMGT].[GM_ROUTE_ROUNDS] (
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmFields" /><![CDATA[	
+    			, [TERMINAL_POINT_ZONE_B_MUID]
+    			, [TERMINAL_STATION_C_MUID]
+    			, [RR_TYPE_MUID]
+    			, [TERMINAL_POINT_ZONE_A_MUID]
+    			, [ROUTE_VARIANT_MUID]
+    			, [AVERAGE_LENGTH_FIX]
+    			, [AVERAGE_LENGTH]
+    			, [TERMINAL_STATION_A_MUID]
+    			, [SPECIFICATION2]    			
+    			, [SPECIFICATION1]
+    			, [COMMENT]
+    			, [TERMINAL_STATION_B_MUID]
+    			, [STOP_PLACE_A_MUID]
+    			, [STOP_PLACE_B_MUID]
+            ) values (
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmValues" /><![CDATA[
+    			, #{terminalPointZoneBMuid}
+    			, #{terminalStationCMuid}
+    			, #{typeMuid}
+    			, #{terminalPointZoneAMuid}
+    			, #{routeVariantMuid}
+    			, #{averageLengthFixed}
+    			, #{averageLength}
+    			, #{terminalStationAMuid}
+    			, #{specification2}    			
+    			, #{specification1}
+    			, #{comment}
+    			, #{terminalStationBMuid}
+    			, #{stopPlaceAMuid}
+    			, #{stopPlaceBMuid}
+            )
+        ]]>    
+    </insert>
+    
+    <select id="getByMuid" resultType="ru.armd.pbk.domain.viss.gismgt.GmRouteRound">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, TERMINAL_POINT_ZONE_B_MUID as terminalPointZoneBMuid
+	    		, TERMINAL_STATION_C_MUID as terminalStationCMuid
+	    		, RR_TYPE_MUID as typeMuid
+	    		, TERMINAL_POINT_ZONE_A_MUID as terminalPointZoneAMuid
+	    		, ROUTE_VARIANT_MUID as routeVariantMuid
+	    		, AVERAGE_LENGTH_FIX as averageLengthFixed
+	    		, AVERAGE_LENGTH as averageLength
+	    		, TERMINAL_STATION_A_MUID as terminalStationAMuid
+	    		, SPECIFICATION2 as specification2	    		
+	    		, SPECIFICATION1 as specification1
+	    		, COMMENT as comment
+	    		, TERMINAL_STATION_B_MUID as terminalStationBMuid
+	    		, STOP_PLACE_A_MUID as stopPlaceAMuid
+    			, STOP_PLACE_B_MUID as stopPlaceBMuid
+			from [PBK_GISMGT].[GM_ROUTE_ROUNDS] a
+            where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTE_ROUNDS WHERE MUID = #{muid})			
+        ]]>
+    </select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.gismgt.GmRouteRound">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, TERMINAL_POINT_ZONE_B_MUID as terminalPointZoneBMuid
+	    		, TERMINAL_STATION_C_MUID as terminalStationCMuid
+	    		, RR_TYPE_MUID as typeMuid
+	    		, TERMINAL_POINT_ZONE_A_MUID as terminalPointZoneAMuid
+	    		, ROUTE_VARIANT_MUID as routeVariantMuid
+	    		, AVERAGE_LENGTH_FIX as averageLengthFixed
+	    		, AVERAGE_LENGTH as averageLength
+	    		, TERMINAL_STATION_A_MUID as terminalStationAMuid
+	    		, SPECIFICATION2 as specification2	    		
+	    		, SPECIFICATION1 as specification1
+	    		, COMMENT as comment
+	    		, TERMINAL_STATION_B_MUID as terminalStationBMuid
+	    		, STOP_PLACE_A_MUID as stopPlaceAMuid
+    			, STOP_PLACE_B_MUID as stopPlaceBMuid
+			from [PBK_GISMGT].[GM_ROUTE_ROUNDS] a
+            where ID = #{id}			
+        ]]>
+    </select>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.gismgt.GmRouteRound">
+        <![CDATA[
+        	update [PBK_GISMGT].[GM_ROUTE_ROUNDS]
+            set
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.updateGmFields" /><![CDATA[
+	    		, TERMINAL_POINT_ZONE_B_MUID = #{terminalPointZoneBMuid}
+	    		, TERMINAL_STATION_C_MUID = #{terminalStationCMuid}
+	    		, RR_TYPE_MUID = #{typeMuid}
+	    		, TERMINAL_POINT_ZONE_A_MUID = #{terminalPointZoneAMuid}
+	    		, ROUTE_VARIANT_MUID = #{routeVariantMuid}
+	    		, AVERAGE_LENGTH_FIX = #{averageLengthFixed}
+	    		, AVERAGE_LENGTH = #{averageLength}
+	    		, TERMINAL_STATION_A_MUID = #{terminalStationAMuid}
+	    		, SPECIFICATION2 = #{specification2}	    		
+	    		, SPECIFICATION1 = #{specification1}
+	    		, COMMENT = #{comment}
+	    		, TERMINAL_STATION_B_MUID = #{terminalStationBMuid}
+	    		, STOP_PLACE_A_MUID = #{stopPlaceAMuid}
+	    		, STOP_PLACE_B_MUID = #{stopPlaceBMuid} 
+			where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTE_ROUNDS WHERE MUID = #{muid})
+        ]]>
+    </update>    
+</mapper>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.TsTypeReportMapper">
+
+	 <select id="getReportViews" resultType="ru.armd.pbk.views.nsi.TsTypeReportView">
+        <![CDATA[
+          SELECT
+               ROW_NUMBER() OVER (]]><include refid="ru.armd.pbk.mappers.CommonSql.orderBySql" /><![CDATA[) AS id,
+               t.*
+            FROM (
+				SELECT
+					c.[ID] as id, 
+		          	c.[COD] as cod,
+		          	c.[NAME] as name, 
+		          	c.[DESCRIPTION] as description,
+		          	ts.[NAME] as tsName  
+		        FROM
+		        	[PBK_NSI].[TS_TYPES] c
+		          	join [PBK_GISMGT].[GM_TS_KINDS] ts on (c.GM_TS_KIND_ID = ts.ID)
+				WHERE
+					(#{filter.name} is null or UPPER(c.NAME) like UPPER('%${filter.name}%')) 
+		          	and (#{filter.cod} is null or UPPER(c.COD) like UPPER('%${filter.cod}%'))
+		          	and (c.IS_DELETE = 0)
+		          	]]><if test="filter.ids != null">
+						AND c.ID IN (${filter.ids})
+					</if>
+        	) t
+        <include refid="ru.armd.pbk.mappers.CommonSql.orderBySql_t" />
+    </select>
+    
+</mapper>

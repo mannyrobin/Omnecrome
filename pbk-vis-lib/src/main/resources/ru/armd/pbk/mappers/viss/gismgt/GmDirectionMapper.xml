@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gismgt.GmDirectionMapper">
+	
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.gismgt.GmDirection" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into [PBK_GISMGT].[GM_DIRECTION] (
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmFields" /><![CDATA[	
+    			, [SHORT_NAME]
+    			, [NAME]
+            ) values (
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmValues" /><![CDATA[
+    			, #{shortName}
+    			, #{name}
+            )
+        ]]>       
+    </insert>
+    
+    <select id="getByMuid" resultType="ru.armd.pbk.domain.viss.gismgt.GmDirection">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, SHORT_NAME as shortName
+	    		, NAME as name
+			from [PBK_GISMGT].[GM_DIRECTION] a
+            where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_DIRECTION WHERE MUID = #{muid})			
+        ]]>
+    </select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.gismgt.GmDirection">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, SHORT_NAME as shortName
+	    		, NAME as name
+			from [PBK_GISMGT].[GM_DIRECTION] a
+            where ID = #{id}			
+        ]]>
+    </select>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.gismgt.GmDirection">
+        <![CDATA[
+        	update [PBK_GISMGT].[GM_DIRECTION]
+            set
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.updateGmFields" /><![CDATA[
+	    		, SHORT_NAME = #{shortName}
+	    		, NAME = #{name}
+			where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_DIRECTION WHERE MUID = #{muid})
+        ]]>
+    </update>    
+</mapper>

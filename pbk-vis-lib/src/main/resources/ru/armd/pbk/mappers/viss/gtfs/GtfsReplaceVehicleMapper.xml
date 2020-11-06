@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gtfs.GtfsReplaceVehicleMapper">
+
+	<insert id="insertChunck" parameterType="java.util.List">
+		INSERT
+		INTO [PBK_VIS].[ASDU_GTFS_REPLACE_VEHICLE]
+		(
+		[WORK_DATE]
+		,[GRAFIC]
+		,[TIME]
+		,[VEHICLE_ID_1]
+		,[VEHICLE_ID_2]
+		,[SHIFT_NUM]
+		) VALUES
+		<foreach collection="list" item="element" index="index"
+			separator=",">
+			(#{element.workDate}
+			,#{element.grafic}
+			,#{element.time}
+			,#{element.vehicleId1}
+			,#{element.vehicleId2}
+			,#{element.shiftNum} )
+		</foreach>
+	</insert>
+
+</mapper>

@@ -1,0 +1,54 @@
+<div class="modal-header" draggable-modal>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="close()">
+        <span aria-hidden="true">&times;</span>
+    </button>
+    <h4 class="modal-title">{{title}}</h4>
+</div>
+
+<div class="modal-body">
+    <div ar-validation-errors></div>
+
+    <!-- FORM -->
+    <form name="venuesForm">       
+        <div class="row form-group">            
+            <div ar-form-field col-class="'col-sm-12'" field="fields[0]"></div>
+        </div>  
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[9]" ng-show="fields[12].value == null || fields[12].value.id == 0 || fields[10].value == null || fields[10].value.id == 0"></div>           
+            <div ar-form-field col-class="'col-sm-6'" field="fields[13]" ng-show="fields[12].value != null && fields[12].value.id == 1 && fields[10].value != null && fields[10].value.id == 1"></div>           
+            <div ar-form-field col-class="'col-sm-2'" field="fields[10]"></div>           
+        </div>
+        <h4>В какие смены проверяется</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-2'" field="fields[3]"></div>
+            <div ar-form-field col-class="'col-sm-2'" field="fields[4]"></div>
+            <div ar-form-field col-class="'col-sm-2'" field="fields[14]"></div>
+            <div ar-form-field col-class="'col-sm-3'" field="fields[5]"></div>
+            <div ar-form-field col-class="'col-sm-3'" field="fields[12]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-12'" field="fields[6]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[7]"></div>
+            <div ar-form-field col-class="'col-sm-6'" field="fields[8]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[11]"></div>
+        </div>
+        <h5 style="text-align: center; color: #808080">Выберите место встречи на карте для долготы и широты:</h5>
+        <div class="form-group">
+            <ar-map id="mapYa" ng-show="isMapYa" ar-map service="mapServiceYa" init-func="onLoadMap()" class="form-group">
+            </ar-map>
+            <ar-map id="mapOther" ng-show="isMapOther" ar-map service="mapServiceOther" class="form-group">
+            </ar-map>
+        </div> 
+    </form>
+    <!-- END FORM -->
+
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-primary" ng-click="save()" ng-disabled="venuesForm.$invalid">Сохранить</button>
+    <button type="button" class="btn btn-default" ng-click="close()">Закрыть</button>
+</div>

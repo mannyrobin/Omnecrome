@@ -1,0 +1,7 @@
+<div class="btn-group">
+	<a class="btn btn-default dropdown-toggle" data-toggle="dropdown"
+		href="#">{{selectedItem.name}} <span class="caret"></span></a>
+	<ul class="dropdown-menu">
+		<li ng-repeat="item in items"><a href="#" ng-click="selectItem(item)">{{item.name}}</a></li>
+	</ul>
+</div>

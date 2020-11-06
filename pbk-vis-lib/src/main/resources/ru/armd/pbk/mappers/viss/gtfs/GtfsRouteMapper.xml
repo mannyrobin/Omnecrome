@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gtfs.GtfsRouteMapper">
+
+	<insert id="insertChunck" parameterType="java.util.List">
+		INSERT
+		INTO [PBK_VIS].[ASDU_GTFS_ROUTES]
+		(
+		[WORK_DATE]
+      	, [ROUTE_ID]
+      	, [AGENCY_ID]
+      	, [ROUTE_SHORT_NAME]
+      	, [ROUTE_LONG_NAME]
+      	, [ROUTE_DESC]
+      	, [ROUTE_VIEW]
+        , [ROUTE_TYPE]
+		) VALUES
+		<foreach collection="list" item="element" index="index"
+			separator=",">
+			(#{element.workDate}
+			,#{element.routeId}
+			,#{element.agencyId}
+			,#{element.routeShortName}
+			,#{element.routeLongName}
+			,#{element.routeDesc}
+			,#{element.routeView}
+			,#{element.routeType})
+		</foreach>
+	</insert>
+
+</mapper>

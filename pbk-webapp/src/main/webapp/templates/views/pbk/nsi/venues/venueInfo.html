@@ -1,0 +1,38 @@
+<div>
+    <div ar-validation-errors></div>
+    
+   
+    <!-- FORM -->
+    <form name="venuesForm">       
+        <div class="row form-group">            
+            <div ar-form-field col-class="'col-sm-12'" field="fields[0]"></div>
+        </div>  
+        <!-- div class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[1]"></div>
+            <div ar-form-field col-class="'col-sm-6'" field="fields[2]"></div>
+        </div -->
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[7]" ng-show="!isShowMultiDepts()"></div>
+            <div ng-show="isShowMultiDepts()"><div ar-form-field col-class="'col-sm-6'" field="fields[10]" ng-show="isShowMultiDepts()"></div></div>
+            <div ar-form-field col-class="'col-sm-2'" field="fields[8]"></div>
+        </div>
+        <h4>В какие смены проверяется</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-2'" field="fields[3]"></div>
+            <div ar-form-field col-class="'col-sm-2'" field="fields[4]"></div>
+            <div ar-form-field col-class="'col-sm-2'" field="fields[11]"></div>
+            <div ar-form-field col-class="'col-sm-2'" field="fields[5]"></div>
+            <div ar-form-field col-class="'col-sm-2'" field="fields[9]"></div>
+        </div>   
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-12'" field="fields[6]"></div>
+        </div>         
+    </form>
+    
+</div>
+
+<div class="pull-right" ng-if="isNotReadOnlyUser">
+    <button type="button" class="btn btn-primary" ng-click="saveVersion()" ng-disabled="venuesForm.$invalid || !isChange">Сохранить версию</button>
+<!--    <button type="button" class="btn btn-primary" ng-click="save()" ng-disabled="venuesForm.$invalid || !isChange">Сохранить</button>-->
+    <button type="button" class="btn btn-default" ng-click="reset()">Отменить изменения</button>
+</div>

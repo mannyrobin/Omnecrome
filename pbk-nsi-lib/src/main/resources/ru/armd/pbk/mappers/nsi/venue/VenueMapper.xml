@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.venue.VenueMapper">
+
+	<sql id="fieldDomain">
+        <![CDATA[
+		  ,d.[IS_DELETE] as isDelete
+		  ,dh.[CREATE_DATE] as createDate
+		  ,dh.[CREATE_USER_ID] as createUserId
+		  ,dh.[UPDATE_DATE] as updateDate
+		  ,dh.[UPDATE_USER_ID] as updateUserId
+		  ,dh.[V_START_DATE] as versionStartDate
+		  ,dh.[V_END_DATE] as versionEndDate
+		  ,dh.[HEAD_ID] as headId		 
+		  ,dh.[NAME] as name
+		  ,dh.[DESCRIPTION] as description
+		  ,dh.[WKT_GEOM] as wktGeom
+		  ,dh.[CITY_DISTRICT_ID] as districtId
+		  ,dh.[SHIFT_I] as shiftI
+		  ,dh.[SHIFT_II] as shiftII
+		  ,dh.[SHIFT_III] as shiftIII
+		  ,dh.[SHIFT_DAY] as shiftDay
+		  ,dh.[SHIFT_NIGHT] as shiftNight
+		  ,dh.[DEPT_ID] as deptId
+		  ,dh.[TPU] as tpu
+        ]]>
+    </sql>
+    
+	<select id="getGridViews" resultType="ru.armd.pbk.views.nsi.venue.VenueView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+        	SELECT
+               d.[ID] as id      
+               ]]><include refid="fieldDomain" /><![CDATA[        
+               , (SELECT NAME FROM PBK_NSI.CITY_DISTRICT_HISTS WHERE HEAD_ID = dh.CITY_DISTRICT_ID and V_END_DATE >= [PBK_CORE].getVersionEndDate() GROUP BY NAME) as district
+			   , (SELECT distinct ch.NAME FROM PBK_NSI.CITY_COUNTY_HISTS ch
+				  JOIN  PBK_NSI.CITY_DISTRICT_HISTS disth on  disth.CITY_COUNTY_ID = ch.HEAD_ID where disth.HEAD_ID = dh.CITY_DISTRICT_ID and disth.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+				  GROUP BY ch.NAME) as county   
+               , (SELECT NAME FROM PBK_NSI.DEPARTMENT_HISTS WHERE HEAD_ID = dh.DEPT_ID and V_END_DATE >= [PBK_CORE].getVersionEndDate() GROUP BY NAME) as department
+               , (CASE WHEN (dh.SHIFT_I = 1 OR dh.SHIFT_II = 1 OR dh.SHIFT_III = 1 OR dh.SHIFT_DAY = 1 OR dh.SHIFT_NIGHT = 1) THEN 1 ELSE 0 END) as inPlan
+			FROM [PBK_NSI].[CITY_VENUES] d JOIN [PBK_NSI].[CITY_VENUE_HISTS] dh on (d.ID = dh.HEAD_ID)			
+			WHERE 
+				(#{filter.name} is null or UPPER(dh.NAME) like UPPER('%${filter.name}%')) 		        
+		        and (#{filter.districtId} is null or dh.CITY_DISTRICT_ID = #{filter.districtId})
+		        and (#{filter.countyId} is null or dh.CITY_DISTRICT_ID in 
+		        	(SELECT cdh.HEAD_ID 
+		        	 FROM PBK_NSI.CITY_DISTRICT_HISTS cdh WHERE cdh.HEAD_ID = dh.CITY_DISTRICT_ID and cdh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+		        	 AND cdh.CITY_COUNTY_ID = #{filter.countyId}))         
+		        and (#{filter.deptId} is null or dh.DEPT_ID = #{filter.deptId})
+		        and (
+		        	(
+		        		(SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да'
+		        		AND d.IS_DELETE = 1
+		        		AND dh.[V_END_DATE] = (SELECT MAX(dh2.[V_END_DATE]) FROM [PBK_NSI].[CITY_VENUE_HISTS] dh2 WHERE dh.HEAD_ID = dh2.HEAD_ID)
+		        	)  
+		        	OR
+		        	( 
+		        		d.IS_DELETE = 0
+		        		AND dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+		        	)
+		        )
+                and (#{filter.deptAuthId} is null or dh.[DEPT_ID]= #{filter.deptAuthId})
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    
+    <select id="getVenueDistrictsHistoryViews" resultType="ru.armd.pbk.views.nsi.venue.VenueHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+				cvh.NAME as name				
+				,cdh.NAME as districtName
+				,cch.NAME as countyName
+				,cvh.DESCRIPTION as description
+		  		,cvh.[WKT_GEOM] as wktGeom
+		  		,cdh.[HEAD_ID] as districtId
+		  		,cvh.[SHIFT_I] as shiftI
+		  		,cvh.[SHIFT_II] as shiftII
+		  		,cvh.[SHIFT_III] as shiftIII
+		  		,cvh.[SHIFT_DAY] as shiftDay
+		  		,cvh.[SHIFT_NIGHT] as shiftNight
+		  		,cvh.[V_END_DATE] as venueVersionEndDate
+		  		,cv.[IS_DELETE] as deleted 
+			FROM
+				PBK_NSI.CITY_VENUE_DISTRICTS dh 
+					LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID)
+					LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+					INNER JOIN PBK_NSI.CITY_VENUE_HISTS cvh ON dh.CITY_VENUE_ID = cvh.HEAD_ID 
+					INNER JOIN PBK_NSI.CITY_VENUES cv ON cv.ID = cvh.HEAD_ID 
+					INNER JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON dh.CITY_DISTRICT_ID = cdh.HEAD_ID and cdh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+					INNER JOIN PBK_NSI.CITY_COUNTY_HISTS cch ON (cdh.PLAN_CITY_COUNTY_ID is not null and cdh.PLAN_CITY_COUNTY_ID = cch.HEAD_ID or cdh.PLAN_CITY_COUNTY_ID is null and cdh.CITY_COUNTY_ID = cch.HEAD_ID) and cch.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+			WHERE
+			    dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+				and (cv.IS_DELETE = 0 AND cvh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate() OR cv.IS_DELETE = 1 AND cvh.[V_END_DATE] = (SELECT MAX(cvh2.[V_END_DATE]) FROM [PBK_NSI].[CITY_VENUE_HISTS] cvh2 WHERE cvh.HEAD_ID = cvh2.HEAD_ID))
+          		and((#{filter.venueHeadId} is not null and cvh.HEAD_ID = #{filter.venueHeadId})
+          		or (#{filter.districtId} is not null and cdh.HEAD_ID = #{filter.districtId}))
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>    
+    
+    <select id="getHistoryViews" resultType="ru.armd.pbk.views.nsi.venue.VenueHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+			]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+			dh.NAME as name				
+			,cdh.NAME as districtName
+			,cch.NAME as countyName
+			,dh.DESCRIPTION as description
+	  		,dh.[WKT_GEOM] as wktGeom
+	  		,dh.[CITY_DISTRICT_ID] as districtId
+	  		,dh.[SHIFT_I] as shiftI
+	  		,dh.[SHIFT_II] as shiftII
+	  		,dh.[SHIFT_III] as shiftIII
+	  		,dh.[SHIFT_DAY] as shiftDay
+	  		,dh.[SHIFT_NIGHT] as shiftNight
+			FROM
+			PBK_NSI.CITY_VENUE_HISTS dh
+			LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) 
+			LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+			LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON dh.CITY_DISTRICT_ID = cdh.HEAD_ID and cdh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+			LEFT JOIN PBK_NSI.CITY_COUNTY_HISTS cch ON (cdh.PLAN_CITY_COUNTY_ID is not null and cdh.PLAN_CITY_COUNTY_ID = cch.HEAD_ID or cdh.PLAN_CITY_COUNTY_ID is null and cdh.CITY_COUNTY_ID = cch.HEAD_ID) and cch.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+			WHERE
+          		(#{filter.venueHeadId} is not null and dh.HEAD_ID = #{filter.venueHeadId})
+          		
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select> 
+    
+    
+
+	<select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT
+        	 	d.ID as id, dh.NAME as name
+        	FROM
+        		PBK_NSI.CITY_VENUES d JOIN PBK_NSI.CITY_VENUE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+        	WHERE
+        		(#{districtId} is null or d.ID NOT IN (
+        			SELECT v.CITY_VENUE_ID from PBK_NSI.CITY_VENUE_DISTRICTS v 
+        			WHERE v.CITY_DISTRICT_ID = #{districtId} AND v.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+        		) 
+        		]]><if test="deptInId != null"><![CDATA[
+        			and dh.DEPT_ID in (${deptInId}) 	
+        		]]></if><![CDATA[    
+        		AND (#{deptId} is null or #{deptId} = dh.DEPT_ID) AND 
+        		d.IS_DELETE = 0 OR (#{currentId} IS NOT NULL AND d.ID = #{currentId})
+        		or (d.IS_DELETE = 0 AND (#{name} IS NOT NULL AND UPPER(dh.NAME) like UPPER('%${name}%')))
+        	ORDER BY name
+		]]>
+	</select>
+	
+	<select id="getSelectItemsForPlan" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT
+        	 	d.ID as id, dh.NAME as name
+        	FROM
+        		PBK_NSI.CITY_VENUES d JOIN PBK_NSI.CITY_VENUE_HISTS dh ON (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				LEFT JOIN PBK_NSI.CITY_DISTRICTS cd ON (dh.CITY_DISTRICT_ID = cd.ID) LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON (cd.ID = cdh.HEAD_ID AND cdh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				LEFT JOIN PBK_NSI.CITY_COUNTIES cc ON (cdh.CITY_COUNTY_ID = cc.ID) LEFT JOIN PBK_NSI.CITY_COUNTY_HISTS cch ON (cc.ID = cch.HEAD_ID AND cch.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				LEFT JOIN PBK_NSI.DEPARTMENTS dep ON (cch.DEPT_ID = dep.ID)
+				RIGHT JOIN PBK_PLAN.PLANS p ON (p.DEPT_ID = dep.ID)
+        	WHERE
+        		(d.IS_DELETE = 0
+				AND (#{planId} IS NULL OR p.ID = #{planId} ))
+				AND  d.ID NOT IN (
+					SELECT
+						id
+					FROM
+						(
+							SELECT DISTINCT
+								cv.ID as id,
+								COUNT(DISTINCT SHIFT_ID) as count
+							FROM
+								PBK_PLAN.PLAN_VENUES pv LEFT JOIN PBK_NSI.CITY_VENUES cv ON (pv.CITY_VENUE_ID = cv.ID)
+							WHERE
+								PLAN_ID = #{planId} GROUP BY cv.ID
+						) t
+					WHERE
+						t.count >= 4)
+		]]>
+	</select>
+	
+	<insert id="insertHead" parameterType="ru.armd.pbk.domain.HeadVersionDomain" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.CITY_VENUES(
+	        [IS_DELETE]
+        ) VALUES (
+        	#{isDelete}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.CITY_VENUES' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+    
+    <update id="updateHead" parameterType="ru.armd.pbk.domain.HeadVersionDomain">
+    	<![CDATA[
+    		UPDATE PBK_NSI.CITY_VENUES
+    		SET IS_DELETE = #{isDelete}
+    		WHERE ID = #{id} 	
+    	]]>
+    </update>
+
+	<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.venue.Venue" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        insert into PBK_NSI.CITY_VENUE_HISTS(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+        	, [HEAD_ID]        
+		  	, [NAME]
+		  	, [DESCRIPTION]
+		  	, [WKT_GEOM]
+		  	, [CITY_DISTRICT_ID]  
+		  	, [SHIFT_I]
+		    , [SHIFT_II]
+		    , [SHIFT_III]
+		    , [SHIFT_DAY]
+		    , [SHIFT_NIGHT]
+		    , [DEPT_ID]     	
+		    , [TPU]     	
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+        	, #{headId}        	
+        	, #{name}
+        	, #{description}
+        	, #{wktGeom}
+        	, #{districtId}
+        	, #{shiftI}
+		    , #{shiftII}
+		    , #{shiftIII}
+		    , #{shiftDay}
+		    , #{shiftNight}
+		    , #{deptId}
+		    , #{tpu}
+        )
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.CITY_VENUE_HISTS' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+
+	<update id="update" parameterType="ru.armd.pbk.domain.nsi.venue.Venue">
+		<![CDATA[
+			UPDATE PBK_NSI.CITY_VENUE_HISTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[				
+		  		,NAME = #{name}
+		  		,DESCRIPTION = #{description}
+		  		,WKT_GEOM = #{wktGeom}
+		  		,CITY_DISTRICT_ID = #{districtId}
+		  		,SHIFT_I = #{shiftI}
+		  		,SHIFT_II = #{shiftII}
+		  		,SHIFT_III = #{shiftIII}
+		  		,SHIFT_DAY = #{shiftDay}
+		  		,SHIFT_NIGHT = #{shiftNight}
+		  		,DEPT_ID = #{deptId}
+		  		,TPU = #{tpu}
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+
+	<update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.CITY_VENUES
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+        
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_NSI.CITY_VENUES
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.venue.Venue">
+		<![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[CITY_VENUES] d JOIN [PBK_NSI].[CITY_VENUE_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE 1 = 1
+               and dh.[ID] = #{id}
+        ]]>
+    </select>
+    
+    <select id="getActual" resultType="ru.armd.pbk.domain.nsi.venue.Venue">
+		<![CDATA[
+			SELECT 
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[CITY_VENUES] d JOIN [PBK_NSI].[CITY_VENUE_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+               dh.[HEAD_ID] = #{domainId} AND
+			   (d.IS_DELETE = 0 AND dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate() OR d.IS_DELETE = 1 AND dh.[V_END_DATE] = (SELECT MAX(dh2.[V_END_DATE]) FROM [PBK_NSI].[CITY_VENUE_HISTS] dh2 WHERE dh.HEAD_ID = dh2.HEAD_ID))
+        ]]>
+	</select>
+
+	<select id="getCityVenueByDept" resultType="ru.armd.pbk.domain.nsi.venue.Venue">
+		<![CDATA[
+			SELECT 
+               dh.[HEAD_ID] as id,
+  				(
+                	SELECT DISTINCT cast(cdh.PLAN_CITY_COUNTY_ID as varchar)+ ',' AS [text()]
+					FROM PBK_NSI.CITY_VENUE_DISTRICTS cvd 
+						JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh on cvd.CITY_DISTRICT_ID = cdh.HEAD_ID
+					WHERE cvd.CITY_VENUE_ID = dh.HEAD_ID
+						and cast(#{workDate} as DATE) BETWEEN cvd.V_START_DATE AND cvd.V_END_DATE
+						and cast(#{workDate} as DATE) BETWEEN cdh.V_START_DATE AND cdh.V_END_DATE
+	                FOR XML PATH ('')
+		        ) countyIds				               
+               ]]><include refid="fieldDomain" /><![CDATA[
+        	FROM
+        		PBK_NSI.CITY_VENUES d JOIN PBK_NSI.CITY_VENUE_HISTS dh ON (d.ID = dh.HEAD_ID)
+				/*LEFT JOIN PBK_NSI.CITY_DISTRICTS cd ON (dh.CITY_DISTRICT_ID = cd.ID) LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON (cd.ID = cdh.HEAD_ID AND cdh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				LEFT JOIN PBK_NSI.CITY_COUNTIES cc ON (cdh.CITY_COUNTY_ID = cc.ID) LEFT JOIN PBK_NSI.CITY_COUNTY_HISTS cch ON (cc.ID = cch.HEAD_ID AND cch.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				LEFT JOIN PBK_NSI.DEPARTMENTS dep ON (cch.DEPT_ID = dep.ID)*/
+        	WHERE
+				dh.V_END_DATE = (
+					SELECT MAX(cvh2.V_END_DATE)
+					FROM PBK_NSI.CITY_VENUE_HISTS cvh2 
+					WHERE cvh2.HEAD_ID = dh.HEAD_ID 
+						AND cast(cvh2.V_END_DATE as DATE) >= cast(#{workDate} as DATE) AND cast(cvh2.V_START_DATE as DATE) <= cast(#{workDate} as DATE)
+				)
+				AND (dh.DEPT_ID = #{deptId} or 
+						(dh.SHIFT_NIGHT = 1 
+							AND (
+								dh.TPU = 0
+								or exists (
+											select 1 from PBK_NSI.CITY_VENUE_DEPTS svdpt 
+											WHERE svdpt.DEPT_ID = #{deptId} AND svdpt.CITY_VENUE_ID = d.ID
+												AND cast(#{workDate} as DATE) BETWEEN CAST(svdpt.V_START_DATE as DATE) AND CAST(svdpt.V_END_DATE as DATE) 
+										  )
+							)
+						)
+				)
+		]]>
+	</select>
+	
+		
+	<select id="isExist" resultType="boolean">
+	    <include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+   			SELECT
+   				1
+   			FROM
+   				PBK_NSI.CITY_VENUE_HISTS
+   			WHERE
+   				(#{headId} is null OR HEAD_ID != #{headId})
+   				AND (#{code} is null OR COD = #{code})
+   				AND V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    	<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+    </select>
+    
+	<insert id="linkDepartment" parameterType="ru.armd.pbk.domain.nsi.venue.Venue" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        insert into [PBK_NSI].[CITY_VENUE_DEPTS] (
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+        	, [CITY_VENUE_ID]
+        	, [DEPT_ID]
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+        	, #{headId}
+        	, #{deptId}
+        )
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.CITY_VENUE_DEPTS' ) as id
+            ]]>
+		</selectKey>
+	</insert>	
+
+	<update id="unlinkDepartment" parameterType="ru.armd.pbk.domain.nsi.venue.Venue">
+		<![CDATA[
+			UPDATE PBK_NSI.CITY_VENUE_DEPTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+			WHERE
+			  CITY_VENUE_ID = #{headId} AND DEPT_ID = #{deptId}
+        ]]>
+	</update>
+	
+	<select id="getSelectDepts" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT
+				cd.ID,
+      			cdh.NAME
+  			FROM
+  				PBK_DB.PBK_NSI.CITY_VENUE_DEPTS cvd LEFT JOIN PBK_DB.PBK_NSI.DEPARTMENTS cd ON (cvd.DEPT_ID = cd.ID)
+  				LEFT JOIN PBK_DB.PBK_NSI.DEPARTMENT_HISTS cdh ON (cd.ID = cdh.HEAD_ID)
+  			WHERE
+  				CITY_VENUE_ID = #{venueId} AND cvd.V_END_DATE >= [PBK_CORE].getVersionEndDate() 
+  					AND cd.IS_DELETE = 0 AND cdh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+		]]>
+	</select>
+    
+	<insert id="linkDistrict" parameterType="ru.armd.pbk.domain.nsi.venue.Venue" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        insert into [PBK_NSI].[CITY_VENUE_DISTRICTS] (
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+        	, [CITY_VENUE_ID]
+        	, [CITY_DISTRICT_ID]
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+        	, #{headId}
+        	, #{districtId}
+        )
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.CITY_VENUE_DISTRICTS' ) as id
+            ]]>
+		</selectKey>
+	</insert>	
+
+	<select id="getVenueDistrictByIds" resultType="ru.armd.pbk.domain.nsi.venue.VenueDistrict">
+		<![CDATA[
+			SELECT ID as id
+					, CITY_VENUE_ID as venueId
+					, CITY_DISTRICT_ID as districtId
+					, [CREATE_DATE] as createDate
+					, [CREATE_USER_ID] as createUserId
+					, [UPDATE_DATE] as updateDate
+					, [UPDATE_USER_ID] as updateUserId
+					, [V_START_DATE] as versionStartDate
+		            , [V_END_DATE] as versionEndDate
+			FROM [PBK_NSI].[CITY_VENUE_DISTRICTS]
+			where ID in 
+		]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+	</select>
+
+	<update id="unlinkDistrict" parameterType="ru.armd.pbk.domain.nsi.venue.Venue">
+		<![CDATA[
+			UPDATE PBK_NSI.CITY_VENUE_DISTRICTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+	
+	<select id="getSelectDistricts" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT
+				cd.ID,
+      			cdh.NAME
+  			FROM
+  				PBK_DB.PBK_NSI.CITY_VENUE_DISTRICTS cvd LEFT JOIN PBK_DB.PBK_NSI.CITY_DISTRICTS cd ON (cvd.CITY_DISTRICT_ID = cd.ID)
+  				LEFT JOIN PBK_DB.PBK_NSI.CITY_DISTRICT_HISTS cdh ON (cd.ID = cdh.HEAD_ID)
+  			WHERE
+  				CITY_VENUE_ID = #{venueId} AND cvd.V_END_DATE >= [PBK_CORE].getVersionEndDate() AND cd.IS_DELETE = 0 AND cdh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+		]]>
+	</select>
+	
+	<select id="getSelectVenueDistrictRoutes" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+		SELECT DISTINCT
+        	d.ID as id, dh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name
+        FROM
+        	PBK_NSI.CITY_VENUE_ROUTES cvr
+        	RIGHT JOIN PBK_NSI.ROUTES d ON (cvr.ROUTE_ID = d.id AND cvr.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			JOIN PBK_NSI.ROUTE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.CITY_VENUE_DISTRICTS cvd ON (cvr.CITY_VENUE_DISTRICT_ID = cvd.ID)
+			JOIN PBK_GISMGT.GM_ROUTES gm on (dh.GM_ROUTE_ID = gm.ID)
+			JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+        WHERE
+        	d.IS_DELETE = 0
+			AND (#{venueId} is null OR cvr.CITY_VENUE_ID = #{venueId})
+			AND (#{districtId} is null OR cvd.CITY_DISTRICT_ID = #{districtId})
+			]]><if test="districtIds != null">
+				AND cvd.CITY_DISTRICT_ID IN (${districtIds})
+			</if>
+			AND (#{venueRouteTypeId} is null OR #{venueRouteTypeId} = cvr.ROUTE_TYPE_ID) 
+			AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+	</select>
+	
+	<select id="getSelectStops" resultType="ru.armd.pbk.core.views.SelectItem">
+		SELECT DISTINCT
+        	stops.ID as id, stopsHist.NAME + ' (' + cdh.NAME + ')' as name
+        FROM
+        	PBK_NSI.CITY_VENUE_ROUTES cvr
+        	LEFT JOIN [PBK_DB].[PBK_NSI].[ROUTES] route ON (cvr.ROUTE_ID = route.ID AND cvr.V_END_DATE >= PBK_CORE.getVersionEndDate()) join [PBK_DB].[PBK_NSI].[ROUTE_HISTS] routeHist on (route.ID=routeHist.HEAD_ID and routeHist.V_END_DATE >=  PBK_CORE.getVersionEndDate())
+            join [PBK_DB].[PBK_GISMGT].[GM_ROUTES] gmRoute on gmRoute.ID=routeHist.[GM_ROUTE_ID]
+            join [PBK_GISMGT].[GM_ROUTE_VARIANTS] gmRouteVar on gmRouteVar.ROUTE_MUID = gmRoute.MUID
+            join [PBK_GISMGT].[GM_ROUTE_ROUNDS] gmRouteRnds on (gmRouteRnds.ROUTE_VARIANT_MUID=gmRouteVar.MUID
+            and gmRouteRnds.RR_TYPE_MUID = (SELECT MUID FROM [PBK_GISMGT].GM_RR_TYPES where cod = '00'))
+            join [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] trajectories on trajectories.RR_MUID=gmRouteRnds.MUID
+            join [PBK_GISMGT].[GM_ROUTE_TRAJECTORY_STOP_PLACES] trajectoryStops on trajectoryStops.ROUTE_TRAJECTORY_MUID=trajectories.MUID
+            join [PBK_GISMGT].[GM_STOP_PLACES] gmStopPlaces on gmStopPlaces.MUID=trajectoryStops.STOP_PLACE_MUID
+            join [PBK_GISMGT].[GM_STOPS] stops on gmStopPlaces.STOP_MUID=stops.MUID JOIN PBK_NSI.STOP_HISTS stopsHist on (stops.ID = stopsHist.HEAD_ID AND stopsHist.V_END_DATE >= PBK_CORE.getVersionEndDate())
+            LEFT JOIN PBK_GISMGT.GM_REGIONS gr ON (stops.REGION_MUID = gr.MUID)
+			LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON (cdh.GM_REGION_ID = gr.ID)
+        WHERE
+        	route.IS_DELETE = 0 AND UPPER(stopsHist.NAME) like UPPER('%${stopName}%')
+			AND cvr.CITY_VENUE_ID = #{venueId}
+	</select>
+	
+</mapper>

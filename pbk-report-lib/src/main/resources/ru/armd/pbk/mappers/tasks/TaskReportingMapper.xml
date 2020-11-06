@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.tasks.TaskReportingMapper">
+
+    <!-- Маппер назван не TaskReportMapper, т.к. такой уже есть (маппер отчёта по заданию)-->
+
+  <select id="getById" resultType="ru.armd.pbk.views.tasks.TaskReportView">
+    <![CDATA[
+      SELECT distinct
+        t.[ID] AS id
+        , sch.[WORK_DATE] AS taskDate
+        , b.[BSO_NUMBER] AS bsoNumber
+        , ts.[NAME] AS taskState
+        , eh.[SURNAME] AS employeeSurname
+        , eh.[NAME] AS employeeName
+        , eh.[PATRONUMIC] AS employeePatronumic
+        , eh.[PERSONNEL_NUMBER] AS personalNumber
+        , eh.[LICENSE_DETAILS] AS licenseDetails
+        , eh.[LICENSE_END_DATE] as licenseEndDate
+        , dh.[NAME] AS departmentName
+        , ph.[PUSK_NUMBER] AS puskNumber
+        , isnull(t.[WORK_START_TIME], s.[WORK_START_TIME]) AS workStartTime
+        , isnull(t.[WORK_END_TIME], case when t.TASK_TYPE_ID = 1 
+						AND s.COD in('DAY', 'I', 'II', 'III')
+						AND (DATEPART(HOUR, s.WORK_END_TIME) - DATEPART(HOUR, s.WORK_START_TIME) - (DATEPART(HOUR, s.BREAK_END_TIME) - DATEPART(HOUR, s.BREAK_START_TIME)) != CEILING(ewm.WORK_PLAN_HOURS)) 
+						then DATEADD(MS, DATEDIFF (MS  , s.BREAK_START_TIME, s.BREAK_END_TIME  ), DATEADD(hh, ewm.WORK_PLAN_HOURS, s.WORK_START_TIME)) 
+						else s.WORK_END_TIME end) AS workEndTime
+        , isnull(t.[BREAK_START_TIME], s.[BREAK_START_TIME]) AS breakStartTime
+        , isnull(t.[BREAK_END_TIME], s.[BREAK_END_TIME]) AS breakEndTime
+		, esh.[SURNAME] AS employeeSignSurname
+        , esh.[NAME] AS employeeSignName
+        , esh.[PATRONUMIC] AS employeeSignPatronumic,
+		  CASE t.[CITY_DISTRICT_ID]
+		  WHEN 352
+			  THEN
+				  'Все маршруты ГУП "Мосгортранс" г. Москвы. Хорошевский район в САО'
+		  else
+			  CASE sch.SHIFT_ID
+			  WHEN 3
+				  THEN 'Все маршруты ГУП "Мосгортранс" г. Москвы'
+			  ELSE
+				  'Все маршруты ГУП "Мосгортранс" в ' + ch.[SHORT_NAME] + ' г. Москвы'
+			  END
+		  END
+			  as countyName
+        , case t.[TASK_TYPE_ID] when 1 
+			then ( 
+				SELECT
+					cvh.NAME
+				FROM
+        			PBK_PLAN.PLAN_VENUES pv LEFT JOIN PBK_NSI.CITY_VENUES cv ON (pv.CITY_VENUE_ID = cv.ID) LEFT JOIN PBK_NSI.CITY_VENUE_HISTS cvh ON (cv.ID = cvh.HEAD_ID AND cvh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				WHERE
+        			pv.ID = t.PLAN_VENUE_ID) else t.SPECIAL_MARK end + case when t.SPECIAL_TASK is null then '' else ' (' + t.SPECIAL_TASK + ')' end AS specialMark
+      FROM
+        [PBK_TASK].[TASKS] t
+        JOIN [PBK_PLAN].[PLAN_SCHEDULES] sch ON t.[PLAN_SCHEDULE_ID] = sch.[ID]
+        LEFT JOIN [PBK_NSI].[EMPLOYEES] e ON sch.[EMPLOYEE_ID] = e.[ID]
+        LEFT JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh ON e.[ID] = eh.[HEAD_ID]
+        LEFT JOIN [PBK_NSI].[CITY_COUNTY_HISTS] ch ON eh.[CITY_COUNTY_ID] = ch.[HEAD_ID] and ch.V_END_DATE >= PBK_CORE.getVersionEndDate()
+        LEFT JOIN [PBK_NSI].[DEPARTMENTS] d ON eh.[DEPT_ID] = d.[ID]
+        LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON d.[ID] = dh.[HEAD_ID]
+		LEFT JOIN [PBK_NSI].[EMPLOYEE_HISTS] esh ON dh.[EMPLOYEE_SIGN_ID] = esh.[HEAD_ID]
+        JOIN [PBK_TASK].[TASK_STATES] ts on t.TASK_STATE_ID = ts.ID
+        LEFT JOIN [PBK_NSI].[BSOS] b ON t.[BSO_ID] = b.[ID]
+        LEFT JOIN [PBK_NSI].[PUSKS] p ON eh.[PUSK_ID] = p.[ID] and p.[IS_DELETE] = 0
+        LEFT JOIN [PBK_NSI].[PUSK_HISTS] ph ON p.[ID] = ph.[HEAD_ID]
+        LEFT JOIN [PBK_NSI].[SHIFTS] s ON sch.[SHIFT_ID] = s.[ID]
+        JOIN [PBK_NSI].[EMPLOYEE_WORK_MODES] ewm on sch.EMPLOYEE_ID = ewm.EMPLOYEE_ID and ewm.WORK_DATE = sch.WORK_DATE
+      WHERE 1=1
+        AND (eh.V_END_DATE IS NULL OR eh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+        AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+        AND (ph.V_END_DATE IS NULL OR ph.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+		AND t.id = #{id}
+    ]]>
+  </select>
+
+	<select id="getReportViews" resultType="ru.armd.pbk.views.tasks.TaskExportReportView">
+        <![CDATA[
+          SELECT
+               ROW_NUMBER() OVER (]]><include refid="ru.armd.pbk.mappers.CommonSql.orderBySql" /><![CDATA[) AS id,
+               t.*
+            FROM (
+				SELECT
+	          	tasks.id as id,
+	            ps.WORK_DATE as taskDate,
+	            bsos.BSO_NUMBER as bsoNumber,
+	            task_states.NAME as taskState,
+	            task_types.COD as taskTypeCod,
+	            eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as employeeName,
+				ceh.SURNAME + ' ' + ceh.NAME + ' ' + ceh.PATRONUMIC as changeEmployeeName,
+				s.NAME as shiftName,
+				cs.NAME as changeShiftName,
+	            dh.NAME as departmentName,
+	            ISNULL(cch.SHORT_NAME, cch.NAME) as countyName,
+				cvh.NAME as planVenueName,
+				CASE WHEN 
+			(SELECT tr.TS_CHECK_COUNT FROM [PBK_TASK].[TASK_REPORTS] tr WHERE tr.TASK_ID = tasks.id ) =
+			(SELECT CASE (SELECT VALUE
+				  FROM [PBK_CORE].[SETTINGS] 
+				  where COD = 'AUTO_CLOSE_TASK_BY') 
+			   WHEN  'АСКП' then (SELECT
+									count(*) FROM (SELECT ROUTE_ID, MOVE_CODE
+									FROM [PBK_VIS].[ASKP_PUSK_CHECKS] 
+									WHERE TASK_ID = tasks.id
+									GROUP BY ROUTE_ID, MOVE_CODE) t) 
+			   WHEN  'БСК' then (SELECT
+									count(*) FROM (SELECT ROUTE_ID, MOVE_CODE
+									FROM [PBK_VIS].[ASKP_CONTACTLESS_CARDS] 
+									WHERE TASK_ID = tasks.id
+									GROUP BY ROUTE_ID, MOVE_CODE) t)
+			   ELSE 0 END)
+			 AND (SELECT tr.TS_CHECK_COUNT FROM [PBK_TASK].[TASK_REPORTS] tr WHERE tr.TASK_ID = tasks.id) != 0 THEN 1 else 0 end as isEquals
+         	FROM
+	          	[PBK_TASK].[TASKS] tasks
+				LEFT JOIN PBK_PLAN.PLAN_VENUES pv ON (tasks.PLAN_VENUE_ID = pv.ID) LEFT JOIN PBK_NSI.CITY_VENUES cv ON (pv.CITY_VENUE_ID = cv.ID)
+				LEFT JOIN PBK_NSI.CITY_VENUE_HISTS cvh ON (cv.ID = cvh.HEAD_ID) 
+	            join [PBK_PLAN].[PLAN_SCHEDULES] ps on tasks.PLAN_SCHEDULE_ID = ps.ID
+				left join [PBK_NSI].[EMPLOYEES] e on ps.EMPLOYEE_ID = e.ID
+				left join [PBK_NSI].[EMPLOYEE_HISTS] eh ON (e.ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				left join [PBK_NSI].[CITY_COUNTY_HISTS] cch ON (cch.HEAD_ID = eh.CITY_COUNTY_ID AND cch.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				LEFT JOIN PBK_NSI.SHIFTS s ON (ps.SHIFT_ID = s.ID)
+				LEFT JOIN [PBK_PLAN].[PLAN_SCHEDULES] cps ON (tasks.CHANGE_PLAN_SCHEDULE_ID = cps.ID)
+				left join [PBK_NSI].[EMPLOYEES] ce ON (cps.EMPLOYEE_ID = ce.ID)
+				left join [PBK_NSI].[EMPLOYEE_HISTS] ceh on (ce.ID = ceh.HEAD_ID  AND ceh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				LEFT JOIN PBK_NSI.SHIFTS cs ON (cps.SHIFT_ID = cs.ID)
+				left join [PBK_NSI].[DEPARTMENT_HISTS] dh ON (tasks.DEPT_ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				join [PBK_TASK].[TASK_STATES] task_states on tasks.TASK_STATE_ID = task_states.ID
+				join [PBK_TASK].[TASK_TYPES] task_types on tasks.TASK_TYPE_ID = task_types.ID
+				left join [PBK_NSI].[BSOS] bsos on tasks.BSO_ID = bsos.ID				
+         	WHERE
+				(pv.CITY_VENUE_ID IS NULL OR cvh.V_END_DATE = (
+						SELECT MAX(cvh2.V_END_DATE)
+						FROM PBK_NSI.CITY_VENUE_HISTS cvh2 
+						WHERE cvh2.HEAD_ID = cvh.HEAD_ID 
+							AND cast(cvh2.V_END_DATE as DATE) >= cast(ps.WORK_DATE as DATE) AND cast(cvh2.V_START_DATE as DATE) <= cast(ps.WORK_DATE as DATE)
+					))
+                AND (#{filter.deptAuthId} IS NULL OR tasks.DEPT_ID = #{filter.deptAuthId})
+	            AND (#{filter.deptId} IS NULL OR tasks.DEPT_ID = #{filter.deptId})
+	            AND (#{filter.departmentId} IS NULL OR tasks.DEPT_ID = #{filter.departmentId})
+	            AND (#{filter.employeeId} IS NULL OR e.ID = #{filter.employeeId})
+	            AND (#{filter.taskStateId} IS NULL OR task_states.ID = #{filter.taskStateId})
+		        AND (#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE as DATE))
+		        AND (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE as DATE))
+		        AND (#{filter.venueId} is null or #{filter.venueId} = cvh.HEAD_ID)
+		        AND (#{filter.venueName} is null OR (UPPER(cvh.NAME) like UPPER('%${filter.venueName}%')))
+		        AND (#{filter.shiftId} is null OR ps.SHIFT_ID = #{filter.shiftId})
+		        AND (#{filter.fio} is null OR UPPER(eh.NAME) like UPPER('%${filter.fio}%') or (UPPER(eh.SURNAME) like UPPER('%${filter.fio}%')) or (UPPER(eh.PATRONUMIC) like UPPER('%${filter.fio}%')
+			 	OR UPPER(ceh.NAME) like UPPER('%${filter.fio}%')) or (UPPER(ceh.SURNAME) like UPPER('%${filter.fio}%')) or (UPPER(ceh.PATRONUMIC) like UPPER('%${filter.fio}%')))]]>
+        	) t
+        	<include refid="ru.armd.pbk.mappers.CommonSql.orderBySql_t" />
+    </select>
+    
+</mapper>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.dvr.DvrStorePeriodMapper">
+	
+	<insert id="insert" parameterType="ru.armd.pbk.domain.dvr.DvrStorePeriod" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_VIS.DVR_STORE_PERIOD (        	
+        	[NAME]
+        	, [DESCRIPTION]
+        	, [DVR_ID]	        
+        ) VALUES(        	
+        	#{name}
+        	, #{description}
+        	, #{dvrId})
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_VIS.DVR_STORE_PERIOD' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+    
+    <select id="getDomain" resultType="ru.armd.pbk.domain.dvr.DvrStorePeriod">
+    		select 
+    			ID as id,    			
+		    	DESCRIPTION as description,
+		    	NAME as name,
+		    	DVR_ID as dvrId		    	            
+            from PBK_VIS.DVR_STORE_PERIOD 
+            where (#{dvrId} is not null and #{dvrId} = DVR_ID)
+    </select>
+    
+    
+</mapper>

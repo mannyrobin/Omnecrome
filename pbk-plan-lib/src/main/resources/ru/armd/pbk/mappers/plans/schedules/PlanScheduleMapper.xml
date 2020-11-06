@@ -1,0 +1,642 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.plans.schedules.PlanScheduleMapper">
+    
+    <select id="getEmployeeForPlanViews" resultType="ru.armd.pbk.views.plans.schedules.EmployeePlanScheduleView">
+        <![CDATA[
+			SELECT DISTINCT
+				d.ID as id,
+				dh.NAME as name,
+				dh.PATRONUMIC as patronumic,
+				dh.SURNAME as surname,
+				dh.PERSONNEL_NUMBER as personalNumber,
+				dh.FIRE_DATE as fireDate,
+				ch.SHORT_NAME as shortCountyName
+			FROM
+				PBK_PLAN.PLAN_SCHEDULES ps LEFT JOIN PBK_NSI.EMPLOYEES d ON (ps.EMPLOYEE_ID = d.ID AND d.IS_DELETE = 0) LEFT JOIN PBK_NSI.EMPLOYEE_HISTS dh ON (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				JOIN PBK_NSI.EMP_DEPT_MOVES edm ON (edm.EMPLOYEE_ID = ps.EMPLOYEE_ID and ps.DEPT_ID = edm.DEPT_ID)
+				LEFT JOIN PBK_NSI.CITY_COUNTY_HISTS ch on dh.CITY_COUNTY_ID = ch.HEAD_ID and ch.V_END_DATE >= PBK_CORE.getVersionEndDate()
+			WHERE
+          		ps.DEPT_ID = #{filter.deptId}
+            	AND ((#{filter.fio} is null or UPPER(dh.NAME) like UPPER('%${filter.fio}%')) or (UPPER(dh.SURNAME) like UPPER('%${filter.fio}%')) or (UPPER(dh.PATRONUMIC) like UPPER('%${filter.fio}%')))
+            	AND ps.SHIFT_MODE_ID IS NOT NULL
+            	AND ps.WORK_DATE <= [PERIOD_END_DATE] AND ps.WORK_DATE >= [PERIOD_START_DATE]
+            	AND (dh.FIRE_DATE IS NULL AND dh.FOR_PLAN_USE = 1 OR (#{filter.dateForm, jdbcType=DATE} is null OR dh.FIRE_DATE >= #{filter.dateForm, jdbcType=DATE}))
+            	AND (#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE as DATE))
+	           	AND (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE as DATE))
+        ]]>
+        <if test="filter.countiesIds != null">
+        	<![CDATA[
+        		AND ch.HEAD_ID IN (${filter.countiesIds})
+        	]]>
+        </if>
+        <include refid="ru.armd.pbk.mappers.CommonSql.orderBySql" />
+    </select>
+    
+	<select id="getPlanSchedulesForEmployees" resultType="ru.armd.pbk.domain.plans.schedules.ScheduleShift">
+		<![CDATA[
+			SELECT
+				ps.ID as id,
+				ps.WORK_DATE as planDate,
+				ps.SHIFT_ID as shiftId,
+				ps.EMPLOYEE_ID as employeeId,
+				ps.SHIFT_MODE_ID as shiftModeId,
+				s.DESCRIPTION as shiftDescription
+			FROM
+	           	PBK_PLAN.PLAN_SCHEDULES ps
+	           	JOIN PBK_DB.PBK_NSI.EMP_DEPT_MOVES edm ON (edm.EMPLOYEE_ID = ps.EMPLOYEE_ID and ps.DEPT_ID = edm.DEPT_ID)
+				LEFT JOIN PBK_NSI.SHIFTS s ON (ps.SHIFT_ID = s.ID)
+				JOIN PBK_NSI.EMPLOYEES e ON (ps.EMPLOYEE_ID = e.ID AND e.IS_DELETE = 0)
+				LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (e.ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			WHERE
+	           	ps.DEPT_ID = #{params.filter.deptId}
+	           	AND (#{params.filter.dateFrom, jdbcType=DATE} is null or #{params.filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE as DATE))
+	           	AND (#{params.filter.dateTo, jdbcType=DATE} is null or #{params.filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE as DATE))
+	           	AND ps.SHIFT_MODE_ID IS NOT NULL
+	           	AND ps.EMPLOYEE_ID IN
+           	]]><foreach collection="employees" open="(" close=")" separator="," item="employee">
+           		#{employee.id}
+           	</foreach><![CDATA[
+           		AND ps.WORK_DATE <= [PERIOD_END_DATE] AND ps.WORK_DATE >= [PERIOD_START_DATE]           		
+           		AND (eh.FIRE_DATE IS NULL AND eh.FOR_PLAN_USE = 1 OR eh.FIRE_DATE >= cast(ps.WORK_DATE as DATE))
+           	]]>
+    </select>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+        	ps.ID as id,
+			CONCAT(eh.SURNAME, ' ', eh.NAME , ' ', eh.PATRONUMIC, ' (Смена: ', s.NAME, ')') as name
+        FROM
+        	PBK_PLAN.PLAN_SCHEDULES ps LEFT JOIN PBK_NSI.EMPLOYEES e ON (ps.EMPLOYEE_ID = e.ID) LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (ps.DEPT_ID = eh.DEPT_ID AND e.ID = eh.HEAD_ID AND eh.V_END_DATE = PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.SHIFTS s ON (ps.SHIFT_ID = s.ID) LEFT JOIN PBK_NSI.DEPARTMENTS d ON (ps.DEPT_ID = d.ID AND d.IS_DELETE = 0) LEFT JOIN PBK_NSI.DEPARTMENT_HISTS dh ON (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+        WHERE
+        	dh.FOR_PLAN_USE = 1 AND eh.FOR_PLAN_USE = 1
+        	AND (#{workDate} IS NULL OR ps.WORK_DATE = #{workDate})
+        	AND (#{isNight} IS NULL OR #{isNight} = 1 AND ps.SHIFT_ID = 3)
+        	AND (#{scheduleId} IS NULL OR (ps.SHIFT_ID = (SELECT SHIFT_ID FROM PBK_PLAN.PLAN_SCHEDULES WHERE ID = #{scheduleId}) AND (ps.SHIFT_ID NOT IN (6,7) OR (#{deptId} IS NULL OR (ps.DEPT_ID = #{deptId} AND eh.DEPT_ID = #{deptId})))))
+        	AND (#{isReserve} IS NULL OR #{isReserve} = 1 AND ps.ID IN (
+     			SELECT
+					t.PLAN_SCHEDULE_ID	
+				FROM
+					PBK_TASK.TASKS t
+				WHERE
+					t.TASK_STATE_ID = 6)
+			AND ps.ID != #{scheduleId})
+        	OR (#{currentId} IS NOT NULL AND ps.ID = #{currentId})
+        ORDER BY
+        	eh.SURNAME, eh.NAME, eh.PATRONUMIC, s.NAME
+    </select>
+
+	<select id="getPreviousPlanSchedulesForDepts" resultType="ru.armd.pbk.domain.plans.schedules.ScheduleShift">
+		SELECT DISTINCT
+			ps.ID as id,
+			ps.DEPT_ID as deptId,
+			ps.WORK_DATE as planDate,
+			ps.SHIFT_ID as shiftId,
+			ps.SHIFT_MODE_ID as shiftModeId,
+			ps.EMPLOYEE_ID as employeeId
+		FROM
+           	PBK_PLAN.PLAN_SCHEDULES ps
+           	INNER JOIN [PBK_NSI].[EMPLOYEES] e on (e.ID = ps.EMPLOYEE_ID)
+           	INNER JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh on (e.ID = eh.HEAD_ID)
+      			INNER JOIN [PBK_NSI].[SHIFTS] sh on (sh.ID = ps.SHIFT_ID)
+           	INNER JOIN (
+           		SELECT max(ps2.WORK_DATE) as WORK_DATE, ps2.EMPLOYEE_ID
+           		FROM PBK_PLAN.PLAN_SCHEDULES ps2
+           			INNER JOIN [PBK_NSI].[SHIFTS] sh2 on (sh2.ID = ps2.SHIFT_ID)
+           		WHERE cast(ps2.WORK_DATE as DATE) &lt; #{dateFrom}
+           			AND sh2.COD NOT IN ('HOLIDAY', 'VACATION', 'SICK', 'OTHER', 'LINE1', 'LINE2')
+           		GROUP BY ps2.EMPLOYEE_ID
+           	) ps2 on (ps2.EMPLOYEE_ID = ps.EMPLOYEE_ID AND ps2.WORK_DATE = ps.WORK_DATE)
+		WHERE
+           	cast(ps.WORK_DATE as DATE) &lt; #{dateFrom}
+			<if test="departmentId != null">
+				AND ps.DEPT_ID = #{departmentId}
+			</if>
+			<if test="employeeId != null">
+				AND ps.EMPLOYEE_ID = #{employeeId}
+			</if>
+      			AND sh.COD NOT IN ('HOLIDAY', 'VACATION', 'SICK', 'OTHER', 'LINE1', 'LINE2')
+        ORDER BY ps.ID
+    </select>
+		
+	<select id="isForPlanUse" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT DISTINCT
+				e.[ID] as id
+				, eh.[SURNAME] + ' ' + eh.[NAME] + ' ' + eh.[PATRONUMIC] as name
+			FROM
+				[PBK_NSI].[EMPLOYEES] e JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh on (e.ID = eh.HEAD_ID)
+				JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on (eh.DEPT_ID = dh.HEAD_ID)
+			WHERE
+					e.IS_DELETE = 0 
+				AND cast(eh.V_END_DATE as DATE) >= cast(#{date} as DATE) 
+				AND cast(eh.V_START_DATE as DATE) <= cast(#{date} as DATE)
+				AND cast(dh.V_END_DATE as DATE) >= cast(#{date} as DATE)
+				AND cast(dh.V_START_DATE as DATE) <= cast(#{date} as DATE)
+				AND e.ID = #{employeeId}
+				AND eh.FOR_PLAN_USE = 1
+				AND dh.FOR_PLAN_USE = 1
+		]]>
+	</select>
+		
+	<select id="getDeptsEmployees" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT DISTINCT
+				e.[ID] as id
+				, eh.[SURNAME] + ' ' + eh.[NAME] + ' ' + eh.[PATRONUMIC] as name
+			FROM
+				[PBK_NSI].[EMPLOYEES] e JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh on (e.ID = eh.HEAD_ID)
+			WHERE
+					e.IS_DELETE = 0 
+				AND eh.V_END_DATE >= #{dateFrom} 
+				AND eh.V_START_DATE <= #{dateTo}
+				AND eh.DEPT_ID = #{departmentId}
+				AND eh.FOR_PLAN_USE = 1
+		]]>
+	</select>
+
+    <sql id="getPSCell">
+        <![CDATA[
+            SELECT
+                ps.ID as id,
+                ps.DEPT_ID as deptId,
+                ps.WORK_DATE as planDate,
+                ps.SHIFT_ID as shiftId,
+                ps.SHIFT_MODE_ID as shiftModeId,
+                ps.EMPLOYEE_ID as employeeId,
+       		    CASE (SELECT DISTINCT 1 FROM PBK_NSI.EMPLOYEE_HISTS eh
+					WHERE eh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+                        AND eh.FOR_PLAN_USE = 1
+                        AND eh.HEAD_ID = ps.EMPLOYEE_ID
+       		        ) WHEN 1 THEN 1 ELSE 0 END as isForPlanUse
+                FROM
+                    PBK_PLAN.PLAN_SCHEDULES ps
+                WHERE
+                    cast(#{workDate} as DATE) = cast(ps.WORK_DATE as DATE)
+                    AND ps.EMPLOYEE_ID = #{employeeId}
+        ]]>
+    </sql>
+		
+	<select id="getPlanScheduleCell" resultType="ru.armd.pbk.domain.plans.schedules.ScheduleShift">
+        <include refid="getPSCell" /><![CDATA[
+           	AND ps.DEPT_ID = (	SELECT [DEPT_ID]    
+  								FROM [PBK_NSI].[EMP_DEPT_MOVES]
+ 								WHERE EMPLOYEE_ID = #{employeeId} 
+ 								AND cast(#{workDate} as DATE) BETWEEN cast(PERIOD_START_DATE as DATE)
+ 												AND cast(PERIOD_END_DATE as DATE))
+	        ]]>
+	</select>
+
+	<select id="getPlanScheduleCellForMove" resultType="ru.armd.pbk.domain.plans.schedules.ScheduleShift">
+        <include refid="getPSCell" /><![CDATA[
+           	AND ps.DEPT_ID = (	SELECT [DEPT_ID]
+  								FROM [PBK_NSI].[EMP_DEPT_MOVES]
+ 								WHERE EMPLOYEE_ID = #{employeeId}
+ 								AND cast(#{deptSearchDate} as DATE) BETWEEN cast(PERIOD_START_DATE as DATE)
+ 												AND cast(PERIOD_END_DATE as DATE))
+	        ]]>
+	</select>
+	
+	<select  id="getEmployeesWithoutSchedule" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT HEAD_ID as id, SURNAME + ' ' + NAME + ' ' + PATRONUMIC as name
+			FROM PBK_NSI.EMPLOYEE_HISTS 
+			WHERE HEAD_ID in (
+				SELECT distinct eh.HEAD_ID
+				FROM PBK_NSI.DEPARTMENT_HISTS dh 
+				JOIN PBK_NSI.EMPLOYEE_HISTS eh on eh.DEPT_ID = dh.HEAD_ID 
+						AND (cast(eh.V_END_DATE as DATE) BETWEEN cast(case when #{dateFrom} is null then getdate() else #{dateFrom} end as DATE)  AND cast(case when #{dateTo} is null then getdate() else #{dateTo} end as DATE)
+							 OR cast(eh.V_START_DATE as DATE) BETWEEN cast(case when #{dateFrom} is null then getdate() else #{dateFrom} end as DATE) AND cast(case when #{dateTo} is null then getdate() else #{dateTo} end as DATE)) 
+						AND eh.FOR_PLAN_USE = 1
+				WHERE dh.FOR_PLAN_USE = 1 and dh.V_END_DATE >= PBK_CORE.getVersionEndDate() and dh.HEAD_ID = #{deptId}
+						AND eh.HEAD_ID not in (	SELECT DISTINCT ps.EMPLOYEE_ID
+											   	FROM PBK_PLAN.PLAN_SCHEDULES ps
+											   	WHERE ps.WORK_DATE BETWEEN cast(#{dateFrom} as DATE) AND cast(#{dateTo} as DATE)
+														AND ps.DEPT_ID = #{deptId})
+												)
+				AND V_END_DATE >= [PBK_CORE].getVersionEndDate() 
+		]]>
+	</select>
+	
+	<select id="getPlanScheduleCells" resultType="ru.armd.pbk.domain.plans.schedules.ScheduleShift">
+		SELECT
+			ps.ID as id,
+			ps.DEPT_ID as deptId,
+			ps.WORK_DATE as planDate,
+			ps.SHIFT_ID as shiftId,
+			ps.SHIFT_MODE_ID as shiftModeId,
+			ps.EMPLOYEE_ID as employeeId,
+       		CASE (SELECT 1 FROM PBK_NSI.EMPLOYEE_HISTS eh 
+					WHERE eh.V_END_DATE >= [PBK_CORE].getVersionEndDate() 
+							AND eh.FOR_PLAN_USE = 1
+							AND eh.HEAD_ID = ps.EMPLOYEE_ID        
+       		) WHEN 1 THEN 1 ELSE 0 END as isForPlanUse
+		FROM
+           	PBK_PLAN.PLAN_SCHEDULES ps
+		WHERE
+			ps.EMPLOYEE_ID = #{employeeId} and
+			cast(ps.WORK_DATE as DATE) >= #{dateFrom}
+			AND ps.DEPT_ID = (	SELECT [DEPT_ID]  
+  								FROM [PBK_NSI].[EMP_DEPT_MOVES]
+ 								WHERE EMPLOYEE_ID = #{employeeId} 
+ 								AND ps.WORK_DATE BETWEEN cast(PERIOD_START_DATE as DATE)
+ 												AND cast(PERIOD_END_DATE as DATE))	
+		ORDER BY
+			ps.WORK_DATE
+	</select>	
+
+	<select id="getPlanScheduleById" resultType="ru.armd.pbk.domain.plans.schedules.PlanSchedule">
+		<![CDATA[
+			SELECT
+				ps.ID as id,
+				ps.DEPT_ID as deptId,
+				ps.WORK_DATE as workDate,
+				ps.SHIFT_ID as shiftId,
+				ps.EMPLOYEE_ID as employeeId,
+				(
+       				SELECT t.ID 
+       				FROM PBK_TASK.TASKS t
+       				WHERE t.PLAN_SCHEDULE_ID = ps.ID
+				) as taskId,
+				(
+					SELECT CITY_COUNTY_ID
+					FROM PBK_NSI.EMPLOYEE_HISTS eh
+					WHERE eh.HEAD_ID = ps.EMPLOYEE_ID
+						AND eh.V_END_DATE = (
+							SELECT MAX(eh2.V_END_DATE)
+							FROM PBK_NSI.EMPLOYEE_HISTS eh2 
+							WHERE eh2.HEAD_ID = eh.HEAD_ID 
+								AND cast(ps.WORK_DATE as DATE) BETWEEN eh2.V_START_DATE AND eh2.V_END_DATE
+						)
+				) as countyId
+			FROM
+	           	PBK_PLAN.PLAN_SCHEDULES ps
+	        WHERE 
+	        	ps.id = #{id}
+		]]>
+	</select>
+	
+	<select id="findFreeController" resultType="ru.armd.pbk.domain.plans.schedules.PlanSchedule">
+		<![CDATA[
+			SELECT
+				ps.ID as id,
+				ps.DEPT_ID as deptId,
+				ps.WORK_DATE as workDate,
+				ps.SHIFT_ID as shiftId,
+				ps.EMPLOYEE_ID as employeeId,
+				(
+       				SELECT t.ID 
+       				FROM PBK_TASK.TASKS t
+       				WHERE t.PLAN_SCHEDULE_ID = ps.ID
+				) as taskId,
+				(
+					SELECT CITY_COUNTY_ID
+					FROM PBK_NSI.EMPLOYEE_HISTS eh
+					WHERE eh.HEAD_ID = ps.EMPLOYEE_ID
+						AND eh.V_END_DATE = (
+							SELECT MAX(eh2.V_END_DATE)
+							FROM PBK_NSI.EMPLOYEE_HISTS eh2 
+							WHERE eh2.HEAD_ID = eh.HEAD_ID 
+								AND cast(ps.WORK_DATE as DATE) BETWEEN eh2.V_START_DATE AND eh2.V_END_DATE
+						)
+				) as countyId
+			FROM
+	           	PBK_PLAN.PLAN_SCHEDULES ps
+			WHERE
+	           	cast(ps.WORK_DATE as DATE) = cast(#{workDate} as DATE)
+				AND ps.DEPT_ID = #{deptId}
+       			AND (#{shiftId} IS NULL OR ps.SHIFT_ID = #{shiftId})
+       			AND NOT EXISTS (
+       				SELECT 1 
+       				FROM PBK_TASK.TASKS t 
+		            	JOIN PBK_TASK.TASK_STATES ts on t.TASK_STATE_ID = ts.ID
+       				WHERE t.PLAN_SCHEDULE_ID = ps.ID AND ts.COD NOT IN ('IN_RESERVE')
+       			)
+       			AND EXISTS (SELECT 1 FROM PBK_NSI.EMPLOYEE_HISTS eh 
+					WHERE cast(eh.V_END_DATE as DATE) >= cast(ps.WORK_DATE as DATE) 
+						AND cast(eh.V_START_DATE as DATE) <= cast(ps.WORK_DATE as DATE)
+							AND eh.DEPT_ID = ps.DEPT_ID
+							AND eh.FOR_PLAN_USE = 1
+							AND eh.HEAD_ID = ps.EMPLOYEE_ID        
+       			)
+       			AND EXISTS (SELECT 1 FROM PBK_NSI.EMP_DEPT_MOVES edm 
+					WHERE cast(edm.PERIOD_END_DATE as DATE) >= cast(ps.WORK_DATE as DATE) 
+						AND cast(edm.PERIOD_START_DATE as DATE) <= cast(ps.WORK_DATE as DATE)
+							AND edm.DEPT_ID = ps.DEPT_ID
+							AND edm.EMPLOYEE_ID = ps.EMPLOYEE_ID        
+       			)
+		]]>
+    </select>
+    
+	<select id="getAvailableForCheckRoutes" resultType="ru.armd.pbk.domain.tasks.CheckRoute">
+		<![CDATA[
+			SELECT * FROM (
+				SELECT distinct r.ID as routeId,
+					(
+						SELECT MAX(ps.WORK_DATE)
+						FROM PBK_PLAN.PLAN_SCHEDULES ps WITH (nolock)
+							JOIN PBK_TASK.TASKS  t WITH (nolock)  on t.PLAN_SCHEDULE_ID = ps.ID
+							JOIN PBK_TASK.TASK_ROUTES tr WITH (nolock) on tr.TASK_ID = t.ID
+						WHERE 
+							tr.ROUTE_ID = r.ID
+							AND cast(ps.WORK_DATE as DATE) <= cast(#{workDate} as DATE)
+					) as lastCheckDate,
+					(
+						SELECT TOP 1 pr.ROUTE_RATIO
+						FROM PBK_PLAN.PLAN_ROUTES pr  WITH (nolock)
+						WHERE pr.ROUTE_ID = r.ID
+							AND DATEADD(DAY, 14, cast(pr.WORK_DATE as DATE)) = cast(#{workDate} as DATE)
+						ORDER BY pr.ID desc
+					) as routeRatio,
+					(
+						SELECT count(*)
+						FROM PBK_PLAN.PLAN_SCHEDULES ps   WITH (nolock)
+							JOIN PBK_TASK.TASKS t  WITH (nolock) on t.PLAN_SCHEDULE_ID = ps.ID
+							JOIN PBK_TASK.TASK_ROUTES tr  WITH (nolock) on tr.TASK_ID = t.ID
+						WHERE 
+							tr.ROUTE_ID = r.ID
+							AND cast(ps.WORK_DATE as DATE) < cast(#{workDate} as DATE) 
+							AND cast(ps.WORK_DATE as DATE) >= DATEADD(month, DATEDIFF(month, 0, cast(#{workDate} as DATE)), 0)
+					) as monthCheckCount,
+					rh.[ROUTE_MOVE_COUNT] as tsCount,
+					cdr.CITY_DISTRICT_ID districtId,
+					cdh.PLAN_CITY_COUNTY_ID as countyId
+				FROM PBK_NSI.ROUTES r
+					JOIN [PBK_NSI].[ROUTE_HISTS] rh  WITH (nolock) on (r.ID = rh.HEAD_ID and rh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+					JOIN PBK_GISMGT.GM_ROUTES gm  WITH (nolock) on rh.GM_ROUTE_ID = gm.ID
+					JOIN PBK_NSI.CITY_DISTRICT_ROUTES cdr  WITH (nolock) on cdr.ROUTE_ID = r.ID
+					JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh  WITH (nolock) ON cdh.HEAD_ID = cdr.CITY_DISTRICT_ID AND cdh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+					JOIN PBK_NSI.CITY_COUNTY_HISTS cch  WITH (nolock) ON cch.HEAD_ID = cdh.PLAN_CITY_COUNTY_ID AND cch.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+				WHERE
+					(
+						exists (
+							select 1 from PBK_NSI.CITY_VENUE_DISTRICTS cvd  WITH (nolock)
+								JOIN PBK_NSI.CITY_VENUE_HISTS cvh  WITH (nolock) ON cvh.HEAD_ID = cvd.CITY_VENUE_ID
+								JOIN PBK_PLAN.PLAN_VENUES pv  WITH (nolock) on pv.CITY_VENUE_ID = cvh.HEAD_ID
+							where cvd.CITY_DISTRICT_ID = cdr.CITY_DISTRICT_ID
+								AND pv.ID = #{planVenueId}
+								AND cch.DEPT_ID = pv.DEPT_ID
+								AND pv.SHIFT_ID != 3 AND rh.IS_NIGHT = 0
+								AND cvh.V_END_DATE = (
+									SELECT MAX(cvh2.V_END_DATE)
+									FROM PBK_NSI.CITY_VENUE_HISTS cvh2  WITH (nolock)
+									WHERE cvh2.HEAD_ID = cvh.HEAD_ID 
+										AND cast(cvh2.V_END_DATE as DATE) >= cast(#{workDate} as DATE) AND cast(cvh2.V_START_DATE as DATE) <= cast(#{workDate} as DATE)
+								)
+						)
+						or
+						exists (
+							select 1 from PBK_PLAN.PLAN_VENUES pv  WITH (nolock)
+							where pv.ID = #{planVenueId}
+								AND pv.SHIFT_ID = 3 AND rh.IS_NIGHT = 1
+						)
+					) and gm.CLOSE_DATE is null
+			) tbl
+			WHERE lastCheckDate IS NULL or cast(lastCheckDate as DATE) < DATEADD(DAY, -1, cast(#{workDate} as DATE))
+			ORDER BY routeRatio DESC, monthCheckCount ASC
+		]]>
+    </select>
+    
+    <insert id="insert" parameterType="ru.armd.pbk.domain.plans.schedules.ScheduleShift" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        INSERT INTO
+        	PBK_PLAN.PLAN_SCHEDULES(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+	        	,EMPLOYEE_ID
+				,SHIFT_ID
+				,WORK_DATE
+				,SHIFT_MODE_ID
+				,DEPT_ID
+				,WORK_FACT_HOURS)
+        SELECT
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+	        	, #{employeeId}
+	        	, #{shiftId}
+	        	, #{planDate}
+	        	, #{shiftModeId}
+	        	, #{deptId}
+	        	, cast(cast(#{workFactHours} as varchar) as float)
+		FROM PBK_NSI.EMPLOYEE_HISTS eh 
+		WHERE eh.V_END_DATE >= [PBK_CORE].getVersionEndDate() 
+					AND eh.FOR_PLAN_USE = 1
+					AND eh.HEAD_ID = #{employeeId}        
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_PLAN.PLAN_SCHEDULES' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.plans.schedules.ScheduleShift">
+		<![CDATA[
+			UPDATE
+				PBK_PLAN.PLAN_SCHEDULES SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				, DEPT_ID = #{deptId}
+				, SHIFT_ID = #{shiftId}
+	        	, SHIFT_MODE_ID = #{shiftModeId}
+	        	, WORK_FACT_HOURS = cast(cast(#{workFactHours} as varchar) as float)
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+	
+	<select id="getById" resultType="ru.armd.pbk.domain.plans.schedules.ScheduleShift">
+		<![CDATA[
+			SELECT
+				ID as id
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues" /><![CDATA[
+				,EMPLOYEE_ID as employeeId
+				,SHIFT_ID as shiftId
+				,WORK_DATE as planDate
+				,SHIFT_MODE_ID as shiftModeId
+				,DEPT_ID as deptId
+				,WORK_FACT_HOURS as workFactHours
+			FROM
+				PBK_PLAN.PLAN_SCHEDULES
+			WHERE
+               ID = #{id}
+        ]]>
+    </select>
+    
+    <select id="getSchedule" resultType="ru.armd.pbk.domain.plans.schedules.ScheduleShift">
+    	<![CDATA[
+			SELECT
+				ID as id
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues" /><![CDATA[
+				,EMPLOYEE_ID as employeeId
+				,SHIFT_ID as shiftId
+				,WORK_DATE as planDate
+				,SHIFT_MODE_ID as shiftModeId
+			FROM
+				PBK_PLAN.PLAN_SCHEDULES
+			WHERE
+				(#{deptId} is null OR DEPT_ID = #{deptId})
+				AND (#{employeeId} is null OR EMPLOYEE_ID = #{employeeId})
+				AND (#{workDate} is null OR cast(WORK_DATE as DATE) = cast(#{workDate} as DATE))
+		]]>
+    </select>
+    
+    <select id="getScheduleByTaskId" resultType="ru.armd.pbk.domain.plans.schedules.ScheduleShift">
+    	<![CDATA[
+			SELECT
+				ps.ID as id
+				,ps.CREATE_DATE as createDate
+                ,ps.CREATE_USER_ID as createUserId
+                ,ps.UPDATE_DATE as updateDate
+                ,ps.UPDATE_USER_ID as updateUserId
+				,ps.EMPLOYEE_ID as employeeId
+				,ps.SHIFT_ID as shiftId
+				,ps.WORK_DATE as planDate
+				,ps.SHIFT_MODE_ID as shiftModeId
+			FROM
+				PBK_TASK.TASKS t LEFT JOIN PBK_PLAN.PLAN_SCHEDULES ps ON (t.PLAN_SCHEDULE_ID = ps.ID)
+			WHERE
+				t.ID = #{taskId}
+		]]>
+    </select>
+    
+    <select id="getChangeScheduleByTaskId" resultType="ru.armd.pbk.domain.plans.schedules.ScheduleShift">
+    	<![CDATA[
+			SELECT
+				ps.ID as id
+				,ps.CREATE_DATE as createDate
+                ,ps.CREATE_USER_ID as createUserId
+                ,ps.UPDATE_DATE as updateDate
+                ,ps.UPDATE_USER_ID as updateUserId
+				,ps.EMPLOYEE_ID as employeeId
+				,ps.SHIFT_ID as shiftId
+				,ps.WORK_DATE as planDate
+				,ps.SHIFT_MODE_ID as shiftModeId
+			FROM
+				PBK_TASK.TASKS t LEFT JOIN PBK_PLAN.PLAN_SCHEDULES ps ON (t.CHANGE_PLAN_SCHEDULE_ID = ps.ID)
+			WHERE
+				t.ID = #{taskId}
+		]]>
+    </select>
+    
+    <select id="getScheduleByParams" resultType="ru.armd.pbk.domain.plans.schedules.ScheduleShift">
+    	<![CDATA[
+			SELECT
+				ps.ID as id
+				,ps.CREATE_DATE as createDate
+                ,ps.CREATE_USER_ID as createUserId
+                ,ps.UPDATE_DATE as updateDate
+                ,ps.UPDATE_USER_ID as updateUserId
+				,ps.EMPLOYEE_ID as employeeId
+				,ps.SHIFT_ID as shiftId
+				,ps.WORK_DATE as planDate
+				,ps.SHIFT_MODE_ID as shiftModeId
+			FROM
+				PBK_PLAN.PLAN_SCHEDULES ps
+			WHERE
+				ps.DEPT_ID = #{deptId} AND ps.EMPLOYEE_ID = #{employeeId} AND cast(ps.WORK_DATE as DATE) = cast(#{workDate} as DATE)
+		]]>
+    </select>
+    
+    <select id="getCauseShiftId" resultType="long">
+        <![CDATA[
+            SELECT
+			   ps.SHIFT_ID             
+			FROM
+				PBK_PLAN.PLAN_SCHEDULES ps
+			WHERE
+				ps.ID = #{sheduleId}
+				AND ps.SHIFT_ID IN (4, 5, 8, 15, 16)
+       ]]>
+    </select>
+    
+    <select id="getReserveList" resultType="long">
+        <![CDATA[
+            SELECT
+				ps.ID
+			FROM
+				PBK_PLAN.PLAN_SCHEDULES ps
+			WHERE
+				ps.DEPT_ID = #{filter.deptId}
+	           	AND (#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE as DATE))
+	           	AND (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE as DATE))
+	           	AND ps.SHIFT_ID IN (2, 3, 6, 7)
+	           	AND ps.ID IN (			
+					SELECT
+						t.PLAN_SCHEDULE_ID			               
+					FROM
+						PBK_TASK.TASKS t
+					WHERE
+						t.TASK_STATE_ID = 6
+				)
+       ]]>
+    </select>
+	
+	<select id="getEmployeeWorkModes" resultType="ru.armd.pbk.domain.plans.schedules.ScheduleWorkMode">
+		SELECT DISTINCT
+			   EWM.[WORK_DATE] as workDate
+		      ,EWM.[EMPLOYEE_ID] as employeeId
+		      ,EWM.[WORK_MODE_ID] as workModeId
+		      ,EWM.[WORK_PLAN_HOURS] as workPlanHours
+			  ,PS.ID as psId
+			  ,PS.SHIFT_MODE_ID as shiftModeId
+			  ,PS.SHIFT_ID as shiftId
+		FROM [PBK_NSI].[EMPLOYEE_WORK_MODES] EWM
+			JOIN PBK_PLAN.PLAN_SCHEDULES PS ON PS.EMPLOYEE_ID = EWM.EMPLOYEE_ID AND PS.WORK_DATE = EWM.WORK_DATE
+		WHERE cast(EWM.[WORK_DATE] as DATE) >= #{dateFrom, jdbcType=DATE}
+			AND EWM.[EMPLOYEE_ID] = #{employeeId}
+		ORDER BY EWM.[WORK_DATE] ASC
+	</select>
+	
+	<select id="getSelectItemsForCreatingTask" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+        SELECT
+        	ps.ID as id,
+			CONCAT(eh.SURNAME, ' ', eh.NAME , ' ', eh.PATRONUMIC, ' (Смена: ', s.NAME, ')') as name
+        FROM
+        	PBK_PLAN.PLAN_SCHEDULES ps LEFT JOIN PBK_NSI.EMPLOYEES e ON (ps.EMPLOYEE_ID = e.ID) LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (ps.DEPT_ID = eh.DEPT_ID AND e.ID = eh.HEAD_ID AND eh.V_END_DATE = PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.SHIFTS s ON (ps.SHIFT_ID = s.ID) LEFT JOIN PBK_NSI.DEPARTMENTS d ON (ps.DEPT_ID = d.ID AND d.IS_DELETE = 0) LEFT JOIN PBK_NSI.DEPARTMENT_HISTS dh ON (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+        	JOIN PBK_DB.PBK_NSI.EMP_DEPT_MOVES edm ON (edm.EMPLOYEE_ID = e.ID and ps.DEPT_ID = edm.DEPT_ID)
+        WHERE
+        	dh.FOR_PLAN_USE = 1 AND eh.FOR_PLAN_USE = 1
+        	AND ps.WORK_DATE <= edm.[PERIOD_END_DATE] AND ps.WORK_DATE >= edm.[PERIOD_START_DATE]
+        	AND (#{workDate, jdbcType=DATE} = cast(ps.WORK_DATE as DATE))
+        	AND (#{deptId} IS NULL OR (ps.DEPT_ID = #{deptId} AND eh.DEPT_ID = #{deptId}))
+        	AND ps.SHIFT_ID IN (3, 8, 15, 16)
+        	AND ps.ID NOT IN (
+        		SELECT
+        			PLAN_SCHEDULE_ID
+        		FROM
+        			PBK_TASK.TASKS
+				WHERE
+					TASK_STATE_ID != 4)
+        	OR (#{currentId} IS NOT NULL AND ps.ID = #{currentId})
+        ORDER BY
+        	eh.SURNAME, eh.NAME, eh.PATRONUMIC, s.NAME
+        ]]>
+    </select>
+
+	<select id="getScheduleForCheckingMode" resultType="ru.armd.pbk.domain.plans.schedules.ScheduleShift">
+		<![CDATA[
+			SET DATEFIRST 7;
+			select buf.* from (
+								  select ps.EMPLOYEE_ID as employeeId, ps.SHIFT_MODE_ID as shiftModeId, STUFF(( SELECT ',' + cast(DATEPART(dw, cast(ps2.WORK_DATE as date)) as VARCHAR)
+																												FROM PBK_PLAN.PLAN_SCHEDULES ps2
+																												where ps2.EMPLOYEE_ID = ps.EMPLOYEE_ID
+																													  and ps2.shift_id = 1
+																													  AND (CAST(GETDATE() AS date) <= ps2.WORK_DATE)
+																													  AND (cast(DATEADD(yy, DATEDIFF(yy, 0, GETDATE()) + 1, -1) as date) >= ps2.WORK_DATE)
+																													  and shift_mode_id != 0
+																												FOR XML PATH(''), TYPE
+																											  ).value('.', 'NVARCHAR(MAX)')
+								  ,1,1,'') shiftDescription
+								  from PBK_PLAN.PLAN_SCHEDULES ps
+								  where
+									  (CAST(GETDATE() AS date) <= ps.WORK_DATE)
+                          			  AND (cast(DATEADD(yy, DATEDIFF(yy, 0, GETDATE()) + 1, -1) as date) >= ps.WORK_DATE)
+									  and ps.shift_id = 1
+									  and shift_mode_id != 0
+								  GROUP BY ps.EMPLOYEE_ID, ps.SHIFT_MODE_ID
+							  ) buf
+			order by buf.employeeId
+		]]>
+	</select>
+</mapper>

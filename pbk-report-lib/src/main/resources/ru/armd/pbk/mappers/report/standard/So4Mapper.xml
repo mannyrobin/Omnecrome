@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So4Mapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.report.So4View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[
+        SELECT
+          ROW_NUMBER() OVER (ORDER BY date) AS id
+          , date
+          , firstShiftCount
+          , secondShiftCount
+          , dayCount
+          , nightCount
+          , (firstShiftCount + secondShiftCount + dayCount + nightCount) AS totalCount
+        FROM
+        ( SELECT
+            ps.WORK_DATE AS date
+            , count(CASE WHEN ps.SHIFT_ID = 6 THEN 1 ELSE NULL END) AS firstShiftCount
+            , count(CASE WHEN ps.SHIFT_ID = 7 THEN 1 ELSE NULL END) AS secondShiftCount
+            , count(CASE WHEN ps.SHIFT_ID = 2 THEN 1 ELSE NULL END) AS dayCount
+            , count(CASE WHEN ps.SHIFT_ID = 3 THEN 1 ELSE NULL END) AS nightCount
+          FROM
+            [PBK_PLAN].[PLAN_SCHEDULES] ps            
+            LEFT JOIN [PBK_NSI].[DEPARTMENTS] d ON (ps.DEPT_ID = d.ID AND d.IS_DELETE = 0)
+            LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate() AND dh.FOR_PLAN_USE = 1)
+			LEFT JOIN PBK_NSI.EMPLOYEES e ON (ps.EMPLOYEE_ID = e.ID AND e.IS_DELETE = 0)
+			RIGHT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (e.ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate() AND eh.FOR_PLAN_USE = 1)
+          WHERE
+          	dh.FOR_PLAN_USE = 1
+            AND (eh.FIRE_DATE IS NULL OR (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= cast(eh.FIRE_DATE AS DATE))
+            AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(eh.FIRE_DATE AS DATE)))
+            AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+            AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+        ]]><if test="filter.departmentId != null">
+            AND ps.DEPT_ID IN (${filter.departmentId})
+        </if><![CDATA[
+            and (#{filter.deptAuthId} is null or ps.DEPT_ID = #{filter.deptAuthId})
+          GROUP BY ps.WORK_DATE
+        ) AS shiftCounts
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getGridViewTotal" resultType="ru.armd.pbk.views.report.So4View">
+        <![CDATA[
+        SELECT
+        	'Итого' as totalTitle	
+			, SUM(firstShiftCount) as firstShiftCount
+			, SUM(secondShiftCount) as secondShiftCount
+			, SUM(dayCount) as dayCount
+			, SUM(nightCount) as nightCount
+			, SUM(firstShiftCount + secondShiftCount + dayCount + nightCount) AS totalCount
+        FROM
+        ( SELECT
+            ps.WORK_DATE AS date
+            , count(CASE WHEN ps.SHIFT_ID = 6 THEN 1 ELSE NULL END) AS firstShiftCount
+            , count(CASE WHEN ps.SHIFT_ID = 7 THEN 1 ELSE NULL END) AS secondShiftCount
+            , count(CASE WHEN ps.SHIFT_ID = 2 THEN 1 ELSE NULL END) AS dayCount
+            , count(CASE WHEN ps.SHIFT_ID = 3 THEN 1 ELSE NULL END) AS nightCount
+          FROM
+            [PBK_PLAN].[PLAN_SCHEDULES] ps            
+            LEFT JOIN [PBK_NSI].[DEPARTMENTS] d ON (ps.DEPT_ID = d.ID AND d.IS_DELETE = 0)
+            LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate() AND dh.FOR_PLAN_USE = 1)
+			LEFT JOIN PBK_NSI.EMPLOYEES e ON (ps.EMPLOYEE_ID = e.ID AND e.IS_DELETE = 0)
+			RIGHT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (e.ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate() AND eh.FOR_PLAN_USE = 1)
+          WHERE
+          	dh.FOR_PLAN_USE = 1
+            AND (eh.FIRE_DATE IS NULL OR (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= cast(eh.FIRE_DATE AS DATE))
+            AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(eh.FIRE_DATE AS DATE)))
+            AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+            AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+        ]]><if test="departmentId != null">
+            AND ps.DEPT_ID IN (${departmentId})
+        </if><![CDATA[
+            and (#{deptAuthId} is null or ps.DEPT_ID = #{deptAuthId})
+          GROUP BY ps.WORK_DATE
+        ) AS shiftCounts
+        ]]>
+    </select>
+    
+
+</mapper>

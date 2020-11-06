@@ -1,0 +1,33 @@
+<div>
+    <div ar-validation-errors></div>
+    
+    <!-- FORM -->
+    <form name="form">
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[0]"></div>
+            <div ar-form-field col-class="'col-sm-6'" field="fields[1]"></div>
+        </div> 
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-4'" field="fields[2]"></div>
+            <div ar-form-field col-class="'col-sm-4'" field="fields[3]"></div>
+            <div ar-form-field col-class="'col-sm-4'" field="fields[4]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[5]"></div>
+            <div ar-form-field col-class="'col-sm-6'" field="fields[9]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-4'" field="fields[6]"></div>
+            <div ar-form-field col-class="'col-sm-4'" field="fields[7]"></div>
+            <div ar-form-field col-class="'col-sm-4'" field="fields[8]"></div>
+        </div>  
+    </form>
+    <!-- END FORM -->
+    
+</div>
+ 
+<div class="pull-right" ng-if="isNotReadOnlyUser">
+    <button type="button" class="btn btn-primary" ng-click="saveVersion()" ng-disabled="form.$invalid || !isChange">Сохранить версию</button>
+    <button type="button" class="btn btn-primary" ng-click="save()" ng-disabled="form.$invalid || !isChange">Сохранить</button>
+    <button type="button" class="btn btn-default" ng-click="reset()">Отмена</button>
+</div> 

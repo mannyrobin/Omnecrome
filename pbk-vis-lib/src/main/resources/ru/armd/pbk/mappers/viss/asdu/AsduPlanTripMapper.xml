@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.asdu.AsduPlanTripMapper">
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.asdu.AsduPlanTrip" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_VIS].[ASDU_PLAN_TRIPS] (
+                 [DATE]
+                ,[MR_CODE]
+                ,[DEPOT_NUMBER]
+                ,[SHIFT_NUM]
+                ,[ROUTE_NUM]
+                ,[ORDER_NUM]
+                ,[STOP_ID]
+                ,[ERM_ID]
+                ,[TRIP_ID]
+                ,[GRAFIC]
+            ) VALUES (
+                  #{date}
+                , #{mrCode}
+                , #{depotNumber}
+                , #{shiftNum}
+                , #{routeNum}
+                , #{orderNum}
+                , #{stopId}
+                , #{ermId}
+                , #{tripId}
+                , #{grafic}
+            )
+        ]]>
+        <!-- selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_VIS.ASDU_PLAN_TRIPS' ) as id
+            ]]>
+        </selectKey -->
+    </insert>
+
+    <insert id="insertBulk" parameterType="java.util.List">
+        <![CDATA[
+            INSERT INTO [PBK_VIS].[ASDU_PLAN_TRIPS] (
+                 [DATE]
+                ,[MR_CODE]
+                ,[DEPOT_NUMBER]
+                ,[SHIFT_NUM]
+                ,[ROUTE_NUM]
+                ,[ORDER_NUM]
+                ,[STOP_ID]
+                ,[ERM_ID]
+                ,[TRIP_ID]
+                ,[GRAFIC]
+            ) VALUES
+        ]]><foreach collection="list" item="element" index="index" separator=","><![CDATA[
+                (#{element.date}
+                , #{element.mrCode}
+                , #{element.depotNumber}
+                , #{element.shiftNum}
+                , #{element.routeNum}
+                , #{element.orderNum}
+                , #{element.stopId}
+                , #{element.ermId}
+                , #{element.tripId}
+                , #{element.grafic})
+        ]]></foreach>
+    </insert>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.asdu.AsduPlanTrip">
+        <![CDATA[
+            UPDATE [PBK_VIS].[ASDU_PLAN_TRIPS]
+            SET
+                 [DATE] = #{date}
+                ,[MR_CODE] = #{mrCode}
+                ,[DEPOT_NUMBER] = #{depotNumber}
+                ,[SHIFT_NUM] = #{shiftNum}
+                ,[ROUTE_NUM] = #{routeNum}
+                ,[ORDER_NUM] = #{orderNum}
+                ,[STOP_ID] = #{stopId}
+                ,[ERM_ID] = #{ermId}
+                ,[TRIP_ID] = #{tripId}
+                ,[GRAFIC] = #{grafic}
+            WHERE [ID] = #{id}
+        ]]>
+    </update>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.asdu.AsduPlanTrip">
+        <![CDATA[
+            SELECT [ID] as id
+                ,[DATE] as date
+                ,[MR_CODE] as mrCode
+                ,[DEPOT_NUMBER] as depotNumber
+                ,[SHIFT_NUM] as shiftNum
+                ,[ROUTE_NUM] as routeNum
+                ,[ORDER_NUM] as orderNum
+                ,[STOP_ID] as stopId
+                ,[ERM_ID] as ermId
+                ,[TRIP_ID] as tripId
+                ,[GRAFIC] as grafic
+            FROM [PBK_VIS].[ASDU_PLAN_TRIPS]
+            WHERE [ID] = #{id}
+       ]]>
+    </select>
+
+    <!-- select id="getDomains" resultType="ru.armd.pbk.domain.viss.asdu.AsduPlanTrip">
+        <![CDATA[
+            SELECT [ID] as id
+                ,[DATE] as date
+                ,[MR_CODE] as mrCode
+                ,[DEPOT_NUMBER] as depotNumber
+                ,[SHIFT_NUM] as shiftNum
+                ,[ROUTE_NUM] as routeNum
+                ,[ORDER_NUM] as orderNum
+                ,[STOP_ID] as stopId
+                ,[ERM_ID] as ermId
+                ,[TRIP_ID] as tripId
+                ,[GRAFIC] as grafic
+            FROM [PBK_VIS].[ASDU_PLAN_TRIPS]
+            WHERE 1 = 1
+        ]]>
+    </select -->
+</mapper>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.tasks.TaskFileStreamMapper">
+
+    <select id="getById" resultType="ru.armd.pbk.core.domain.FileStream">
+        <![CDATA[
+            SELECT
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.fileStreamFields"/><![CDATA[
+            FROM [PBK_TASK].[TASK_FILETABLE]
+            WHERE [stream_id] = #{id}
+       ]]>
+    </select>
+     
+    <select id="getByName" resultType="ru.armd.pbk.core.domain.FileStream">
+        <![CDATA[
+            SELECT
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.fileStreamFields"/><![CDATA[
+            FROM [PBK_TASK].[TASK_FILETABLE]
+            WHERE [name] = #{name}
+       ]]>
+    </select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.core.domain.FileStream" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_TASK].[TASK_FILETABLE] (
+                [file_stream]
+                ,[name]
+            ) VALUES (
+                #{stream}
+                , #{name}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="String" keyProperty="id">
+            <![CDATA[
+                SELECT stream_id as id from [PBK_TASK].[TASK_FILETABLE] where [name] = #{name}
+            ]]>
+        </selectKey>
+    </insert>
+    
+    
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+                PBK_TASK.TASK_FILETABLE
+            where stream_id in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+</mapper>

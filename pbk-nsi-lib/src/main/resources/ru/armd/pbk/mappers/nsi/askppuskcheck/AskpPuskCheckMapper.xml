@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.askppuskcheck.AskpPuskCheckMapper">
+    <select id="getGridViewsByRoutesDetails" resultType="ru.armd.pbk.views.nsi.askppuskcheck.AskpPuskCheckView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          SELECT
+            apc.ID AS id,
+            th.NAME AS ticketName,
+            rh.ROUTE_NUMBER +' ('+gmts.NAME+')' AS routeNumber,
+            apc.MOVE_CODE AS moveCode,
+            apc.CHECK_START_TIME AS checkStartTime,
+            apc.CHECK_END_TIME AS checkEndTime,
+            apc.CHECK_RESULT1_COUNT AS checkResult1Count,
+            apc.CHECK_RESULT2_COUNT AS checkResult2Count,
+            apc.CHECK_RESULT3_COUNT AS checkResult3Count
+          FROM
+            [PBK_DB].[PBK_VIS].[ASKP_PUSK_CHECKS] apc
+            LEFT JOIN [PBK_DB].[PBK_NSI].[TICKETS] t ON apc.TICKET_ID = t.ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[TICKET_HISTS] th ON t.ID = th.HEAD_ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[ROUTES] r ON apc.ROUTE_ID = r.ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[ROUTE_HISTS] rh ON r.ID = rh.HEAD_ID
+            LEFT JOIN PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+			LEFT JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+			LEFT JOIN [PBK_NSI].[ROUTE_TS_KINDS] rts on rh.ROUTE_TS_KIND_ID = rts.ID
+          WHERE 1 = 1
+            AND #{filter.taskId} = apc.TASK_ID
+            AND (th.V_END_DATE IS NULL OR th.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (rh.V_END_DATE IS NULL OR rh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (#{filter.routeId} IS NULL OR #{filter.routeId} = r.ID)       
+            AND (#{filter.routeTsKindId} is null or #{filter.routeTsKindId} = rts.ID)
+            AND (#{filter.ticketId} is null or #{filter.ticketId} = apc.TICKET_ID)
+        ]]><if test="filter.startTimeFrom != null"><![CDATA[
+            AND apc.CHECK_START_TIME >= DATEADD(minute, #{filter.startTimeFrom}, CONVERT(DATETIME, apc.WORK_DATE))
+        ]]></if>
+        <if test="filter.startTimeTo != null"><![CDATA[
+            AND apc.CHECK_START_TIME <= DATEADD(minute, #{filter.startTimeTo}, CONVERT(DATETIME, apc.WORK_DATE))
+        ]]></if>
+        <if test="filter.endTimeFrom != null"><![CDATA[
+            AND apc.CHECK_START_TIME >= DATEADD(minute, #{filter.endTimeFrom}, CONVERT(DATETIME, apc.WORK_DATE))
+        ]]></if>
+        <if test="filter.endTimeTo != null"><![CDATA[
+            AND apc.CHECK_START_TIME <= DATEADD(minute, #{filter.endTimeTo}, CONVERT(DATETIME, apc.WORK_DATE))
+        ]]></if>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getGridViewsByRoutes" resultType="ru.armd.pbk.views.nsi.askppuskcheck.AskpPuskCheckView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          SELECT distinct     
+          	rh.HEAD_ID as id,       
+            rh.ROUTE_NUMBER +' ('+gmts.NAME+')' AS routeNumber            
+          FROM
+            [PBK_DB].[PBK_VIS].[ASKP_PUSK_CHECKS] apc
+            LEFT JOIN [PBK_DB].[PBK_NSI].[TICKETS] t ON apc.TICKET_ID = t.ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[TICKET_HISTS] th ON t.ID = th.HEAD_ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[ROUTES] r ON apc.ROUTE_ID = r.ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[ROUTE_HISTS] rh ON r.ID = rh.HEAD_ID
+            LEFT JOIN PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+			LEFT JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+			LEFT JOIN [PBK_NSI].[ROUTE_TS_KINDS] rts on rh.ROUTE_TS_KIND_ID = rts.ID
+          WHERE 1 = 1
+            AND #{filter.taskId} = apc.TASK_ID
+            AND (th.V_END_DATE IS NULL OR th.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (rh.V_END_DATE IS NULL OR rh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (#{filter.routeId} IS NULL OR #{filter.routeId} = r.ID)
+            AND (#{filter.routeTsKindId} is null or #{filter.routeTsKindId} = rts.ID)
+            AND (#{filter.ticketId} is null or #{filter.ticketId} = apc.TICKET_ID)
+        ]]><if test="filter.startTimeFrom != null"><![CDATA[
+            AND apc.CHECK_START_TIME >= DATEADD(minute, #{filter.startTimeFrom}, CONVERT(DATETIME, apc.WORK_DATE))
+        ]]></if>
+        <if test="filter.startTimeTo != null"><![CDATA[
+            AND apc.CHECK_START_TIME <= DATEADD(minute, #{filter.startTimeTo}, CONVERT(DATETIME, apc.WORK_DATE))
+        ]]></if>
+        <if test="filter.endTimeFrom != null"><![CDATA[
+            AND apc.CHECK_END_TIME >= DATEADD(minute, #{filter.endTimeFrom}, CONVERT(DATETIME, apc.WORK_DATE))
+        ]]></if>
+        <if test="filter.endTimeTo != null"><![CDATA[
+            AND apc.CHECK_END_TIME <= DATEADD(minute, #{filter.endTimeTo}, CONVERT(DATETIME, apc.WORK_DATE))
+        ]]></if>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getGridViewsByHours" resultType="ru.armd.pbk.views.nsi.askppuskcheck.AskpPuskCheckView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          SELECT distinct     
+            dateadd(hour, datediff(hour, 0, apc.CHECK_START_TIME), 0) AS checkStartTime
+          FROM
+            [PBK_DB].[PBK_VIS].[ASKP_PUSK_CHECKS] apc
+            LEFT JOIN [PBK_DB].[PBK_NSI].[TICKETS] t ON apc.TICKET_ID = t.ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[TICKET_HISTS] th ON t.ID = th.HEAD_ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[ROUTES] r ON apc.ROUTE_ID = r.ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[ROUTE_HISTS] rh ON r.ID = rh.HEAD_ID
+            LEFT JOIN PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+            LEFT JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+            LEFT JOIN [PBK_NSI].[ROUTE_TS_KINDS] rts on rh.ROUTE_TS_KIND_ID = rts.ID
+          WHERE 1 = 1
+            AND #{filter.taskId} = apc.TASK_ID
+            AND (th.V_END_DATE IS NULL OR th.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (rh.V_END_DATE IS NULL OR rh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (#{filter.routeId} IS NULL OR #{filter.routeId} = r.ID)
+            AND (#{filter.routeTsKindId} is null or #{filter.routeTsKindId} = rts.ID)
+            AND (#{filter.ticketId} is null or #{filter.ticketId} = apc.TICKET_ID)
+        ]]><include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getGridViewsByHoursDetails" resultType="ru.armd.pbk.views.nsi.askppuskcheck.AskpPuskCheckView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          SELECT
+            apc.ID AS id,
+            th.NAME AS ticketName,
+            rh.ROUTE_NUMBER +' ('+gmts.NAME+')' AS routeNumber,
+            apc.MOVE_CODE AS moveCode,
+            apc.CHECK_START_TIME AS checkStartTime,
+            apc.CHECK_END_TIME AS checkEndTime,
+            apc.CHECK_RESULT1_COUNT AS checkResult1Count,
+            apc.CHECK_RESULT2_COUNT AS checkResult2Count,
+            apc.CHECK_RESULT3_COUNT AS checkResult3Count
+          FROM
+            [PBK_DB].[PBK_VIS].[ASKP_PUSK_CHECKS] apc
+            LEFT JOIN [PBK_DB].[PBK_NSI].[TICKETS] t ON apc.TICKET_ID = t.ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[TICKET_HISTS] th ON t.ID = th.HEAD_ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[ROUTES] r ON apc.ROUTE_ID = r.ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[ROUTE_HISTS] rh ON r.ID = rh.HEAD_ID
+            LEFT JOIN PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+            LEFT JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+            LEFT JOIN [PBK_NSI].[ROUTE_TS_KINDS] rts on rh.ROUTE_TS_KIND_ID = rts.ID
+          WHERE 1 = 1
+            AND #{filter.taskId} = apc.TASK_ID
+            AND (th.V_END_DATE IS NULL OR th.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (rh.V_END_DATE IS NULL OR rh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (#{filter.routeId} IS NULL OR #{filter.routeId} = r.ID)       
+            AND (#{filter.routeTsKindId} is null or #{filter.routeTsKindId} = rts.ID)
+            AND (#{filter.ticketId} is null or #{filter.ticketId} = apc.TICKET_ID)
+            AND apc.CHECK_START_TIME >= DATEADD(minute, #{filter.startTimeFrom}, CONVERT(DATETIME, apc.WORK_DATE))
+            AND apc.CHECK_START_TIME <= DATEADD(minute, #{filter.startTimeTo}, CONVERT(DATETIME, apc.WORK_DATE))
+        ]]><include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getGridViewsByBind"  resultType="ru.armd.pbk.views.nsi.askppuskcheck.AskpPuskCheckBindView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+    	<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+         SELECT
+            apc.ID AS id,
+            th.NAME AS ticketName,
+            rh.ROUTE_NUMBER +' ('+gmts.NAME+')' AS routeNumber,
+            apc.WORK_DATE as workDate,
+            apc.ASKP_ROUTE_CODE as routeCode,
+            apc.MOVE_CODE AS moveCode,
+            apc.CHECK_START_TIME AS checkStartTime,
+            apc.CHECK_END_TIME AS checkEndTime,
+            apc.CHECK_RESULT1_COUNT AS checkResult1Count,
+            apc.CHECK_RESULT2_COUNT AS checkResult2Count,
+            apc.CHECK_RESULT3_COUNT AS checkResult3Count,
+			case when apc.TASK_ID IS NULL then 0 else 1 end as isBind,
+			apc.CARD_NUMBER as cardNumber,
+			ISNULL((eh.SURNAME + ' ' + LEFT(eh.NAME, 1) + '. ' + LEFT(eh.PATRONUMIC, 1) + '.'), '') as employeeName,
+			ISNULL(dh.NAME, '') as deptName
+          FROM
+            [PBK_DB].[PBK_VIS].[ASKP_PUSK_CHECKS] apc
+            LEFT JOIN [PBK_DB].[PBK_NSI].[TICKETS] t ON apc.TICKET_ID = t.ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[TICKET_HISTS] th ON t.ID = th.HEAD_ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[ROUTES] r ON apc.ROUTE_ID = r.ID
+            LEFT JOIN [PBK_DB].[PBK_NSI].[ROUTE_HISTS] rh ON r.ID = rh.HEAD_ID
+            LEFT JOIN PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+            LEFT JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+            LEFT JOIN [PBK_NSI].[ROUTE_TS_KINDS] rts on rh.ROUTE_TS_KIND_ID = rts.ID
+            LEFT JOIN [PBK_NSI].[OFFICIAL_CARD_HISTS] offCard on offCard.CARD_NUMBER = apc.CARD_NUMBER and offCard.V_END_DATE >= PBK_CORE.getVersionEndDate()
+            LEFT JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh on eh.OFFICIAL_CARD_ID = offCard.HEAD_ID and eh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+			LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh on dh.HEAD_ID = eh.DEPT_ID and dh.V_END_DATE >= PBK_CORE.getVersionEndDate() 
+          WHERE 1 = 1
+          	AND (th.V_END_DATE IS NULL OR th.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (rh.V_END_DATE IS NULL OR rh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(apc.WORK_DATE as DATE))
+		    AND (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(apc.WORK_DATE as DATE))
+		    AND (#{filter.isBind} is null or (#{filter.isBind} = 1 AND apc.TASK_ID IS NOT NULL) or (#{filter.isBind} = 0 AND apc.TASK_ID IS NULL)) 
+		    AND (#{filter.name} is null or UPPER(eh.NAME) like UPPER('%${filter.name}%')  or UPPER(eh.SURNAME) like UPPER('%${filter.name}%')  or UPPER(eh.PATRONUMIC) like UPPER('%${filter.name}%'))
+		    AND (#{filter.departmentId} is null or dh.HEAD_ID = #{filter.departmentId}) 
+		    AND (#{filter.cardNumber} is null or UPPER(apc.CARD_NUMBER) like UPPER('%${filter.cardNumber}%'))
+        ]]><include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+   
+    <update	id="bind">
+    	<![CDATA[
+    	UPDATE [PBK_VIS].[ASKP_PUSK_CHECKS] 
+			SET TASK_ID = #{taskId} 
+			WHERE TASK_ID is null AND ID in ( 
+			SELECT apc.ID 
+			FROM [PBK_TASK].[TASKS] t 
+			JOIN [PBK_PLAN].[PLAN_SCHEDULES] ps on ps.ID = t.PLAN_SCHEDULE_ID 
+			JOIN [PBK_NSI].[EMPLOYEE_HISTS] e on (e.HEAD_ID = ps.EMPLOYEE_ID and e.V_END_DATE >= [PBK_CORE].getVersionEndDate()) 
+			JOIN [PBK_NSI].[OFFICIAL_CARD_HISTS] offCard on (offCard.HEAD_ID = e.OFFICIAL_CARD_ID and offCard.V_END_DATE >= PBK_CORE.getVersionEndDate()) 
+			JOIN [PBK_VIS].[ASKP_PUSK_CHECKS] apc on (apc.CARD_NUMBER = offCard.CARD_NUMBER and apc.[WORK_DATE] = ps.[WORK_DATE]) 
+			WHERE t.ID = #{taskId})
+		]]>
+    </update>
+    
+    <update id="bindByWorkDate">
+    	<![CDATA[
+	    	UPDATE apc
+			SET apc.TASK_ID = tasks.TASK_ID
+			FROM [PBK_VIS].[ASKP_PUSK_CHECKS] apc 
+			JOIN (
+				SELECT t.ID as TASK_ID,
+					   ps.WORK_DATE as WORK_DATE,
+					   offCard.CARD_NUMBER as CARD_NUMBER
+				FROM [PBK_TASK].[TASKS] t 
+						JOIN [PBK_PLAN].[PLAN_SCHEDULES] ps on ps.ID = t.PLAN_SCHEDULE_ID 
+						JOIN [PBK_NSI].[EMPLOYEE_HISTS] e on (e.HEAD_ID = ps.EMPLOYEE_ID and e.V_END_DATE >= [PBK_CORE].getVersionEndDate()) 
+						JOIN [PBK_NSI].[OFFICIAL_CARD_HISTS] offCard on (offCard.HEAD_ID = e.OFFICIAL_CARD_ID and offCard.V_END_DATE >= PBK_CORE.getVersionEndDate()) 
+					 where cast(ps.WORK_DATE as DATE) = #{workDate, jdbcType=DATE}
+			) as tasks on apc.WORK_DATE = tasks.WORK_DATE AND apc.CARD_NUMBER = tasks.CARD_NUMBER 
+			WHERE apc.TASK_ID is NULL and cast(apc.WORK_DATE as DATE) = #{workDate, jdbcType=DATE}
+		]]>
+    </update>
+    
+    <select id="getUniqueRouteCount" resultType="int">
+        SELECT count(*)
+        FROM (
+            SELECT ROUTE_ID, MOVE_CODE
+            FROM [PBK_VIS].[ASKP_PUSK_CHECKS] 
+            WHERE TASK_ID = #{taskId}
+            GROUP BY ROUTE_ID, MOVE_CODE) t
+    </select>
+    
+    <insert id="insert" parameterType="ru.armd.pbk.domain.nsi.askppuskcheck.AskpPuskCheck">
+			INSERT  		
+			INTO [PBK_VIS].[ASKP_PUSK_CHECKS] 
+				(
+	                [WORK_DATE]
+	                , [ROUTE_ID]
+	                , [ASKP_ROUTE_CODE]
+	                , [MOVE_CODE]
+	                , [TICKET_ID]	               
+	                , [UID]
+	                , [CHECK_START_TIME]
+	                , [CHECK_END_TIME]
+	                , [CHECK_RESULT1_COUNT]
+	                , [CHECK_RESULT2_COUNT]
+	                , [CHECK_RESULT3_COUNT]
+	                , [TASK_ID]
+	                , [CARD_NUMBER]
+	            ) VALUES 
+	      
+	                (#{workDate}
+	                ,#{routeId}
+	                ,#{askpRouteCode}
+	                ,#{moveCode}
+	                ,#{ticketId}	
+	                ,#{uid}               
+	                ,#{checkStartTime} 
+	                ,#{checkEndTime}
+	                ,#{checkResult1Count}
+	                ,#{checkResult2Count}
+	                ,#{checkResult3Count}
+	                ,#{taskId}
+	                ,#{cardNumber})            
+			
+	</insert>
+	
+	<insert id="insertChunck" parameterType="java.util.List">
+		INSERT  		
+			INTO [PBK_VIS].[ASKP_PUSK_CHECKS] 
+				(
+	                [WORK_DATE]
+	                , [ROUTE_ID]
+	                , [ASKP_ROUTE_CODE]
+	                , [MOVE_CODE]
+	                , [TICKET_ID]	               
+	                , [UID]
+	                , [CHECK_START_TIME]
+	                , [CHECK_END_TIME]
+	                , [CHECK_RESULT1_COUNT]
+	                , [CHECK_RESULT2_COUNT]
+	                , [CHECK_RESULT3_COUNT]
+	            ) VALUES 
+		<foreach collection="list" item="element" index="index" separator=",">
+				(#{element.workDate}
+	                ,#{element.routeId}
+	                ,#{element.askpRouteCode}
+	                ,#{element.moveCode}
+	                ,#{element.ticketId}	
+	                ,#{element.uid}               
+	                ,#{element.checkStartTime} 
+	                ,#{element.checkEndTime}
+	                ,#{element.checkResult1Count}
+	                ,#{element.checkResult2Count}
+	                ,#{element.checkResult3Count})
+		</foreach>
+	</insert>
+
+	<select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+		SELECT DISTINCT
+        	d.ID as id, dh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name
+        FROM
+        	[PBK_DB].[PBK_VIS].[ASKP_PUSK_CHECKS] apc LEFT JOIN PBK_NSI.ROUTES d ON (apc.ROUTE_ID = d.ID)
+			JOIN PBK_NSI.ROUTE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			JOIN PBK_GISMGT.GM_ROUTES gm on (dh.GM_ROUTE_ID = gm.ID)
+			JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+        WHERE
+        	d.IS_DELETE = 0 AND	apc.TASK_ID = #{taskId}
+	</select>
+</mapper>

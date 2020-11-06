@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.DvrMapper">
+
+	<sql id="fieldDomain">
+        <![CDATA[
+		  ,d.[IS_DELETE] as isDelete
+		  ,dh.[CREATE_DATE] as createDate
+		  ,dh.[CREATE_USER_ID] as createUserId
+		  ,dh.[UPDATE_DATE] as updateDate
+		  ,dh.[UPDATE_USER_ID] as updateUserId
+		  ,dh.[V_START_DATE] as versionStartDate
+		  ,dh.[V_END_DATE] as versionEndDate
+		  ,dh.[HEAD_ID] as headId
+		  ,dh.[DVR_NUMBER] as dvrNumber
+		  ,dh.[DVR_MODEL] as dvrModel
+		  ,dh.[DEPT_ID] as deptId
+		  ,dh.[DESCRIPTION] as description
+        ]]>
+    </sql>
+
+	<select id="getGridViews" resultType="ru.armd.pbk.views.nsi.dvr.DvrView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+               d.[ID] as id
+               , eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as owner
+               , dpth.NAME as dptName
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[DVRS] d JOIN [PBK_NSI].[DVR_HISTS] dh on (d.ID = dh.HEAD_ID)
+				LEFT JOIN [PBK_NSI].[DVR_EMPLOYEE_HISTS] deh on deh.[DEVICE_ID] = d.[ID] and deh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+				LEFT JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh on eh.[HEAD_ID] = deh.[EMPLOYEE_ID] and eh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+				LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] dpth on dpth.[HEAD_ID] = dh.DEPT_ID and dpth.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+			WHERE 
+				((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR d.IS_DELETE = 0) AND dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+			  	and (#{filter.dvrNumber} is null or UPPER(dh.DVR_NUMBER) like UPPER('%${filter.dvrNumber}%'))
+			  	and (#{filter.departmentId} is null or dpth.HEAD_ID = #{filter.departmentId}) 
+			    and (#{filter.employeeId} is null or eh.HEAD_ID = #{filter.employeeId}) 
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getHistoryViews" resultType="ru.armd.pbk.views.nsi.dvr.DvrHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+				dh.DVR_NUMBER as dvrNumber
+				,dh.[DVR_MODEL] as dvrModel
+		  		,dh.[DESCRIPTION] as description
+		  		,dh.[DEPT_ID] as deptId
+			FROM
+				PBK_NSI.DVR_HISTS dh LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+			WHERE
+          		dh.HEAD_ID = #{filter.dvrHeadId}
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+
+	<select id="getOwnersHistoryViews" resultType="ru.armd.pbk.views.nsi.dvr.DvrOwnersHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+		<![CDATA[
+			with y as (
+			SELECT
+				isnull(employess.SURNAME, '') as surname
+				,isnull(employess.NAME, '') as name
+				,isnull(employess.PATRONUMIC, '') as patronumic
+				,employess.PERSONNEL_NUMBER as pesonalNumber
+				,deh.UPDATE_DATE as updateDate
+				,DVR_NUMBER as dvrNumber
+				,DVR_MODEL as dvrModel
+				,uu.LOGIN as updateUser
+				,CASE WHEN deh.[V_END_DATE] >= PBK_CORE.getVersionEndDate() THEN 1 ELSE 0 END AS active
+				,CASE WHEN employess.ID is null then 'Отвязка' else 'Привязка' end as operation
+			FROM PBK_NSI.DVR_EMPLOYEE_HISTS as deh
+			     LEFT JOIN PBK_NSI.EMPLOYEE_HISTS employess on deh.EMPLOYEE_ID = employess.HEAD_ID AND employess.[V_END_DATE] >= PBK_CORE.getVersionEndDate() 			     
+				 JOIN PBK_NSI.DVRS dvr on dvr.ID=deh.DEVICE_ID
+				 JOIN PBK_CORE.USERS uu ON (deh.UPDATE_USER_ID  = uu.ID)
+				 JOIN PBK_NSI.DVR_HISTS dvr_his on dvr.ID=dvr_his.HEAD_ID and dvr_his.V_END_DATE >= PBK_CORE.getVersionEndDate()
+			WHERE deh.DEVICE_ID=#{filter.dvrId} 
+			order by deh.DEVICE_ID, deh.UPDATE_DATE offset (#{page} - 1) * #{count} rows fetch first #{count} rows only
+			)
+            select
+                (select count(*) from y) as cnt
+                , * from y
+        ]]>
+	</select>
+    
+    <insert id="insertHead" parameterType="ru.armd.pbk.domain.HeadVersionDomain" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.DVRS(
+	        [IS_DELETE]
+        ) VALUES (
+        	#{isDelete}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.DVRS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+	<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.Dvr" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        insert into PBK_NSI.DVR_HISTS(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+        	, [HEAD_ID]
+        	, [DVR_NUMBER]
+	        , [DVR_MODEL]
+	        , [DESCRIPTION]
+	        , [DEPT_ID]
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+        	, #{headId}
+        	, #{dvrNumber}
+        	, #{dvrModel}
+        	, #{description}
+        	, #{deptId}
+        )
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.DVR_HISTS' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+
+	<update id="update" parameterType="ru.armd.pbk.domain.nsi.Dvr">
+		<![CDATA[
+			UPDATE PBK_NSI.DVR_HISTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+				, DVR_NUMBER = #{dvrNumber}
+				, DVR_MODEL = #{dvrModel}
+				, DESCRIPTION = #{description}
+				, DEPT_ID = #{deptId}
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+
+	<update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.DVRS
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+    
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_NSI.DVRS
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.Dvr">
+		<![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[DVRS] d JOIN [PBK_NSI].[DVR_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+            	dh.[ID] = #{id}
+        ]]>
+    </select>
+
+	<select id="getActual" resultType="ru.armd.pbk.domain.nsi.Dvr">
+		<![CDATA[
+			SELECT 
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[DVRS] d JOIN [PBK_NSI].[DVR_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+               dh.[HEAD_ID] = #{domainId}
+			   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+	</select>
+	
+	<select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+        	d.ID as id, dh.DVR_NUMBER as name
+        FROM
+        	PBK_NSI.DVRS d JOIN PBK_NSI.DVR_HISTS dh on (d.ID = dh.HEAD_ID)
+        WHERE
+        	(d.IS_DELETE = 0 OR (#{currentId} IS NOT NULL AND d.ID = #{currentId})) AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    </select>
+	
+	<select id="getSelectItemsForEmployee" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+        	d.ID as id, dh.DVR_NUMBER as name
+        FROM
+        	PBK_NSI.DVRS d JOIN PBK_NSI.DVR_HISTS dh on (d.ID = dh.HEAD_ID)
+        WHERE
+        	d.IS_DELETE = 0 AND
+        	(d.ID NOT IN (
+        		SELECT
+        			eh.DVR_ID
+        		FROM
+        			PBK_NSI.EMPLOYEES e LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (e.ID = eh.HEAD_ID)
+        		WHERE
+        			e.IS_DELETE = 0 AND eh.DVR_ID IS NOT NULL AND eh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+			) OR (#{dvrId} IS NOT NULL AND d.ID = #{dvrId})) AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    </select>
+    
+	<update id="updateWithEmployee">
+			UPDATE [PBK_NSI].[EMPLOYEE_HISTS]
+			SET DVR_ID = null
+			WHERE EMPLOYEE_HISTS.DVR_ID = #{dvrId} and EMPLOYEE_HISTS.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    </update>
+    
+    <select id="getDomain" resultType="ru.armd.pbk.domain.nsi.Dvr">
+    		<![CDATA[
+    		SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[DVRS] d JOIN [PBK_NSI].[DVR_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+            	(#{dvrNumber} is not null and dh.[DVR_NUMBER] = #{dvrNumber})
+            	and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+            ]]>
+    </select>    
+    	
+	<select id="isExist" resultType="boolean">
+	    <include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+   			SELECT
+   				1
+   			FROM
+   				PBK_NSI.DVR_HISTS
+   			WHERE
+   				(#{headId} is null OR HEAD_ID != #{headId})
+   				AND (#{num} is null OR DVR_NUMBER = #{num})
+   				AND V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    	<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+    </select>
+</mapper>

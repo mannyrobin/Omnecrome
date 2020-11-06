@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So5Mapper">
+
+    <select id="getBranches" resultType="ru.armd.pbk.views.report.So5BranchView">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[
+          SELECT
+            dh.HEAD_ID AS id
+            , dh.NAME AS name
+          FROM
+            PBK_NSI.DEPARTMENTS d
+            JOIN PBK_NSI.DEPARTMENT_HISTS dh ON (d.id = dh.HEAD_ID AND d.IS_DELETE = 0 AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate() AND dh.FOR_PLAN_USE = 1)
+          WHERE 1=1
+             ]]><if test="filter.departmentId != null">
+               AND d.ID IN (${filter.departmentId})
+             </if><![CDATA[
+               and (#{filter.deptAuthId} is null or d.ID = #{filter.deptAuthId})
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd"/>
+    </select>
+
+    <select id="getPlanCountForBranch" resultType="int">
+        <![CDATA[
+        select ISNULL(sum(dh.PLAN_COUNT), 0)
+        FROM
+            PBK_NSI.DEPARTMENTS d
+            JOIN PBK_NSI.DEPARTMENT_HISTS dh ON (d.id = dh.HEAD_ID AND d.IS_DELETE = 0 AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate() AND dh.FOR_PLAN_USE = 1)
+		WHERE
+			(#{branchId} is null or dh.HEAD_ID = #{branchId})
+        ]]>
+        <if test="params.filter.departmentId != null">AND dh.HEAD_ID IN (${params.filter.departmentId})</if>
+    </select>
+
+    <select id="getFactCountForBranch" resultType="int">
+        <![CDATA[
+        	SELECT
+				count(distinct eh.head_id)
+			FROM
+			    PBK_TASK.TASKS t
+                LEFT JOIN PBK_PLAN.PLAN_SCHEDULES ps ON (t.PLAN_SCHEDULE_ID = ps.ID)
+                LEFT JOIN PBK_TASK.TASK_STATES ts ON (t.TASK_STATE_ID = ts.ID)
+                LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (ps.EMPLOYEE_ID = eh.HEAD_ID)
+			WHERE
+				ts.COD NOT IN ('IN_RESERVE', 'CANCELED')
+				AND (ps.shift_id != 5 and ps.shift_id != 4 and ps.shift_id != 1)
+				AND (#{branchId} is null or ps.DEPT_ID = #{branchId})
+            	AND (#{params.filter.dateFrom, jdbcType=DATE} IS NULL OR #{params.filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+            	AND (#{params.filter.dateTo, jdbcType=DATE} IS NULL OR #{params.filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+            	]]><if test="params.filter.departmentId != null">AND ps.DEPT_ID IN (${params.filter.departmentId})</if><![CDATA[
+        ]]>
+    </select>
+
+    <select id="getDaysSummariesForBranch" resultType="ru.armd.pbk.views.report.So5DaySummariesView">
+        <![CDATA[
+        SELECT
+            ps.WORK_DATE AS date,
+            COUNT(CASE WHEN ps.SHIFT_ID = 2 OR ps.SHIFT_ID = 6 OR ps.SHIFT_ID = 15 THEN t.ID ELSE NULL END) AS firstShift,
+            COUNT(CASE WHEN ps.SHIFT_ID = 3 OR ps.SHIFT_ID = 7 OR ps.SHIFT_ID = 14 OR ps.SHIFT_ID = 16 THEN t.ID ELSE NULL END) AS secondShift,
+            COUNT(CASE WHEN ps.SHIFT_ID IN (2, 3, 6, 7, 14, 15, 16) THEN t.ID ELSE NULL END) AS total
+            /* DISTINCT - т.к. 1 контролёр может отработать >1 смены за дату? и посчитать его надо только 1 раз */
+        FROM
+          PBK_TASK.TASKS t
+          LEFT JOIN PBK_PLAN.PLAN_SCHEDULES ps ON ps.ID = t.PLAN_SCHEDULE_ID
+          LEFT JOIN PBK_TASK.TASK_STATES ts ON (ts.ID = t.TASK_STATE_ID)
+        WHERE 1=1
+            AND ts.COD != 'CANCELED'
+            AND (#{branchId} is null or ps.DEPT_ID = #{branchId})
+            AND (#{params.filter.dateFrom, jdbcType=DATE} IS NULL OR #{params.filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+            AND (#{params.filter.dateTo, jdbcType=DATE} IS NULL OR #{params.filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+            ]]><if test="params.filter.departmentId != null">AND ps.DEPT_ID IN (${params.filter.departmentId})</if><![CDATA[
+        GROUP BY ps.WORK_DATE
+        ORDER BY ps.WORK_DATE
+        ]]>
+    </select>
+
+    <select id="getDaysTotalSummariesForBranch" resultType="ru.armd.pbk.views.report.So5DaysTotalSummariesView">
+        <![CDATA[
+        	SELECT
+        		SUM(t.firstShift) as firstShift,
+        		SUM(t.secondShift) as secondShift,
+        		SUM(t.total) as total
+        	FROM (
+	        	         SELECT
+                            ps.WORK_DATE AS date,
+                            COUNT(CASE WHEN ps.SHIFT_ID = 2 OR ps.SHIFT_ID = 6 OR ps.SHIFT_ID = 15 THEN t.ID ELSE NULL END) AS firstShift,
+                            COUNT(CASE WHEN ps.SHIFT_ID = 3 OR ps.SHIFT_ID = 7 OR ps.SHIFT_ID = 14 OR ps.SHIFT_ID = 16 THEN t.ID ELSE NULL END) AS secondShift,
+                            COUNT(CASE WHEN ps.SHIFT_ID IN (2, 3, 6, 7, 14, 15, 16) THEN t.ID ELSE NULL END) AS total
+                            /* DISTINCT - т.к. 1 контролёр может отработать >1 смены за дату? и посчитать его надо только 1 раз */
+                        FROM
+                          PBK_TASK.TASKS t
+                          LEFT JOIN PBK_PLAN.PLAN_SCHEDULES ps ON ps.ID = t.PLAN_SCHEDULE_ID
+                          LEFT JOIN PBK_TASK.TASK_STATES ts ON (ts.ID = t.TASK_STATE_ID)
+                        WHERE 1=1
+                            AND ts.COD != 'CANCELED'
+                            AND (#{branchId} is null or ps.DEPT_ID = #{branchId})
+                            AND (#{params.filter.dateFrom, jdbcType=DATE} IS NULL OR #{params.filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                            AND (#{params.filter.dateTo, jdbcType=DATE} IS NULL OR #{params.filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                            ]]><if test="params.filter.departmentId != null">AND ps.DEPT_ID IN (${params.filter.departmentId})</if><![CDATA[
+                        GROUP BY ps.WORK_DATE) t
+        ]]>
+    </select>
+
+    <select id="getDateStart" resultType="date">
+        <![CDATA[
+          SELECT
+              isnull(#{filter.dateFrom, jdbcType=DATE}, cast('0001-01-01' AS DATE))
+        ]]>
+    </select>
+
+    <select id="getDateEnd" resultType="date">
+        <![CDATA[
+          SELECT
+              isnull(#{filter.dateTo, jdbcType=DATE}, cast('9999-12-31' AS DATE))
+        ]]>
+    </select>
+
+</mapper>

@@ -1,0 +1,45 @@
+<div class="form-group btn-group">    
+    <button ar-tooltip="Обновить" ng-click="refreshAction()" type="button" class="btn btn-info">
+        <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+    </button>
+
+    <div ng-if="showRowCount" class="dropdown btn-group">
+        <button class="btn btn-default dropdown-toggle grid-rows-on-page" type="button" data-toggle="dropdown"
+                aria-expanded="true">
+            <span class="dropdown-text">{{viewRowsOnPage}}</span>
+            <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu pull-right" role="menu" style="padding: 10px">
+            <li>
+                <div class="checkbox-inline" ng-if="!hideInfinityLoad">
+                    <label>
+                        <input ng-model="infinityLoad" type="checkbox" class="dropdown-item-checkbox" ng-click="onInfinityLoad()">
+                        Автоподгрузка
+                    </label>
+                </div>
+            </li>
+            <br />
+            <li ng-repeat="pageRowNum in pageRowsNum">
+                <a href="#" ng-click="selectPageRowsNum(pageRowNum)">{{pageRowNum}}</a>
+            </li>
+        </ul>
+    </div>
+
+    <div ng-if="headers && headers.length > 0" class="dropdown btn-group">
+        <button class="btn btn-default dropdown-toggle show-hide-grid-cols" type="button" data-toggle="dropdown"
+                aria-expanded="true">
+            <span class="dropdown-text"><span class="icon glyphicon glyphicon-th-list"></span></span>
+            <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu pull-right" role="menu" style="padding: 10px">
+            <li ng-repeat="header in headers">
+                <div class="checkbox-inline">
+                    <label>
+                        <input ng-model="header.visible" type="checkbox" class="dropdown-item-checkbox">
+                        {{header.label !== '' ? header.label : header.iconTip}}
+                    </label>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>

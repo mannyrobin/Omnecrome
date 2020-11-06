@@ -1,0 +1,58 @@
+<div class="row">
+    <div>
+        <form ng-if="isShow()" class="form-inline filters">
+            <div ng-if='!filter.hide' ng-repeat="filter in filters" class="form-group {{filter.class}}">
+                
+                <input ng-if='!filter.hide && filter.type == "text"' type="text" maxlength="32" class="form-control" ng-model="filter.value" ng-change="filter.onChange()"
+                        placeholder="{{::filter.placeholder}}" ar-tooltip="{{::filter.placeholder}}">
+
+                <input ng-if='!filter.hide && filter.type == "int"' type="text" class="form-control" ng-model="filter.value" ng-change="filter.onChange()"
+                       maxlength="{{::filter.maxLength}}" min="{{::filter.min}}" max="{{::filter.max}}"
+                       ng-attr-placeholder="{{::filter.placeholder}}" ar-tooltip="{{::filter.placeholder}}">
+                
+                <oi-select ng-if='!filter.hide && filter.type == "select" && filter.lazyfunc == null' oi-options="item.name for item in filter.list track by item.id"
+                        ng-model="filter.value" placeholder="{{::filter.placeholder}}" ar-tooltip="{{::filter.placeholder}}"
+                        ng-change="filter.onChange()"></oi-select>
+                <oi-select ng-if='!filter.hide && filter.type == "select" && filter.lazyfunc != null' oi-options="item.name for item in filter.lazyfunc($query)"
+                           ng-model="filter.value" placeholder="{{::filter.placeholder}}" ar-tooltip="{{::filter.placeholder}}"
+                           ng-change="filter.onChange()"></oi-select>
+
+
+                <oi-select ng-if='!filter.hide && filter.type == "multiselect" && filter.lazyfunc == null' oi-options="item.name for item in filter.list track by item.id"
+                        ng-model="filter.value" placeholder="{{::filter.placeholder}}" ar-tooltip="{{::filter.placeholder}}"
+                        ng-change="{{onChange(filter)}}" multiple></oi-select>
+                <oi-select ng-if='!filter.hide && filter.type == "multiselect" && filter.lazyfunc != null' oi-options="item.name for item in filter.lazyfunc($query)"
+                           ng-model="filter.value" placeholder="{{::filter.placeholder}}" ar-tooltip="{{::filter.placeholder}}"
+                           ng-change="{{onChange(filter)}}" multiple></oi-select>
+
+                <!-- YESNO -->
+        		<oi-select ng-if='!filter.hide && filter.type == "yesno"' oi-options="item.name for item in filter.list track by item.id"
+                        ng-model="filter.value" placeholder="{{::filter.placeholder}}" ar-tooltip="{{::filter.placeholder}}"
+                        ng-change="filter.onChange()"></oi-select>
+                
+                <!--  DATE -->
+                <div ng-if='!filter.hide && filter.type == "date"' ng-model="filter.value" ar-datetimepicker date-format="DD.MM.YYYY"
+                        ng-attr-placeholder="{{::filter.placeholder}}" ng-change="filter.onChange()"></div>
+                     
+                <!--  DATE -->
+                <div ng-if='!filter.hide && filter.type == "range"' ng-model="filter.value" ar-datepicker-range
+                        from-placeholder="{{::filter.placeholder.from}}" to-placeholder="{{::filter.placeholder.to}}"></div>
+                        
+                <!-- TIME -->
+                <nobr><div ng-if='!filter.hide && filter.type == "time-range"' ng-model="filter.value" ar-timepicker-range
+                        from-placeholder="{{::filter.placeholder.from}}" to-placeholder="{{::filter.placeholder.to}}"></div></nobr>
+                                
+            </div>
+            <div class="form-group filter-buttons">
+                <nobr>
+                    <button ar-tooltip="{{::parameters.filterString}}" class="btn btn-info" ng-click="parameters.applyFiltersFunc()" type="submit" >
+                        <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                    </button>
+                    <button ar-tooltip="{{::parameters.clearString}}" ng-show="parameters.isShowClearFunc()" ng-click="parameters.clearFiltersFunc()" class="btn btn-warning" type="button">
+                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                    </button>
+                </nobr>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,80 @@
+<xsd:schema targetNamespace="urn:sap-com:document:sap:rfc:functions"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:s0="urn:sap-com:document:sap:rfc:functions">
+	<xsd:element name="Z_HR_GET_DEPART">
+		<xsd:complexType>
+			<xsd:all>
+				<xsd:element name="BET1">
+					<xsd:simpleType>
+						<xsd:restriction base="xsd:decimal">
+							<xsd:totalDigits value="9" />
+							<xsd:fractionDigits value="2" />
+						</xsd:restriction>
+					</xsd:simpleType>
+				</xsd:element>
+				<xsd:element name="DAT1" type="s0:date" />
+				<xsd:element name="DEPARTS">
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="item" minOccurs="0" maxOccurs="unbounded"
+								type="s0:ZHR_S_DEPART" />
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+				<xsd:element name="TEXT1">
+					<xsd:simpleType>
+						<xsd:restriction base="xsd:string">
+							<xsd:maxLength value="40" />
+						</xsd:restriction>
+					</xsd:simpleType>
+				</xsd:element>
+			</xsd:all>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="Z_HR_GET_DEPART.Response">
+		<xsd:complexType>
+			<xsd:all>
+				<xsd:element name="DEPARTS">
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="item" minOccurs="0" maxOccurs="unbounded"
+								type="s0:ZHR_S_DEPART" />
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:all>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:complexType name="ZHR_S_DEPART">
+		<xsd:sequence>
+			<xsd:element name="PERSA" minOccurs="0">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:maxLength value="4" />
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="SNAME" minOccurs="0">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:maxLength value="40" />
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="DATUM" minOccurs="0" type="s0:date" />
+			<xsd:element name="BETRG" minOccurs="0">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:decimal">
+						<xsd:totalDigits value="9" />
+						<xsd:fractionDigits value="2" />
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:simpleType name="date">
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="10" />
+			<xsd:pattern value="....-..-.." />
+		</xsd:restriction>
+	</xsd:simpleType>
+</xsd:schema>

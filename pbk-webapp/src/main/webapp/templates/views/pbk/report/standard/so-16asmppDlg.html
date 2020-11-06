@@ -1,0 +1,23 @@
+<div class="modal-header" draggable-modal>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="close()">
+        <span aria-hidden="true">&times;</span>
+    </button>
+    <h4 class="modal-title">{{title}}</h4>
+</div>
+
+<div class="modal-body">
+<div ng-if="rowsCount > 0">
+Будет загружен пассажиропоток для {{rowsCount}} записей.<br \>
+Загрузка может занять продолжительное время.<br \>
+После загрузки отчет будет обновлен.
+</div>
+<div ng-if="rowsCount == 0">
+Отчет пустой.<br \>
+Для загрузки АСМПП необходимо построить отчет.
+</div>
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-primary" ng-click="save()"  ng-disabled="inProgress || rowsCount === 0">Запустить загрузку АСМПП</button>
+    <button type="button" class="btn btn-default" ng-click="close()" ng-disabled="inProgress">Закрыть</button>
+</div>

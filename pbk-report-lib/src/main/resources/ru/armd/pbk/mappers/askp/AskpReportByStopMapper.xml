@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.askp.AskpReportByStopMapper">
+	
+	<select id="getGridViews" resultType="ru.armd.pbk.views.askp.AskpReportByStopView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+		<![CDATA[
+			SELECT CASE rtk.[COD] WHEN '1' THEN 'А-' WHEN '2' THEN 'Тб-' WHEN '3' THEN 'Тр-' WHEN '4' THEN 'СТр-' END + rh.ROUTE_NUMBER as routeNumber
+				   , t.ticketCount - t.ticketCountPaid as ticketCountFree
+				   , t.ticketCount as ticketCount
+				   , t.ticketCountPaid as ticketCountPaid
+				   , t.stopName as stopName
+				   , t.stopId as stopId
+			FROM (
+				SELECT si.STOP_ID as stopId, si.STOP_NAME + ' (' +  cast(si.STOP_ID as nvarchar) + ')' as stopName
+					, si.ASDU_ROUTE_ID as asduRouteId
+					, ISNULL(sum(si.ASKP_CHECKS_COUNT), 0) as ticketCount
+					, ISNULL(sum(si.ASKP_CHECKS_COUNT_PAID), 0) as ticketCountPaid 
+				FROM PBK_VIS.STOP_INTERVALS si 
+				WHERE 1=1
+				]]><if test="filter.dateFrom != null ">
+				<![CDATA[
+					AND #{filter.dateFrom, jdbcType=DATE} <= si.WORK_DATE
+				]]>
+				</if>
+		        <if test="filter.dateFrom != null ">
+				<![CDATA[
+					AND #{filter.dateFrom, jdbcType=DATE} >= si.WORK_DATE
+				]]>
+				</if>
+		        <if test="filter.stopIds != null"><![CDATA[
+    					AND si.[STOP_ID] IN (${filter.stopIds})
+        			]]></if><![CDATA[ 
+				GROUP by si.STOP_ID, si.STOP_NAME, si.ASDU_ROUTE_ID			
+        	) t
+			JOIN PBK_NSI.ROUTE_HISTS rh on rh.ASDU_ROUTE_ID = t.asduRouteId and rh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+			JOIN PBK_NSI.ROUTE_TS_KINDS rtk on rh.ROUTE_TS_KIND_ID = rtk.ID
+			WHERE 1 = 1 
+			]]><if test="filter.tsType != null and filter.tsType != '-1'">
+				<![CDATA[
+					AND rtk.ID IN (${filter.tsType})
+				]]>
+        	</if><![CDATA[
+			order by stopName, asduRouteId
+        ]]>
+	</select>
+
+</mapper>
+

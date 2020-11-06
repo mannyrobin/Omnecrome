@@ -1,0 +1,73 @@
+<div ar-grid-filter parameters="gridScope.filterParams"></div>
+<div ar-grid-title parameters="gridScope.titleParams"></div>
+<div class="row" style="padding-top: 20px;">
+    <div class="col-sm-2"><i ng-style="{color: scheduleColors.HOLIDAY}" class="glyphicon glyphicon-stop btn-md"></i> - выходной</div>
+    <div class="col-sm-2"><i ng-style="{color: scheduleColors.HOSPITAL}" class="glyphicon glyphicon-stop btn-md"></i> - больничный</div>
+    <div class="col-sm-2"><i ng-style="{color: scheduleColors.VACATION}" class="glyphicon glyphicon-stop btn-md"></i> - отпуск</div>
+</div>
+
+<table st-table="gridScope.grid.rows" st-pipe="gridScope.grid.loadAction" st-safe-src="gridScope.grid.rows"
+       class='table table-hover {{getRowClass == null ? "table-striped" : ""}}'>
+    <colgroup>
+        <col ng-style="{'width': '10%'}">
+        <col ng-style="{'width': '6%'}">
+        <col ng-repeat="day in days">
+    </colgroup>
+    <thead>
+    <tr>
+    	<th class="grid-header" style="text-align: center; vertical-align: middle;" ar-st-sort="departmentName" rowspan="2">
+            ТО СДиК
+        </th>
+        <th class="grid-header" style="text-align: center; vertical-align: middle;" ar-st-sort="surname" rowspan="2">
+            ФИО
+        </th>
+        <th class="grid-header" style="text-align: center; vertical-align: middle;" ar-st-sort="personalNumber" rowspan="2">
+            Табельный номер
+        </th>
+        <th class="grid-header" style="text-align: center; vertical-align: middle;" colspan="{{days.length}}">
+            Количество отработанных часов
+        </th>
+    </tr>
+    <tr>
+        <th class="grid-header" style="text-align: center; vertical-align: middle;" ng-repeat="day in days">
+            {{getDayOfMonth(day)}}
+        </th>
+    </tr>
+    </thead>
+    <tbody ng-show="gridScope.grid.isLoading">
+    <tr>
+        <td colspan="{{(days == null || days.length == 0 ? 1 : days.length) + 2}}" class="text-center"><img ng-src="{{'images/spinner.gif'}}"></td>
+    </tr>
+    </tbody>
+    <tbody ng-show="!gridScope.grid.isLoading && gridScope.grid.rows.length > 0 && gridScope.grid.rows[0].cnt > 0">
+    <tr ng-repeat="row in gridScope.grid.rows">
+        <td>
+            <span>{{getDepartmentName(row)}}</span>
+        </td>
+        <td>
+            <span>{{getFio(row)}}</span>
+        </td>
+        <td>
+            <span>{{row.personalNumber}}</span>
+        </td>
+        <td ng-repeat="day in days" style="text-align: center; vertical-align: middle;"
+            ng-style="{'background-color':'{{getCurrentDateColor(row.shifts[day])}}'}">
+            <span>{{getCurrentDateText(row.shifts[day])}}</span>
+        </td>
+    </tr>
+    </tbody>
+    <tbody ng-show="!gridScope.grid.isLoading && (gridScope.grid.rows.length == 0 || gridScope.grid.rows[0].cnt == 0)">
+    <tr style="background-color: transparent;">
+        <td class="text-center" colspan="{{(days == null || days.length == 0 ? 1 : days.length) + 3}}">
+            <p class="lead">Элементы не найдены</p>
+        </td>
+    </tr>
+    </tbody>
+    <tfoot>
+    <tr>
+        <td class="text-center" colspan="{{(days == null || days.length == 0 ? 1 : days.length) + 3}}">
+            <div ar-grid-pagination rows-on-page="gridScope.colRowsOnPage" grid-scope="gridScope"></div>
+        </td>
+    </tr>
+    </tfoot>
+</table>

@@ -1,0 +1,9 @@
+<div ar-grid-filter parameters="gridScope.filterParams"></div>
+<div ar-grid-title parameters="gridScope.titleParams"></div>
+<div class="row" style="padding-top: 20px;">
+    <div class="col-sm-3"><i ng-style="{color: userColors.INNER_USER}" class="glyphicon glyphicon-stop btn-md"></i> - внутренний пользователь</div>
+    <div class="col-sm-3"><i ng-style="{color: userColors.LDAP_USER}" class="glyphicon glyphicon-stop btn-md"></i> - внешний пользователь</div>
+    <div class="col-sm-3"><i ng-style="{color: userColors.BLOCKED_USER}" class="glyphicon glyphicon-stop btn-md"></i> - заблокированный пользователь</div>
+    <div class="col-sm-3"><i ng-style="{color: userColors.REMOVED_USER}" class="glyphicon glyphicon-stop btn-md"></i> - удаленный пользователь</div>
+</div>
+<div ar-grid-table grid-scope="gridScope"></div>

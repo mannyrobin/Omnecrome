@@ -1,0 +1,33 @@
+<p>Информация для разработчика:
+    <button type="button" ng-click="devInfoOn()" class="btn btn-sm btn-info">включить</button>
+    <button type="button" ng-click="devInfoOff()" class="btn btn-sm btn-warning">отключить</button>
+</p>
+<div ng-show="isShowRow(state)" ng-repeat="state in statesList">
+
+    <div class="row" style="padding-bottom: 10px">
+        <div class="col-sm-6">
+            <strong ng-show="state.data.name">{{::state.data.name}}</strong>
+            <strong ng-show="!state.data.name">{{::state.ncyBreadcrumb.label}}</strong> - <span
+                ng-show="!isShowUrl(state.fullUrl)">{{::getUrlByName(state)}}</span>
+            <a ng-show="isShowUrl(state.fullUrl)" href="#"
+               ng-click="goToState(state.name)">{{::getUrlByName(state)}}</a>
+            <button type="button" ng-click="toggleInfo(state)" class="btn btn-xs btn-info">
+                <i class="glyphicon glyphicon-info-sign"></i>
+            </button>
+        </div>
+    </div>
+
+    <div ng-show="state.data.description">
+        <p class="bg-success" style="padding: 10px">
+            {{::state.data.description}}
+        </p>
+    </div>
+
+    <div ng-show="state.isShowDevInfo">
+        <p class="bg-info" style="padding: 10px">
+            <span style="text-decoration: underline">Урл шаблона</span>: {{::state.templateUrl}}<br>
+            <span style="text-decoration: underline">State</span>: {{::state.name}}<br>
+            <span style="text-decoration: underline">Контроллер</span>: {{::state.controller}}
+        </p>
+    </div>
+</div>

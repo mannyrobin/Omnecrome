@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.core.UserMapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.core.UserView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+            select t.ID as id
+                , t.LOGIN as login
+                , t.NAME as name
+                , t.IS_DELETE as isDelete
+                , t.IS_LDAP as isLdap
+                , (]]><include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" /><![CDATA[
+                	SELECT 1 FROM PBK_CORE.USERS where ID = t.ID AND EXPIRATION_DATE > GETDATE() AND (LOGIN_ATTEMPT_DATE IS NULL OR DATEDIFF(ss, LOGIN_ATTEMPT_DATE, GETDATE()) > (SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2002) * 60)
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" /><![CDATA[) as isActive
+                , t.EXPIRATION_DATE as expirationDate
+                , stuff((select ', ' + r.name from PBK_CORE.ROLES r, PBK_CORE.USER_ROLES ur
+                    where ur.USER_ID = t.ID and ur.ROLE_ID = r.ID
+                    for xml path('')), 1, 1, '') as roles
+            from PBK_CORE.USERS t
+            where
+                (#{filter.login} is null or UPPER(t.LOGIN) like UPPER('%${filter.login}%')) and
+                (#{filter.name} is null or UPPER(t.NAME) like UPPER('%${filter.name}%')) and
+                (#{filter.expirationDateFrom, jdbcType=DATE} is null or #{filter.expirationDateFrom, jdbcType=DATE} <= cast(t.EXPIRATION_DATE as DATE)) and
+                (#{filter.expirationDateTo, jdbcType=DATE} is null or #{filter.expirationDateTo, jdbcType=DATE} >= cast(t.EXPIRATION_DATE as DATE))
+                and ((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR t.IS_DELETE = 0)
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.core.User">
+        <![CDATA[
+             select
+                  ID as id
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues" /><![CDATA[
+                , LOGIN as login
+                , PASSWORD as password
+                , NAME as name
+                , EXPIRATION_DATE as expirationDate
+                , LDAP_CREATE_DATE as ldapCreateDate
+                , IS_LDAP as isLdap
+                , (]]><include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" /><![CDATA[
+                	SELECT 1 FROM PBK_CORE.USERS where ID = u.ID AND EXPIRATION_DATE > GETDATE() AND (LOGIN_ATTEMPT_DATE IS NULL OR DATEDIFF(ss, LOGIN_ATTEMPT_DATE, GETDATE()) > (SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2002) * 60)
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" /><![CDATA[) as isActive
+                , IS_DELETE as isDelete
+                , LOGIN_ATTEMPT_NUMBER as loginAttemptCount
+                , LOGIN_ATTEMPT_DATE as loginAttemptDate
+                , REPORTS_AUTH as reportsAuth
+            from PBK_CORE.USERS u
+            where ID = #{id}
+       ]]>
+    </select>
+
+    <select id="getByLogin" resultType="ru.armd.pbk.domain.core.User">
+        <![CDATA[
+             select
+                  ID as id
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues" /><![CDATA[
+                , LOGIN as login
+                , PASSWORD as password
+                , NAME as name
+                , IS_DELETE as isDelete
+                , EXPIRATION_DATE as expirationDate
+                , LDAP_CREATE_DATE as ldapCreateDate
+                , IS_LDAP as isLdap
+                , IS_ACTIVE as isActive
+                , LOGIN_ATTEMPT_NUMBER as loginAttemptCount
+                , LOGIN_ATTEMPT_DATE as loginAttemptDate
+                , REPORTS_AUTH as reportsAuth
+            from PBK_CORE.USERS u
+            where LOGIN = #{login}
+       ]]>
+    </select>
+
+    <select id="getByLoginExtended" resultType="ru.armd.pbk.domain.core.UserExtended">
+        <![CDATA[
+            SELECT
+                u.ID as id
+                , u.CREATE_DATE as createDate
+                , u.CREATE_USER_ID as createUserId
+                , u.UPDATE_DATE as updateDate
+                , u.UPDATE_USER_ID as updateUserId
+                , u.LOGIN as login
+                , u.PASSWORD as password
+                , u.NAME as name
+                , u.IS_DELETE as isDelete
+                , u.EXPIRATION_DATE as expirationDate
+                , u.LDAP_CREATE_DATE as ldapCreateDate
+                , u.IS_LDAP as isLdap
+                , u.IS_ACTIVE as isActive
+                , u.LOGIN_ATTEMPT_NUMBER as loginAttemptCount
+                , u.LOGIN_ATTEMPT_DATE as loginAttemptDate
+                , u.REPORTS_AUTH as reportsAuth
+                , eh.DEPT_ID as departmentId
+                , p.COD as permission
+                , r.[NAME] as role
+            FROM PBK_CORE.USERS u
+            LEFT JOIN [PBK_NSI].EMPLOYEE_HISTS eh ON
+                eh.V_END_DATE>=[PBK_CORE].getVersionEndDate()
+                AND u.ID = eh.USER_ID
+            LEFT JOIN [PBK_CORE].[USER_ROLES] ur on
+                u.ID = ur.USER_ID
+            LEFT JOIN [PBK_CORE].[ROLE_PERMISSIONS] rp on
+                ur.ROLE_ID = rp.ROLE_ID
+            LEFT JOIN [PBK_CORE].[PERMISSIONS] p on
+                p.ID = rp.PERMISSION_ID
+            LEFT JOIN [PBK_CORE].[ROLES] r on
+                r.ID = ur.ROLE_ID
+            WHERE u.LOGIN = #{login}
+       ]]>
+    </select>
+    
+    <insert id="insert" parameterType="ru.armd.pbk.domain.core.User" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into PBK_CORE.USERS (
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                , LOGIN
+                , PASSWORD
+                , EXPIRATION_DATE
+                , NAME
+                , LDAP_CREATE_DATE
+                , IS_LDAP
+                , IS_ACTIVE
+            ) values (
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+                , #{login}
+                , #{password}
+                , #{expirationDate}
+                , #{name}
+                , #{ldapCreateDate}
+                , #{isLdap}
+                , #{isActive}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_CORE.USERS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <update id="changePassword" >
+        <![CDATA[
+            update PBK_CORE.USERS
+            set
+              ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+              , PASSWORD = #{password}
+              , REPORTS_AUTH = #{reportsAuth}
+
+            where ID = #{id}
+        ]]>
+    </update>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.core.User">
+        <![CDATA[
+            update PBK_CORE.USERS
+            set
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+                , LOGIN = #{login}
+                , EXPIRATION_DATE = #{expirationDate}
+                , NAME = #{name}
+                , LDAP_CREATE_DATE = #{ldapCreateDate}
+                , IS_LDAP = #{isLdap}
+                , IS_ACTIVE = #{isActive}
+            where ID = #{id}
+        ]]>
+    </update>
+
+    <update id="updateUserStatus" parameterType="ru.armd.pbk.domain.core.User">
+        <![CDATA[
+            update PBK_CORE.USERS
+            set
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+                , IS_ACTIVE = #{isActive}
+                , LOGIN_ATTEMPT_NUMBER = #{loginAttemptCount}
+                , LOGIN_ATTEMPT_DATE = #{loginAttemptDate}
+            where ID = #{id}
+        ]]>
+    </update>
+
+    <update id="deleteSoft">
+        <![CDATA[
+            update PBK_CORE.USERS
+            set
+                 IS_DELETE = 1
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+    
+    <delete id="delete">
+        <![CDATA[
+            delete from PBK_CORE.USERS
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+        	ID as id, LOGIN as name
+        FROM
+        	PBK_CORE.USERS
+        WHERE
+        	IS_DELETE = 0 OR (#{currentId} IS NOT NULL AND ID = #{currentId})
+    </select>
+	
+	<select id="getSelectItemsForEmployee" resultType="ru.armd.pbk.core.views.SelectItem">
+       SELECT
+        	ID as id, LOGIN as name
+        FROM
+        	PBK_CORE.USERS
+        WHERE
+        	IS_DELETE = 0 AND
+        	(ID NOT IN (SELECT USER_ID FROM PBK_NSI.EMPLOYEE_HISTS WHERE USER_ID IS NOT NULL) OR
+        	(#{userId} IS NOT NULL AND ID = #{userId}))
+    </select>
+
+    <select id="getDepartmentId" resultType="Long">
+        SELECT dep.[ID]
+        FROM [PBK_NSI].[DEPARTMENTS] dep join [PBK_NSI].EMPLOYEE_HISTS emp on dep.ID=emp.DEPT_ID and emp.V_END_DATE>=[PBK_CORE].getVersionEndDate()
+          join PBK_CORE.USERS usr on usr.ID=emp.USER_ID
+        WHERE LOGIN = #{login}
+    </select>
+    
+    <select id="checkDBConnection" resultType="int">
+    	SELECT 1
+    </select>
+    
+</mapper>

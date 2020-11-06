@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:com="http://mgt.ru/pbk/xsd/1/Common" targetNamespace="http://mgt.ru/pbk/xsd/1/Common" 
+            elementFormDefault="qualified" attributeFormDefault="unqualified">
+  
+  <xsd:simpleType name="TIdent">
+    <xsd:annotation>
+      <xsd:documentation>Уникальный идентификатор, Текстовый, 20 символов</xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:string">
+      <xsd:pattern value="\d{1,20}"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  
+  <xsd:simpleType name="TMessageIdent">
+    <xsd:annotation>
+      <xsd:documentation>Уникальный идентификатор, Текстовый</xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:string"/>
+  </xsd:simpleType>
+  
+  <xsd:simpleType name="TDate">
+    <xsd:annotation>
+      <xsd:documentation>Дата. [ГОСТ ИСО 8601-2001]. Формат CCYY-MM-DD.</xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:date"/>
+  </xsd:simpleType>
+  
+  <xsd:simpleType name="TDateTime">
+    <xsd:annotation>
+      <xsd:documentation>Дата и время. Формат CCYY-MM-DDTHH-mm-SSZ.</xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:dateTime"/>
+  </xsd:simpleType>
+
+  <xsd:simpleType name="TFloat">
+    <xsd:annotation>
+      <xsd:documentation></xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:float">      
+    </xsd:restriction>    
+  </xsd:simpleType>
+
+  <xsd:simpleType name="TCount">
+    <xsd:annotation>
+      <xsd:documentation></xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:integer">
+    </xsd:restriction>
+  </xsd:simpleType>
+  
+  <xsd:simpleType name="TVarchar32">
+    <xsd:restriction base="xsd:string">
+      <xsd:maxLength value="32"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:simpleType name="TVarchar64">
+    <xsd:restriction base="xsd:string">
+      <xsd:maxLength value="64"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:simpleType name="TVarchar128">
+    <xsd:restriction base="xsd:string">
+      <xsd:maxLength value="128"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:simpleType name="TVarchar256">
+    <xsd:restriction base="xsd:string">
+      <xsd:maxLength value="256"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:simpleType name="TVarchar1024">
+    <xsd:restriction base="xsd:string">
+      <xsd:maxLength value="1024"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  
+</xsd:schema>

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.venue.VenueRouteMapper">
+
+	<sql id="fieldDomain">
+        <![CDATA[			
+		  	,dh.[CREATE_DATE] as createDate
+		  	,dh.[CREATE_USER_ID] as createUserId
+		  	,dh.[UPDATE_DATE] as updateDate
+		  	,dh.[UPDATE_USER_ID] as updateUserId
+		  	,dh.[V_START_DATE] as versionStartDate
+		  	,dh.[V_END_DATE] as versionEndDate
+		  	,dh.[CITY_VENUE_ID] as venueId
+		  	,dh.[ROUTE_ID] as routeId
+		  	,dh.[ROUTE_TYPE_ID] as venueRouteTypeId
+		  	,dh.[CITY_VENUE_DISTRICT_ID] as districtId
+        ]]>
+     </sql>
+     
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.venue.VenueRouteView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          SELECT  
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+				rh.ROUTE_NUMBER  +' ('+gmts.NAME+')' as route,
+				rh.HEAD_ID as routeId,
+				rth.NAME as venueRouteType				
+		  FROM
+				PBK_NSI.CITY_VENUE_ROUTES dh 
+				INNER JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) 
+				INNER JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+				INNER JOIN PBK_NSI.ROUTES r ON (dh.ROUTE_ID = r.id)
+				INNER JOIN PBK_NSI.ROUTE_HISTS rh ON (r.ID = rh.HEAD_ID AND rh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				INNER JOIN PBK_NSI.CITY_VENUE_ROUTE_TYPES rth ON (dh.ROUTE_TYPE_ID = rth.ID)				
+				JOIN PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+				JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+		  WHERE
+          		dh.CITY_VENUE_ID = #{filter.venueId}
+          		and (#{filter.venueRouteTypeId} is null or #{filter.venueRouteTypeId} = dh.ROUTE_TYPE_ID) 
+          		and dh.V_END_DATE >= [PBK_CORE].getVersionEndDate() and dh.CITY_VENUE_DISTRICT_ID = #{filter.districtId} 		    									
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <insert id="insert" parameterType="ru.armd.pbk.domain.nsi.venue.VenueRoute" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        insert into PBK_NSI.CITY_VENUE_ROUTES(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+        	, [CITY_VENUE_ID]
+        	, [ROUTE_ID]
+        	, [ROUTE_TYPE_ID]    
+        	, [CITY_VENUE_DISTRICT_ID]  
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+        	, #{venueId}
+        	, #{routeId}
+        	, #{venueRouteTypeId}
+        	, #{districtId}
+        )
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.CITY_VENUE_ROUTES' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.nsi.venue.VenueRoute">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.CITY_VENUE_ROUTES
+		    SET
+		    	CREATE_DATE = #{createDate},
+		    	CREATE_USER_ID = #{createUserId},
+				UPDATE_DATE = #{updateDate},
+		    	UPDATE_USER_ID = #{updateUserId},
+		    	V_START_DATE = #{versionStartDate},
+		    	V_END_DATE = #{versionEndDate},
+				CITY_venue_ID = #{venueId},
+				ROUTE_ID = #{routeId},
+				ROUTE_TYPE_ID = #{venueRouteTypeId},
+				CITY_VENUE_DISTRICT_ID = #{districtId}
+		    WHERE
+		    	ID = #{id}
+	    ]]>
+    </update>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.venue.VenueRoute">
+		<![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[CITY_VENUE_ROUTES] dh
+			WHERE 1 = 1
+               and dh.[ID] = #{id}
+        ]]>
+    </select>
+
+	<select id="getActual" resultType="ru.armd.pbk.domain.nsi.venue.VenueRoute">
+		<![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[CITY_VENUE_ROUTES] dh
+			WHERE
+				dh.[ID] = #{domainId}
+			   	and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+	</select>
+       
+    <select id="isExist" resultType="boolean">
+	    <include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+   			SELECT
+   				1
+   			FROM
+   				PBK_NSI.CITY_VENUE_ROUTES
+   			WHERE
+   				(#{venueId} is null OR CITY_VENUE_ID = #{venueId})
+   				AND (#{routeId} is null OR ROUTE_ID = #{routeId})
+   				AND (#{venueRouteTypeId} is null OR ROUTE_TYPE_ID = #{venueRouteTypeId})
+   				AND (#{districtId} is null or CITY_VENUE_DISTRICT_ID = #{districtId})
+   				AND V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    	<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+    </select>
+    
+    <update id="unlinkRoutes" parameterType="ru.armd.pbk.domain.nsi.venue.VenueDistrict">
+		<![CDATA[
+    		UPDATE [PBK_NSI].[CITY_VENUE_ROUTES] SET    
+    		]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+			]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+			WHERE CITY_VENUE_ID = #{venueId} AND CITY_VENUE_DISTRICT_ID = #{districtId}
+		]]>
+	</update>
+   
+</mapper>

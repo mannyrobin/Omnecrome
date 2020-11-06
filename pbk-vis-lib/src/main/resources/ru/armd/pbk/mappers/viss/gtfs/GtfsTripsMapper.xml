@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gtfs.GtfsTripsMapper">
+
+	<insert id="insertChunckOnDate">
+		INSERT
+		INTO <include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/>.[ASDU_GTFS_TRIPS]
+		(
+		[ROUTE_ID]
+		,[TRIP_ID]
+		,[TRIP_SHORT_NAME]
+		,[DIRECTION_ID]
+		,[TRIP_TYPE]
+		) VALUES
+		<foreach collection="domains" item="element" index="index"
+			separator=",">
+			(#{element.routeId}
+			,#{element.tripId}
+			,#{element.tripShortName}
+			,#{element.directionId}
+			,#{element.tripType} )
+		</foreach>
+	</insert>
+
+</mapper>

@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So14Mapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.report.So14View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[
+          SELECT
+            ROW_NUMBER() OVER (ORDER BY dh.NAME) AS id
+            , dh.NAME AS toSdik
+            , departmentTaskCounts.*
+          FROM
+            ( SELECT
+                t.DEPT_ID AS departmentId
+                , count(CASE WHEN
+                    (#{filter.curDateFrom, jdbcType=DATE} IS NULL OR #{filter.curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.curDateTo, jdbcType=DATE} IS NULL OR #{filter.curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN ps.EMPLOYEE_ID END) AS curFactEmployeeTotal
+                , sum(isnull(CASE WHEN
+                    (#{filter.curDateFrom, jdbcType=DATE} IS NULL OR #{filter.curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.curDateTo, jdbcType=DATE} IS NULL OR #{filter.curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.EXEMPT_SKM_COUNT + tr.EXEMPT_SKMO_COUNT + tr.EXEMPT_VESB_COUNT END, 0)) AS curExemptSkmSkmoVesbCount
+                , sum(isnull(CASE WHEN
+                    (#{filter.curDateFrom, jdbcType=DATE} IS NULL OR #{filter.curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.curDateTo, jdbcType=DATE} IS NULL OR #{filter.curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.EXEMPT_OTHER_LPK_COUNT END, 0)) AS curExemptLpkCount
+                , sum(isnull(CASE WHEN
+                    (#{filter.curDateFrom, jdbcType=DATE} IS NULL OR #{filter.curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.curDateTo, jdbcType=DATE} IS NULL OR #{filter.curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.EXEMPT_VALIDLESS_COUNT END, 0)) AS curExemptValidlessCount
+                , sum(isnull(CASE WHEN
+                    (#{filter.curDateFrom, jdbcType=DATE} IS NULL OR #{filter.curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.curDateTo, jdbcType=DATE} IS NULL OR #{filter.curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.PLANT_STOWAWAY_COUNT END, 0)) AS curPlantStowawayCount
+                , sum(isnull(CASE WHEN
+                    (#{filter.curDateFrom, jdbcType=DATE} IS NULL OR #{filter.curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.curDateTo, jdbcType=DATE} IS NULL OR #{filter.curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.DELIVERY_OVD_COUNT END, 0)) AS curDeliveryOvdCount
+                , sum(isnull(CASE WHEN
+                    (#{filter.curDateFrom, jdbcType=DATE} IS NULL OR #{filter.curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.curDateTo, jdbcType=DATE} IS NULL OR #{filter.curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.TICKET_SOLD_COUNT END, 0)) AS curTicketSoldCount
+                , count(CASE WHEN
+                    (#{filter.curDateFrom, jdbcType=DATE} IS NULL OR #{filter.curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.curDateTo, jdbcType=DATE} IS NULL OR #{filter.curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                THEN t.ID END) AS curEmployeeTaskCount
+                , count(CASE WHEN
+                    (#{filter.prevDateFrom, jdbcType=DATE} IS NULL OR #{filter.prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.prevDateTo, jdbcType=DATE} IS NULL OR #{filter.prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN ps.EMPLOYEE_ID END) AS prevFactEmployeeTotal
+                , sum(isnull(CASE WHEN
+                    (#{filter.prevDateFrom, jdbcType=DATE} IS NULL OR #{filter.prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.prevDateTo, jdbcType=DATE} IS NULL OR #{filter.prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.EXEMPT_SKM_COUNT + tr.EXEMPT_SKMO_COUNT + tr.EXEMPT_VESB_COUNT END, 0)) AS prevExemptSkmSkmoVesbCount
+                , sum(isnull(CASE WHEN
+                    (#{filter.prevDateFrom, jdbcType=DATE} IS NULL OR #{filter.prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.prevDateTo, jdbcType=DATE} IS NULL OR #{filter.prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.EXEMPT_OTHER_LPK_COUNT END, 0)) AS prevExemptLpkCount
+                , sum(isnull(CASE WHEN
+                    (#{filter.prevDateFrom, jdbcType=DATE} IS NULL OR #{filter.prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.prevDateTo, jdbcType=DATE} IS NULL OR #{filter.prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.EXEMPT_VALIDLESS_COUNT END, 0)) AS prevExemptValidlessCount
+                , sum(isnull(CASE WHEN
+                    (#{filter.prevDateFrom, jdbcType=DATE} IS NULL OR #{filter.prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.prevDateTo, jdbcType=DATE} IS NULL OR #{filter.prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.PLANT_STOWAWAY_COUNT END, 0)) AS prevPlantStowawayCount
+                , sum(isnull(CASE WHEN
+                    (#{filter.prevDateFrom, jdbcType=DATE} IS NULL OR #{filter.prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.prevDateTo, jdbcType=DATE} IS NULL OR #{filter.prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.DELIVERY_OVD_COUNT END, 0)) AS prevDeliveryOvdCount
+                , sum(isnull(CASE WHEN
+                    (#{filter.prevDateFrom, jdbcType=DATE} IS NULL OR #{filter.prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.prevDateTo, jdbcType=DATE} IS NULL OR #{filter.prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.TICKET_SOLD_COUNT END, 0)) AS prevTicketSoldCount
+                , count(CASE WHEN
+                    (#{filter.prevDateFrom, jdbcType=DATE} IS NULL OR #{filter.prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{filter.prevDateTo, jdbcType=DATE} IS NULL OR #{filter.prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                THEN t.ID END) AS prevEmployeeTaskCount
+              FROM
+                PBK_TASK.TASKS t
+                JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+                JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+                JOIN PBK_NSI.DEPARTMENT_HISTS dh ON t.DEPT_ID = dh.HEAD_ID AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate() AND dh.FOR_PLAN_USE = 1
+                JOIN PBK_NSI.WORK_DAYS wd ON ps.WORK_DATE = wd.WORK_DATE
+                JOIN pbk_task.TASK_STATES ts ON (t.TASK_STATE_ID = ts.ID) AND ts.COD NOT IN ('IN_RESERVE', 'CANCELED')
+              WHERE 1=1
+              ]]><if test="filter.departmentId != null">
+                AND t.DEPT_ID IN (${filter.departmentId})
+              </if>
+                <if test="filter.isWorkDays != null">
+                    AND ((#{filter.isWorkDays} = 1 AND wd.WORK_DAY_TYPE_ID = 1) OR (#{filter.isWorkDays} = 0 AND wd.WORK_DAY_TYPE_ID != 1))
+                </if><![CDATA[
+                AND (#{filter.deptAuthId} IS NULL OR t.DEPT_ID = #{filter.deptAuthId})
+              GROUP BY t.DEPT_ID
+            ) AS departmentTaskCounts
+            JOIN PBK_NSI.DEPARTMENT_HISTS dh ON departmentTaskCounts.departmentId = dh.HEAD_ID AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getGridViewTotal" resultType="ru.armd.pbk.views.report.So14View">
+        <![CDATA[
+            SELECT
+            	sum(sub.curFactEmployeeTotal) as curFactEmployeeTotal,
+            	sum(sub.curExemptSkmSkmoVesbCount) as curExemptSkmSkmoVesbCount,
+            	sum(sub.curExemptLpkCount) as curExemptLpkCount,
+            	sum(sub.curExemptValidlessCount) as curExemptValidlessCount,
+            	sum(sub.curPlantStowawayCount) as curPlantStowawayCount,
+            	sum(sub.curDeliveryOvdCount) as curDeliveryOvdCount,
+            	sum(sub.curTicketSoldCount) as curTicketSoldCount,
+            	sum(sub.curEmployeeTaskCount) as curEmployeeTaskCount, 
+            	sum(sub.prevFactEmployeeTotal) as prevFactEmployeeTotal,
+            	sum(sub.prevExemptSkmSkmoVesbCount) as prevExemptSkmSkmoVesbCount,
+            	sum(sub.prevExemptLpkCount) as prevExemptLpkCount,
+            	sum(sub.prevExemptValidlessCount) as prevExemptValidlessCount,
+            	sum(sub.prevPlantStowawayCount) as prevPlantStowawayCount,
+            	sum(sub.prevDeliveryOvdCount) as prevDeliveryOvdCount,
+            	sum(sub.prevTicketSoldCount) as prevTicketSoldCount,
+            	sum(sub.prevEmployeeTaskCount) as prevEmployeeTaskCount
+            FROM
+            ( SELECT
+                t.DEPT_ID AS departmentId
+                , count(CASE WHEN
+                    (#{curDateFrom, jdbcType=DATE} IS NULL OR #{curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{curDateTo, jdbcType=DATE} IS NULL OR #{curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN ps.EMPLOYEE_ID END) AS curFactEmployeeTotal
+                , sum(isnull(CASE WHEN
+                    (#{curDateFrom, jdbcType=DATE} IS NULL OR #{curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{curDateTo, jdbcType=DATE} IS NULL OR #{curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.EXEMPT_SKM_COUNT + tr.EXEMPT_SKMO_COUNT + tr.EXEMPT_VESB_COUNT END, 0)) AS curExemptSkmSkmoVesbCount
+                , sum(isnull(CASE WHEN
+                    (#{curDateFrom, jdbcType=DATE} IS NULL OR #{curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{curDateTo, jdbcType=DATE} IS NULL OR #{curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.EXEMPT_OTHER_LPK_COUNT END, 0)) AS curExemptLpkCount
+                , sum(isnull(CASE WHEN
+                    (#{curDateFrom, jdbcType=DATE} IS NULL OR #{curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{curDateTo, jdbcType=DATE} IS NULL OR #{curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.EXEMPT_VALIDLESS_COUNT END, 0)) AS curExemptValidlessCount
+                , sum(isnull(CASE WHEN
+                    (#{curDateFrom, jdbcType=DATE} IS NULL OR #{curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{curDateTo, jdbcType=DATE} IS NULL OR #{curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.PLANT_STOWAWAY_COUNT END, 0)) AS curPlantStowawayCount
+                , sum(isnull(CASE WHEN
+                    (#{curDateFrom, jdbcType=DATE} IS NULL OR #{curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{curDateTo, jdbcType=DATE} IS NULL OR #{curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.DELIVERY_OVD_COUNT END, 0)) AS curDeliveryOvdCount
+                , sum(isnull(CASE WHEN
+                    (#{curDateFrom, jdbcType=DATE} IS NULL OR #{curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{curDateTo, jdbcType=DATE} IS NULL OR #{curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.TICKET_SOLD_COUNT END, 0)) AS curTicketSoldCount
+                , count(CASE WHEN
+                    (#{curDateFrom, jdbcType=DATE} IS NULL OR #{curDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{curDateTo, jdbcType=DATE} IS NULL OR #{curDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                THEN t.ID END) AS curEmployeeTaskCount
+                , count(CASE WHEN
+                    (#{prevDateFrom, jdbcType=DATE} IS NULL OR #{prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{prevDateTo, jdbcType=DATE} IS NULL OR #{prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN ps.EMPLOYEE_ID END) AS prevFactEmployeeTotal
+                , sum(isnull(CASE WHEN
+                    (#{prevDateFrom, jdbcType=DATE} IS NULL OR #{prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{prevDateTo, jdbcType=DATE} IS NULL OR #{prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.EXEMPT_SKM_COUNT + tr.EXEMPT_SKMO_COUNT + tr.EXEMPT_VESB_COUNT END, 0)) AS prevExemptSkmSkmoVesbCount
+                , sum(isnull(CASE WHEN
+                    (#{prevDateFrom, jdbcType=DATE} IS NULL OR #{prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{prevDateTo, jdbcType=DATE} IS NULL OR #{prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.EXEMPT_OTHER_LPK_COUNT END, 0)) AS prevExemptLpkCount
+                , sum(isnull(CASE WHEN
+                    (#{prevDateFrom, jdbcType=DATE} IS NULL OR #{prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{prevDateTo, jdbcType=DATE} IS NULL OR #{prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.EXEMPT_VALIDLESS_COUNT END, 0)) AS prevExemptValidlessCount
+                , sum(isnull(CASE WHEN
+                    (#{prevDateFrom, jdbcType=DATE} IS NULL OR #{prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{prevDateTo, jdbcType=DATE} IS NULL OR #{prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.PLANT_STOWAWAY_COUNT END, 0)) AS prevPlantStowawayCount
+                , sum(isnull(CASE WHEN
+                    (#{prevDateFrom, jdbcType=DATE} IS NULL OR #{prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{prevDateTo, jdbcType=DATE} IS NULL OR #{prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.DELIVERY_OVD_COUNT END, 0)) AS prevDeliveryOvdCount
+                , sum(isnull(CASE WHEN
+                    (#{prevDateFrom, jdbcType=DATE} IS NULL OR #{prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{prevDateTo, jdbcType=DATE} IS NULL OR #{prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                    AND ps.SHIFT_ID NOT IN (1, 4, 5) /* только рабочие смены */
+                THEN tr.TICKET_SOLD_COUNT END, 0)) AS prevTicketSoldCount
+                , count(CASE WHEN
+                    (#{prevDateFrom, jdbcType=DATE} IS NULL OR #{prevDateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+                    AND (#{prevDateTo, jdbcType=DATE} IS NULL OR #{prevDateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+                THEN t.ID END) AS prevEmployeeTaskCount
+              FROM
+                PBK_TASK.TASKS t
+                JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+                JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+                JOIN PBK_NSI.WORK_DAYS wd ON ps.WORK_DATE = wd.WORK_DATE
+                JOIN pbk_task.TASK_STATES ts ON (t.TASK_STATE_ID = ts.ID) AND ts.COD NOT IN ('IN_RESERVE', 'CANCELED')
+              WHERE 1=1
+              ]]><if test="departmentId != null">
+                AND t.DEPT_ID IN (${departmentId})
+              </if>
+                <if test="isWorkDays != null">
+                    AND ((#{isWorkDays} = 1 AND wd.WORK_DAY_TYPE_ID = 1) OR (#{isWorkDays} = 0 AND wd.WORK_DAY_TYPE_ID != 1))
+                </if><![CDATA[
+                AND (#{deptAuthId} IS NULL OR t.DEPT_ID = #{deptAuthId})
+              GROUP BY t.DEPT_ID
+            ) AS sub
+            JOIN PBK_NSI.DEPARTMENT_HISTS dh ON sub.departmentId = dh.HEAD_ID AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>
+
+</mapper>

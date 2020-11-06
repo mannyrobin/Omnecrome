@@ -1,0 +1,807 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So6Mapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.report.So6View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[
+	        SELECT
+ROW_NUMBER() OVER (ORDER BY t.surname) AS id
+, t.toSdik AS toSdik
+, t.surname AS surname
+, t.name AS name
+, t.patronumic AS patronumic
+, t.personalNumber AS personalNumber
+, t.scheduleNumber AS scheduleNumber
+, max(t.forPlanUse) AS forPlanUse
+, t.planShiftCount AS planShiftCount
+, t.factShiftCount AS factShiftCount
+, t.totalPlanCount AS totalPlanCount 
+, t.totalFactCount AS totalFactCount 
+, t.factSkmCount AS factSkmCount
+, t.factSkmoCount AS factSkmoCount
+, t.factVesbCount AS factVesbCount
+, t.factValidlessCount AS factValidlessCount
+, t.factLpkCount AS factLpkCount
+, t.factSoldCount AS factSoldCount
+, t.factStowawayCount AS factStowawayCount
+, t.factDeliveryCount AS factDeliveryCount
+, t.fact1000Count AS fact1000Count
+, t.fact2500Count AS fact2500Count
+, t.excessSkmCount as excessSkmCount
+, t.underSkm as underSkm
+, t.underSkmValue as underSkmValue
+, t.planSubtr as planSubtr
+, ISNULL(t.pcnt, 0) as pcnt
+	        FROM (
+				SELECT *
+				, (CASE WHEN (t.totalFactCount - t.totalPlanCount >= 0) THEN t.totalFactCount - t.totalPlanCount ELSE 0 END) AS excessSkmCount
+	            , (CASE WHEN (t.totalFactCount - t.totalPlanCount < 0) THEN 1 ELSE 0 END) AS underSkm
+	            , (CASE WHEN (t.totalPlanCount - t.totalFactCount >= 0) THEN t.totalPlanCount - t.totalFactCount ELSE 0 END) AS underSkmValue
+	            , (SELECT b.COUNT
+						FROM PBK_NSI.BONUSES b
+						WHERE 1 = 1
+						AND cast(b.PERIOD_START_DATE as DATE) = (SELECT
+																	min(b.[PERIOD_START_DATE])
+																FROM
+																	PBK_NSI.BONUSES b
+																WHERE
+																	(#{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+																	OR (#{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+				        + CASE WHEN (t.totalFactCount - t.totalPlanCount < 0)
+				   THEN  (t.totalFactCount - t.totalPlanCount) ELSE 0 END AS planSubtr
+				, case when  t.totalFactCount  - t.totalPlanCount >= 0
+					then (SELECT
+						max(bp.[PERCENT])
+					FROM
+						PBK_NSI.BONUSES b
+						LEFT JOIN PBK_NSI.BONUSE_PERIODS bp ON (b.ID = bp.BONUS_ID)
+
+					WHERE
+						(t.totalFactCount != 0)
+						AND b.PERIOD_START_DATE = (SELECT
+																	min(b.[PERIOD_START_DATE])
+																FROM
+																	PBK_NSI.BONUSES b
+																WHERE
+																	(#{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+																	OR (#{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					else
+						(SELECT
+						bp.[PERCENT]
+					FROM
+						PBK_NSI.BONUSES b
+						LEFT JOIN PBK_NSI.BONUSE_PERIODS bp ON (b.ID = bp.BONUS_ID)
+
+					WHERE
+						((COUNT_TO IS NOT NULL AND b.COUNT + (t.totalFactCount  - t.totalPlanCount) >= COUNT_FROM AND b.COUNT + (t.totalFactCount  - t.totalPlanCount) <= COUNT_TO) OR (COUNT_TO IS NULL AND b.COUNT + (t.totalFactCount  - t.totalPlanCount) = COUNT_FROM))
+						AND cast(b.PERIOD_START_DATE as DATE) = (SELECT
+																	min(b.[PERIOD_START_DATE])
+																FROM
+																	PBK_NSI.BONUSES b
+																WHERE
+																	(#{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+																	OR (#{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					end AS pcnt
+				FROM (
+				SELECT
+	    distinct eh.SURNAME AS surname
+		, eh.NAME AS name
+		, eh.PATRONUMIC AS patronumic
+		, dh.NAME AS toSdik
+		, eh.PERSONNEL_NUMBER AS personalNumber
+		, eh.FOR_PLAN_USE AS forPlanUse
+		, STUFF((
+								   select grafic from (
+														select
+														  DISTINCT CASE
+																   WHEN ps.SHIFT_MODE_ID = 0 AND ps.shift = 2 AND ps.nextShift1 = 3 AND ps.nextShift2 = 1 AND ps.nextShift3 = 1
+																	  THEN g.code
+																   ELSE ''
+																   END grafic
+														from (select
+																ps1.WORK_DATE,
+																ps1.SHIFT_MODE_ID,
+																ps1.SHIFT_ID shift,
+																LEAD(SHIFT_ID) OVER (ORDER BY work_date) nextShift1,
+																LEAD(SHIFT_ID, 2) OVER (ORDER BY work_date) nextShift2,
+																LEAD(SHIFT_ID, 3) OVER (ORDER BY work_date) nextShift3
+															  from PBK_DB.PBK_PLAN.PLAN_SCHEDULES ps1
+																	cross join (select
+																				  case
+																				  when minFirstDate < minSecondDate AND minFirstDate < minThirdDate AND minFirstDate < minFourthDate
+																					then minFirstDate
+																				  when minSecondDate < minFirstDate AND minSecondDate < minThirdDate AND minSecondDate < minFourthDate
+																					then minSecondDate
+																				  when minThirdDate < minFirstDate AND minThirdDate < minSecondDate AND minThirdDate < minFourthDate
+																					then minThirdDate
+																				  when minFourthDate < minFirstDate AND minFourthDate < minSecondDate AND minFourthDate < minThirdDate
+																					then minFourthDate
+																				  end minGraficDate,
+																				  case
+																				  when maxFirstDate > maxSecondDate AND maxFirstDate > maxThirdDate AND maxFirstDate > maxFourthDate
+																					then maxFirstDate
+																				  when maxSecondDate > maxFirstDate AND maxSecondDate > maxThirdDate AND maxSecondDate > maxFourthDate
+																					then maxSecondDate
+																				  when maxThirdDate > maxFirstDate AND maxThirdDate > maxSecondDate AND maxThirdDate > maxFourthDate
+																					then maxThirdDate
+																				  when maxFourthDate > maxFirstDate AND maxFourthDate > maxSecondDate AND maxFourthDate > maxThirdDate
+																					then maxFourthDate
+																				  end maxGraficDate
+																				from (
+																					   select
+																						 max(firstDate) maxFirstDate,
+																						 max(secondDate) maxSecondDate,
+																						 max(thirdDate) maxThirdDate,
+																						 max(fourthDate) maxFourthDate,
+																						 min(firstDate) minFirstDate,
+																						 min(secondDate) minSecondDate,
+																						 min(thirdDate) minThirdDate,
+																						 min(fourthDate) minFourthDate
+																					   from PBK_NSI.GRAFICS) dates) maxDates
+															  where ps1.employee_id = e.id
+																AND maxDates.minGraficDate <= cast(ps1.WORK_DATE AS DATE)
+																AND maxDates.maxGraficDate >= cast(ps1.WORK_DATE AS DATE)) ps
+															left join PBK_NSI.GRAFICS g on ps.WORK_DATE = g.firstDate
+														union
+														  select
+															DISTINCT CASE
+																	 WHEN ps.SHIFT_MODE_ID = 2 AND ps.SHIFT_ID != 14
+																	   THEN '001'
+																	 WHEN ps.SHIFT_MODE_ID = 1
+																	   THEN '002'
+																	 WHEN ps.SHIFT_MODE_ID = 3
+																	   THEN '003'
+																	 WHEN ps.SHIFT_MODE_ID = 2 AND ps.SHIFT_ID = 14
+																	   THEN '004'
+																	 ELSE ''
+																	 END grafic
+														  from PBK_DB.PBK_PLAN.PLAN_SCHEDULES ps
+														where ps.employee_id = e.id
+															  AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR DATEADD(DAY,1,EOMONTH(#{filter.dateFrom, jdbcType=DATE} ,-1))<= cast(ps.WORK_DATE AS DATE))
+															  AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR EOMONTH(#{filter.dateTo, jdbcType=DATE}) >= cast(ps.WORK_DATE AS DATE))
+															  --AND (cast('2017.11.01' as date) <= cast(ps.WORK_DATE AS DATE))
+															  --AND (cast('2017.11.01' as date) >= cast(ps.WORK_DATE AS DATE))
+														group by ps.SHIFT_MODE_ID, ps.SHIFT_ID) sub
+														where sub.grafic!=''
+																						   FOR XML PATH(''), TYPE
+																	).value('.', 'NVARCHAR(MAX)')
+													,1,0,'')  AS scheduleNumber
+					, ISNULL(planShiftCount, 0) AS planShiftCount
+					, ISNULL(factShiftCount, 0) AS factShiftCount
+					, ROUND(ISNULL(cast(factShiftCount as FLOAT), 0) / (CASE WHEN (ISNULL(planShiftCount, 0) > 0) THEN planShiftCount ELSE 1 END) * (SELECT b.COUNT FROM PBK_NSI.BONUSES b WHERE #{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE)), 0) AS totalPlanCount
+					, ISNULL(factSkmCount, 0) AS factSkmCount
+					, ISNULL(factSkmoCount, 0) AS factSkmoCount
+					, ISNULL(factVesbCount, 0) AS factVesbCount
+					, ISNULL(factValidlessCount, 0) AS factValidlessCount
+					, ISNULL(factLpkCount, 0) AS factLpkCount
+					, ISNULL(factSoldCount, 0) AS factSoldCount
+					, ISNULL(factStowawayCount, 0) AS factStowawayCount
+					, ISNULL(factDeliveryCount, 0) AS factDeliveryCount
+					, ISNULL(fact1000Count, 0) AS fact1000Count
+					, ISNULL(fact2500Count, 0) AS fact2500Count
+					, ISNULL(totalFactCount, 0) AS totalFactCount
+				FROM
+		            [PBK_NSI].[EMPLOYEES] e
+		            JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh ON e.ID = eh.HEAD_ID
+		            JOIN [PBK_NSI].[DEPARTMENTS] d ON eh.DEPT_ID = d.ID
+		            JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON d.ID = dh.HEAD_ID
+		            LEFT JOIN (
+		            	SELECT
+		            		count(distinct ps.ID) AS planShiftCount,
+		            		ps.EMPLOYEE_ID
+		            	FROM
+		            		[PBK_NSI].[EMPLOYEES] e
+		            		LEFT JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh ON (e.ID = eh.HEAD_ID)
+		            		LEFT JOIN PBK_NSI.EMPLOYEE_WORK_MODES ps ON (e.ID = ps.EMPLOYEE_ID)
+		            	WHERE
+		            		(#{filter.dateFrom, jdbcType=DATE}  IS NULL OR #{filter.dateFrom, jdbcType=DATE}  <= cast(ps.WORK_DATE AS DATE))
+				            AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+				            AND (eh.FIRE_DATE IS NULL OR eh.FIRE_DATE >= cast(ps.WORK_DATE AS DATE))
+				            and ps.[WORK_PLAN_HOURS] > 0
+						GROUP BY ps.EMPLOYEE_ID
+		            ) AS ps ON ps.EMPLOYEE_ID = e.ID
+					LEFT JOIN (
+		            	SELECT
+		            		count(distinct ps.ID) AS factShiftCount,
+		            		ps.EMPLOYEE_ID
+						FROM
+							[PBK_NSI].[EMPLOYEES] e
+		            		LEFT JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh ON (e.ID = eh.HEAD_ID)
+		            		LEFT JOIN [PBK_PLAN].[PLAN_SCHEDULES] ps ON (e.ID = ps.EMPLOYEE_ID)
+							LEFT JOIN PBK_NSI.EMPLOYEE_WORK_MODES ewm ON (ps.EMPLOYEE_ID = ewm.EMPLOYEE_ID AND ps.WORK_DATE = ewm.WORK_DATE)
+		            	WHERE
+		            		ps.SHIFT_ID IN (2, 3, 6, 7, 8, 14, 15, 16) /*рабочие смены*/
+				            AND (#{filter.dateFrom, jdbcType=DATE}  IS NULL OR #{filter.dateFrom, jdbcType=DATE}  <= cast(ps.WORK_DATE AS DATE))
+				            AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+				            AND (eh.FIRE_DATE IS NULL OR eh.FIRE_DATE >= cast(ps.WORK_DATE AS DATE))
+				            AND ISNULL(ps.WORK_FACT_HOURS, 0) >= ISNULL(ewm.WORK_PLAN_HOURS, 0)
+						GROUP BY ps.EMPLOYEE_ID
+		            ) AS t ON t.EMPLOYEE_ID = e.ID
+				    LEFT JOIN (
+		            	SELECT *, factSoldCount + factStowawayCount + factDeliveryCount + fact1000Count + fact2500Count + factLpkCount + factSkmCount + factSkmoCount + factValidlessCount + factVesbCount as totalFactCount
+				FROM (
+				SELECT case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 1
+										WHERE cast(PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.EXEMPT_SKM_COUNT) else 0 end AS factSkmCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 2
+										WHERE cast(PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.EXEMPT_SKMO_COUNT) else 0 end AS factSkmoCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 3
+										WHERE cast(PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.EXEMPT_VESB_COUNT) else 0 end AS factVesbCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 4
+										WHERE cast(PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.EXEMPT_OTHER_LPK_COUNT) else 0 end AS factLpkCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 5
+										WHERE cast(PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.EXEMPT_VALIDLESS_COUNT) else 0 end AS factValidlessCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 6
+										WHERE cast(b.PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.TICKET_SOLD_COUNT) else 0 end AS factSoldCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 7
+										WHERE cast(b.PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.PLANT_STOWAWAY_COUNT) else 0 end AS factStowawayCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 8
+										WHERE cast(b.PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.DELIVERY_OVD_COUNT) else 0 end AS factDeliveryCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 9
+										WHERE cast(b.PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.ORDINANCE_1000_COUNT) else 0 end AS fact1000Count,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 10
+										WHERE cast(b.PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{filter.dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{filter.dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.ORDINANCE_2500_COUNT) else 0 end AS fact2500Count, ps.EMPLOYEE_ID
+										FROM [PBK_TASK].[TASKS] t
+										LEFT JOIN [PBK_PLAN].PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+										JOIN [PBK_TASK].TASK_REPORTS r ON r.TASK_ID = t.ID
+										    AND 1=1
+								            AND (#{filter.dateFrom, jdbcType=DATE}  IS NULL OR #{filter.dateFrom, jdbcType=DATE}  <= cast(ps.WORK_DATE AS DATE))
+								            AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+										GROUP BY ps.EMPLOYEE_ID) as r
+						            ) AS r ON r.EMPLOYEE_ID = e.ID
+						          WHERE 1=1
+						            AND e.IS_DELETE = 0
+						            AND dh.FOR_PLAN_USE = 1
+						            AND eh.POSITION_NAME = upper('Контролер пассажирского транспорта')
+						            AND dh.NAME like '%МОК%'
+									AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+						            AND (eh.FIRE_DATE IS NULL AND
+						            (#{filter.forPlanUse} is null or eh.FOR_PLAN_USE = #{filter.forPlanUse})
+						            OR (eh.FIRE_DATE BETWEEN #{filter.dateFrom, jdbcType=DATE} AND #{filter.dateTo, jdbcType=DATE} OR eh.FIRE_DATE > #{filter.dateTo, jdbcType=DATE}))
+						            AND (eh.V_END_DATE IS NULL OR eh.V_END_DATE  > cast(#{filter.dateFrom, jdbcType=DATE} as datetime))
+		          ]]><if test="filter.departmentId != null">
+		            AND d.ID IN (${filter.departmentId})
+		          </if><![CDATA[
+		            and (#{filter.deptAuthId} is null or d.ID = #{filter.deptAuthId})
+	            ) t ) t group by
+ t.surname
+, t.toSdik
+, t.surname
+, t.name 
+, t.patronumic 
+, t.personalNumber
+, t.scheduleNumber
+, t.planShiftCount 
+, t.factShiftCount 
+, t.totalPlanCount 
+, t.totalFactCount 
+, t.factSkmCount 
+, t.factSkmoCount
+, t.factVesbCount 
+, t.factValidlessCount
+, t.factLpkCount 
+, t.factSoldCount 
+, t.factStowawayCount
+, t.factDeliveryCount
+, t.fact1000Count 
+, t.fact2500Count 
+, t.excessSkmCount
+, t.underSkm 
+, t.underSkmValue
+, t.planSubtr 
+, ISNULL(t.pcnt, 0)
+        ]]><include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+	<select id="getGridViewTotal" resultType="ru.armd.pbk.views.report.So6View">
+        <![CDATA[
+        	SELECT   
+        		sum(sub.planShiftCount) as planShiftCount
+        		, sum(sub.factShiftCount) as factShiftCount 
+        		, sum(sub.totalPlanCount) AS totalPlanCount
+				, sum(sub.totalFactCount) as totalFactCount
+	            , sum(sub.factSkmCount) AS factSkmCount
+				, sum(sub.factSkmoCount) AS factSkmoCount
+				, sum(sub.factVesbCount) AS factVesbCount
+				, sum(sub.factValidlessCount) AS factValidlessCount
+				, sum(sub.factLpkCount) AS factLpkCount
+				, sum(sub.factSoldCount) AS factSoldCount
+				, sum(sub.factStowawayCount) AS factStowawayCount
+				, sum(sub.factDeliveryCount) AS factDeliveryCount
+				, sum(sub.fact1000Count) AS fact1000Count
+				, sum(sub.fact2500Count) AS fact2500Count
+				, sum(sub.excessSkmCount) as excessSkmCount
+        		, sum(sub.underSkm) as underSkm 
+        		, sum(sub.underSkmValue) as underSkmValue
+        		, sum(sub.planSubtr) as planSubtr
+        		, 0 as pcnt 
+        	FROM (        		
+				SELECT
+ROW_NUMBER() OVER (ORDER BY t.surname) AS id
+, t.toSdik AS toSdik
+, t.surname AS surname
+, t.name AS name
+, t.patronumic AS patronumic
+, t.personalNumber AS personalNumber
+, t.scheduleNumber AS scheduleNumber
+, max(t.forPlanUse) AS forPlanUse
+, t.planShiftCount AS planShiftCount
+, t.factShiftCount AS factShiftCount
+, t.totalPlanCount AS totalPlanCount 
+, t.totalFactCount AS totalFactCount 
+, t.factSkmCount AS factSkmCount
+, t.factSkmoCount AS factSkmoCount
+, t.factVesbCount AS factVesbCount
+, t.factValidlessCount AS factValidlessCount
+, t.factLpkCount AS factLpkCount
+, t.factSoldCount AS factSoldCount
+, t.factStowawayCount AS factStowawayCount
+, t.factDeliveryCount AS factDeliveryCount
+, t.fact1000Count AS fact1000Count
+, t.fact2500Count AS fact2500Count
+, t.excessSkmCount as excessSkmCount
+, t.underSkm as underSkm
+, t.underSkmValue as underSkmValue
+, t.planSubtr as planSubtr
+, 0 as pcnt
+	        FROM (
+				SELECT *
+				, (CASE WHEN (t.totalFactCount - t.totalPlanCount >= 0) THEN t.totalFactCount - t.totalPlanCount ELSE 0 END) AS excessSkmCount
+	            , (CASE WHEN (t.totalFactCount - t.totalPlanCount < 0) THEN 1 ELSE 0 END) AS underSkm
+	            , (CASE WHEN (t.totalPlanCount - t.totalFactCount >= 0) THEN t.totalPlanCount - t.totalFactCount ELSE 0 END) AS underSkmValue
+	            ,  CASE WHEN (t.totalFactCount - t.totalPlanCount < 0)
+				   THEN (
+						SELECT b.COUNT
+						FROM PBK_NSI.BONUSES b
+						WHERE 1 = 1
+						AND cast(b.PERIOD_START_DATE as DATE) = (SELECT
+																	min(b.[PERIOD_START_DATE])
+																FROM
+																	PBK_NSI.BONUSES b
+																WHERE
+																	(#{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+																	OR (#{dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE)))
+				  ) + (t.totalFactCount - t.totalPlanCount) ELSE 0 END AS planSubtr
+				, case when  t.totalFactCount  - t.totalPlanCount >= 0
+					then (SELECT
+						max(bp.[PERCENT])
+					FROM
+						PBK_NSI.BONUSES b
+						LEFT JOIN PBK_NSI.BONUSE_PERIODS bp ON (b.ID = bp.BONUS_ID)
+
+					WHERE
+						(t.totalFactCount != 0)
+						AND b.PERIOD_START_DATE = (SELECT
+																	min(b.[PERIOD_START_DATE])
+																FROM
+																	PBK_NSI.BONUSES b
+																WHERE
+																	(#{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+																	OR (#{dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					else
+						(SELECT
+						bp.[PERCENT]
+					FROM
+						PBK_NSI.BONUSES b
+						LEFT JOIN PBK_NSI.BONUSE_PERIODS bp ON (b.ID = bp.BONUS_ID)
+
+					WHERE
+						((COUNT_TO IS NOT NULL AND b.COUNT + (t.totalFactCount  - t.totalPlanCount) >= COUNT_FROM AND b.COUNT + (t.totalFactCount  - t.totalPlanCount) <= COUNT_TO) OR (COUNT_TO IS NULL AND b.COUNT + (t.totalFactCount  - t.totalPlanCount) = COUNT_FROM))
+						AND cast(b.PERIOD_START_DATE as DATE) = (SELECT
+																	min(b.[PERIOD_START_DATE])
+																FROM
+																	PBK_NSI.BONUSES b
+																WHERE
+																	(#{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+																	OR (#{dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					end AS pcnt
+				FROM (
+				SELECT
+	    distinct eh.SURNAME AS surname
+		, eh.NAME AS name
+		, eh.PATRONUMIC AS patronumic
+		, dh.NAME AS toSdik
+		, eh.PERSONNEL_NUMBER AS personalNumber
+		, eh.FOR_PLAN_USE AS forPlanUse
+		, STUFF((
+								   select grafic from (
+														select
+														  DISTINCT CASE
+																   WHEN ps.SHIFT_MODE_ID = 0 AND ps.shift = 2 AND ps.nextShift1 = 3 AND ps.nextShift2 = 1 AND ps.nextShift3 = 1
+																	  THEN g.code
+																   ELSE ''
+																   END grafic
+														from (select
+																ps1.WORK_DATE,
+																ps1.SHIFT_MODE_ID,
+																ps1.SHIFT_ID shift,
+																LEAD(SHIFT_ID) OVER (ORDER BY work_date) nextShift1,
+																LEAD(SHIFT_ID, 2) OVER (ORDER BY work_date) nextShift2,
+																LEAD(SHIFT_ID, 3) OVER (ORDER BY work_date) nextShift3
+															  from PBK_DB.PBK_PLAN.PLAN_SCHEDULES ps1
+																	cross join (select
+																				  case
+																				  when minFirstDate < minSecondDate AND minFirstDate < minThirdDate AND minFirstDate < minFourthDate
+																					then minFirstDate
+																				  when minSecondDate < minFirstDate AND minSecondDate < minThirdDate AND minSecondDate < minFourthDate
+																					then minSecondDate
+																				  when minThirdDate < minFirstDate AND minThirdDate < minSecondDate AND minThirdDate < minFourthDate
+																					then minThirdDate
+																				  when minFourthDate < minFirstDate AND minFourthDate < minSecondDate AND minFourthDate < minThirdDate
+																					then minFourthDate
+																				  end minGraficDate,
+																				  case
+																				  when maxFirstDate > maxSecondDate AND maxFirstDate > maxThirdDate AND maxFirstDate > maxFourthDate
+																					then maxFirstDate
+																				  when maxSecondDate > maxFirstDate AND maxSecondDate > maxThirdDate AND maxSecondDate > maxFourthDate
+																					then maxSecondDate
+																				  when maxThirdDate > maxFirstDate AND maxThirdDate > maxSecondDate AND maxThirdDate > maxFourthDate
+																					then maxThirdDate
+																				  when maxFourthDate > maxFirstDate AND maxFourthDate > maxSecondDate AND maxFourthDate > maxThirdDate
+																					then maxFourthDate
+																				  end maxGraficDate
+																				from (
+																					   select
+																						 max(firstDate) maxFirstDate,
+																						 max(secondDate) maxSecondDate,
+																						 max(thirdDate) maxThirdDate,
+																						 max(fourthDate) maxFourthDate,
+																						 min(firstDate) minFirstDate,
+																						 min(secondDate) minSecondDate,
+																						 min(thirdDate) minThirdDate,
+																						 min(fourthDate) minFourthDate
+																					   from PBK_NSI.GRAFICS) dates) maxDates
+															  where ps1.employee_id = e.id
+																AND maxDates.minGraficDate <= cast(ps1.WORK_DATE AS DATE)
+																AND maxDates.maxGraficDate >= cast(ps1.WORK_DATE AS DATE)) ps
+															left join PBK_NSI.GRAFICS g on ps.WORK_DATE = g.firstDate
+														union
+														  select
+															DISTINCT CASE
+																	 WHEN ps.SHIFT_MODE_ID = 2 AND ps.SHIFT_ID != 14
+																	   THEN '001'
+																	 WHEN ps.SHIFT_MODE_ID = 1
+																	   THEN '002'
+																	 WHEN ps.SHIFT_MODE_ID = 3
+																	   THEN '003'
+																	 WHEN ps.SHIFT_MODE_ID = 2 AND ps.SHIFT_ID = 14
+																	   THEN '004'
+																	 ELSE ''
+																	 END grafic
+														  from PBK_DB.PBK_PLAN.PLAN_SCHEDULES ps
+														where ps.employee_id = e.id
+															  AND (#{dateFrom, jdbcType=DATE} IS NULL OR DATEADD(DAY,1,EOMONTH(#{dateFrom, jdbcType=DATE} ,-1))<= cast(ps.WORK_DATE AS DATE))
+															  AND (#{dateTo, jdbcType=DATE} IS NULL OR EOMONTH(#{dateTo, jdbcType=DATE}) >= cast(ps.WORK_DATE AS DATE))
+															  --AND (cast('2017.11.01' as date) <= cast(ps.WORK_DATE AS DATE))
+															  --AND (cast('2017.11.01' as date) >= cast(ps.WORK_DATE AS DATE))
+														group by ps.SHIFT_MODE_ID, ps.SHIFT_ID) sub
+														where sub.grafic!=''
+																						   FOR XML PATH(''), TYPE
+																	).value('.', 'NVARCHAR(MAX)')
+													,1,0,'')  AS scheduleNumber
+					, ISNULL(planShiftCount, 0) AS planShiftCount
+					, ISNULL(factShiftCount, 0) AS factShiftCount
+					, ROUND(ISNULL(cast(factShiftCount as FLOAT), 0) / (CASE WHEN (ISNULL(planShiftCount, 0) > 0) THEN planShiftCount ELSE 1 END) * (SELECT b.COUNT FROM PBK_NSI.BONUSES b WHERE #{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE)), 0) AS totalPlanCount
+					, ISNULL(factSkmCount, 0) AS factSkmCount
+					, ISNULL(factSkmoCount, 0) AS factSkmoCount
+					, ISNULL(factVesbCount, 0) AS factVesbCount
+					, ISNULL(factValidlessCount, 0) AS factValidlessCount
+					, ISNULL(factLpkCount, 0) AS factLpkCount
+					, ISNULL(factSoldCount, 0) AS factSoldCount
+					, ISNULL(factStowawayCount, 0) AS factStowawayCount
+					, ISNULL(factDeliveryCount, 0) AS factDeliveryCount
+					, ISNULL(fact1000Count, 0) AS fact1000Count
+					, ISNULL(fact2500Count, 0) AS fact2500Count
+					, ISNULL(totalFactCount, 0) AS totalFactCount
+				FROM
+		            [PBK_NSI].[EMPLOYEES] e
+		            JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh ON e.ID = eh.HEAD_ID
+		            JOIN [PBK_NSI].[DEPARTMENTS] d ON eh.DEPT_ID = d.ID
+		            JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON d.ID = dh.HEAD_ID
+		            LEFT JOIN (
+		            	SELECT
+		            		count(distinct ps.ID) AS planShiftCount,
+		            		ps.EMPLOYEE_ID
+		            	FROM
+		            		[PBK_NSI].[EMPLOYEES] e
+		            		LEFT JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh ON (e.ID = eh.HEAD_ID)
+		            		LEFT JOIN PBK_NSI.EMPLOYEE_WORK_MODES ps ON (e.ID = ps.EMPLOYEE_ID)
+		            	WHERE
+		            		(#{dateFrom, jdbcType=DATE}  IS NULL OR #{dateFrom, jdbcType=DATE}  <= cast(ps.WORK_DATE AS DATE))
+				            AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+				            AND (eh.FIRE_DATE IS NULL OR eh.FIRE_DATE >= cast(ps.WORK_DATE AS DATE))
+				            and ps.[WORK_PLAN_HOURS] > 0
+						GROUP BY ps.EMPLOYEE_ID
+		            ) AS ps ON ps.EMPLOYEE_ID = e.ID
+					LEFT JOIN (
+		            	SELECT
+		            		count(distinct ps.ID) AS factShiftCount,
+		            		ps.EMPLOYEE_ID
+						FROM
+							[PBK_NSI].[EMPLOYEES] e
+		            		LEFT JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh ON (e.ID = eh.HEAD_ID)
+		            		LEFT JOIN [PBK_PLAN].[PLAN_SCHEDULES] ps ON (e.ID = ps.EMPLOYEE_ID)
+							LEFT JOIN PBK_NSI.EMPLOYEE_WORK_MODES ewm ON (ps.EMPLOYEE_ID = ewm.EMPLOYEE_ID AND ps.WORK_DATE = ewm.WORK_DATE)
+		            	WHERE
+		            		ps.SHIFT_ID IN (2, 3, 6, 7, 8, 14, 15, 16) /*рабочие смены*/
+				            AND (#{dateFrom, jdbcType=DATE}  IS NULL OR #{dateFrom, jdbcType=DATE}  <= cast(ps.WORK_DATE AS DATE))
+				            AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+				            AND (eh.FIRE_DATE IS NULL OR eh.FIRE_DATE >= cast(ps.WORK_DATE AS DATE))
+				            AND ISNULL(ps.WORK_FACT_HOURS, 0) >= ewm.WORK_PLAN_HOURS
+						GROUP BY ps.EMPLOYEE_ID
+		            ) AS t ON t.EMPLOYEE_ID = e.ID
+				    LEFT JOIN (
+		            	SELECT *, factSoldCount + factStowawayCount + factDeliveryCount + fact1000Count + fact2500Count + factLpkCount + factSkmCount + factSkmoCount + factValidlessCount + factVesbCount as totalFactCount
+				FROM (
+				SELECT case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 1
+										WHERE cast(PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.EXEMPT_SKM_COUNT) else 0 end AS factSkmCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 2
+										WHERE cast(PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.EXEMPT_SKMO_COUNT) else 0 end AS factSkmoCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 3
+										WHERE cast(PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.EXEMPT_VESB_COUNT) else 0 end AS factVesbCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 4
+										WHERE cast(PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.EXEMPT_OTHER_LPK_COUNT) else 0 end AS factLpkCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 5
+										WHERE cast(PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.EXEMPT_VALIDLESS_COUNT) else 0 end AS factValidlessCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 6
+										WHERE cast(b.PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.TICKET_SOLD_COUNT) else 0 end AS factSoldCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 7
+										WHERE cast(b.PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.PLANT_STOWAWAY_COUNT) else 0 end AS factStowawayCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 8
+										WHERE cast(b.PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.DELIVERY_OVD_COUNT) else 0 end AS factDeliveryCount,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 9
+										WHERE cast(b.PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.ORDINANCE_1000_COUNT) else 0 end AS fact1000Count,
+					   case when EXISTS(SELECT b.ID
+										FROM PBK_NSI.BONUSES b
+										JOIN PBK_NSI.TICKET_BONUSES tb on b.ID = tb.BONUS_ID and tb.TICKET_ID = 10
+										WHERE cast(b.PERIOD_START_DATE as DATE) = (
+												SELECT
+													min(cast(b.[PERIOD_START_DATE] as date))
+												FROM
+													PBK_NSI.BONUSES b
+												WHERE
+													(#{dateFrom, jdbcType=DATE}  >= cast(b.PERIOD_START_DATE as DATE) AND #{dateFrom, jdbcType=DATE}  <= cast(b.PERIOD_END_DATE as DATE))
+													OR (#{dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE) AND #{dateTo, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))))
+					   then sum(r.ORDINANCE_2500_COUNT) else 0 end AS fact2500Count, ps.EMPLOYEE_ID
+										FROM [PBK_TASK].[TASKS] t
+										LEFT JOIN [PBK_PLAN].PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+										JOIN [PBK_TASK].TASK_REPORTS r ON r.TASK_ID = t.ID
+										    AND 1=1
+								            AND (#{dateFrom, jdbcType=DATE}  IS NULL OR #{dateFrom, jdbcType=DATE}  <= cast(ps.WORK_DATE AS DATE))
+								            AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+										GROUP BY ps.EMPLOYEE_ID) as r
+						            ) AS r ON r.EMPLOYEE_ID = e.ID
+						          WHERE 1=1
+						            AND e.IS_DELETE = 0
+						            AND dh.FOR_PLAN_USE = 1
+						            AND eh.POSITION_NAME = upper('Контролер пассажирского транспорта')
+						            AND dh.NAME like '%МОК%'
+									AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+						            AND (eh.FIRE_DATE IS NULL AND
+						            (#{forPlanUse} is null or eh.FOR_PLAN_USE = #{forPlanUse})
+						            OR (eh.FIRE_DATE BETWEEN #{dateFrom, jdbcType=DATE} AND #{dateTo, jdbcType=DATE} OR eh.FIRE_DATE > #{dateTo, jdbcType=DATE}))
+						            AND (eh.V_END_DATE IS NULL OR eh.V_END_DATE  > cast(#{dateFrom, jdbcType=DATE} as datetime))
+		          ]]><if test="departmentId != null">
+		            AND d.ID IN (${departmentId})
+		          </if><![CDATA[
+		            and (#{deptAuthId} is null or d.ID = #{deptAuthId})
+	            ) t ) t group by
+ t.surname
+, t.toSdik
+, t.surname
+, t.name 
+, t.patronumic 
+, t.personalNumber
+, t.scheduleNumber
+, t.planShiftCount 
+, t.factShiftCount 
+, t.totalPlanCount 
+, t.totalFactCount 
+, t.factSkmCount 
+, t.factSkmoCount
+, t.factVesbCount 
+, t.factValidlessCount
+, t.factLpkCount 
+, t.factSoldCount 
+, t.factStowawayCount
+, t.factDeliveryCount
+, t.fact1000Count 
+, t.fact2500Count 
+, t.excessSkmCount
+, t.underSkm 
+, t.underSkmValue
+, t.planSubtr 
+	  ) sub   
+	  ]]> </select>
+
+</mapper>

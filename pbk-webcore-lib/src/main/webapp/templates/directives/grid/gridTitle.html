@@ -1,0 +1,33 @@
+<div class="row" style="padding-top: 15px">
+    <div class="{{::parameters.gridScope.titleWidth}}">
+        <h3 style="margin-top: 0">{{::parameters.labels.title}}</h3>
+    </div>
+    <div class="{{::parameters.gridScope.titleButtonsWidth}}">
+        <form class="form-inline filters pull-right">
+            <div class="form-group horizontal-spacer">
+                <button ar-tooltip="{{::parameters.labels.addTip}}" type="button" class="btn btn-success"
+                        ng-show="{{parameters.perms.add && parameters.actions.add != null}}" ng-click="parameters.actions.add()">
+                    <span class="glyphicon glyphicon-{{::parameters.labels.addTipIcon}}" aria-hidden="true"></span>
+                </button>
+                <button ng-repeat="btn in parameters.labels.buttons" ar-tooltip="{{btn.tip}}" type="button" ng-show="btn.perm" 
+                	class="btn btn-{{btn.status}} horizontal-spacer"
+                        ng-click="btn.action()">
+                    <span class="glyphicon glyphicon-{{btn.tipIcon}}" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div ng-repeat="button in parameters.buttons" class="form-group horizontal-spacer">
+                <button ng-show="{{parameters.perms[button.name]}}" ar-tooltip="{{::button.tip}}" type="button" class="btn btn-success"
+                        ng-disabled="button.activeWhenItemsSelected &&
+                                         parameters.gridScope.getSelectedItemId && (
+                                            parameters.gridScope.getSelectedItemId().length == 0 ||
+                                            button.customActiveValidator && !button.customActiveValidator(parameters.gridScope))"
+                        ng-click="button.action()">
+                    <span class="glyphicon glyphicon-{{::button.icon}}" aria-hidden="true"></span>
+                </button>
+            </div>
+            
+            <div ar-grid-export ng-show="parameters.actions.export != undefined && parameters.perms.export" export-action="parameters.actions.export" export-formats="parameters.gridScope.grid.exportFormats"></div>
+            <div ar-grid-menu show-row-count="parameters.gridScope.showRowCount" refresh-action="parameters.actions.refresh" rows-on-page="parameters.gridScope.colRowsOnPage" view-rows-on-page="parameters.gridScope.viewRowsOnPage" headers="parameters.gridScope.headers" infinity-load="parameters.gridScope.infinityLoad" hide-infinity-load="parameters.hideInfinityLoad"></div>
+        </form>
+    </div>
+</div>

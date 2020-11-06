@@ -1,0 +1,15 @@
+.filter-base {
+	min-width: 170px;
+	margin: 5px !important;
+	width: auto;
+}
+
+.filter-range {
+	min-width: 420px;
+	margin: 5px !important;
+	width: auto;
+}
+
+.filter-buttons {
+	margin: 5px !important;
+}

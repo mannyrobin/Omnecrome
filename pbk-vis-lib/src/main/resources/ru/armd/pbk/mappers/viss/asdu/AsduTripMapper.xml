@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.asdu.AsduTripMapper">
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.asdu.AsduTrip" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_VIS].[ASDU_TRIPS] (
+                 [ASDU_TRIP_ID]
+                ,[ASDU_ROUTE_ID]
+                ,[SERVICE_ID]
+                ,[TRIP_HEADSIGN]
+                ,[TRIP_SHORT_NAME]
+                ,[DIRECTION_ID]
+                ,[BLOCK_ID]
+                ,[SHAPE_ID]
+                ,[WHEELCHAIR_ACCESSIBLE]
+                ,[ROUTE_VAR]
+            ) VALUES (
+                  #{asduTripId}
+                , #{asduRouteId}
+                , #{serviceId}
+                , #{tripHeadsign}
+                , #{tripShortName}
+                , #{directionId}
+                , #{blockId}
+                , #{shapeId}
+                , #{wheelchairAccessible}
+                , #{routeVar}
+            )
+        ]]>
+        <!-- selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_VIS.ASDU_TRIPS' ) as id
+            ]]>
+        </selectKey -->
+    </insert>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.asdu.AsduTrip">
+        <![CDATA[
+            UPDATE [PBK_VIS].[ASDU_TRIPS]
+            SET
+                 [ASDU_TRIP_ID] = #{asduTripId}
+                ,[ASDU_ROUTE_ID] = #{asduRouteId}
+                ,[SERVICE_ID] = #{serviceId}
+                ,[TRIP_HEADSIGN] = #{tripHeadsign}
+                ,[TRIP_SHORT_NAME] = #{tripShortName}
+                ,[DIRECTION_ID] = #{directionId}
+                ,[BLOCK_ID] = #{blockId}
+                ,[SHAPE_ID] = #{shapeId}
+                ,[WHEELCHAIR_ACCESSIBLE] = #{wheelchairAccessible}
+                ,[ROUTE_VAR] = #{routeVar}
+            WHERE [ID] = #{id}
+        ]]>
+    </update>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.asdu.AsduTrip">
+        <![CDATA[
+            SELECT [ID] as id
+                ,[ASDU_TRIP_ID] as asduTripId
+                ,[ASDU_ROUTE_ID] as asduRouteId
+                ,[SERVICE_ID] as serviceId
+                ,[TRIP_HEADSIGN] as tripHeadsign
+                ,[TRIP_SHORT_NAME] as tripShortName
+                ,[DIRECTION_ID] as directionId
+                ,[BLOCK_ID] as blockId
+                ,[SHAPE_ID] as shapeId
+                ,[WHEELCHAIR_ACCESSIBLE] as wheelchairAccessible
+                ,[ROUTE_VAR] as routeVar
+            FROM [PBK_VIS].[ASDU_TRIPS]
+            WHERE [ID] = #{id}
+       ]]>
+    </select>
+
+    <select id="getDomains" resultType="ru.armd.pbk.domain.viss.asdu.AsduTrip">
+        <![CDATA[
+            SELECT [ID] as id
+                ,[ASDU_TRIP_ID] as asduTripId
+                ,[ASDU_ROUTE_ID] as asduRouteId
+                ,[SERVICE_ID] as serviceId
+                ,[TRIP_HEADSIGN] as tripHeadsign
+                ,[TRIP_SHORT_NAME] as tripShortName
+                ,[DIRECTION_ID] as directionId
+                ,[BLOCK_ID] as blockId
+                ,[SHAPE_ID] as shapeId
+                ,[WHEELCHAIR_ACCESSIBLE] as wheelchairAccessible
+                ,[ROUTE_VAR] as routeVar
+            FROM [PBK_VIS].[ASDU_TRIPS]
+            WHERE 1 = 1
+              and (#{asduTripId} is null or [ASDU_TRIP_ID] = #{asduTripId})
+        ]]>
+    </select>
+</mapper>

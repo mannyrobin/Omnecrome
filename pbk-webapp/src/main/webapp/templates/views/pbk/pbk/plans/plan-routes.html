@@ -1,0 +1,61 @@
+<div ar-grid-filter parameters="gridScope.filterParams"></div>
+<div ar-grid-title parameters="gridScope.titleParams"></div>
+
+<table st-table="gridScope.grid.rows" st-pipe="gridScope.grid.loadAction" st-safe-src="gridScope.grid.rows"
+       class='table table-hover {{getRowClass == null ? "table-striped" : ""}}'>
+    <colgroup>
+        <col ng-style="{'width': '10%'}">
+        <col ng-style="{'width': '10%'}">
+        <col ng-repeat="day in days">
+    </colgroup>
+    <thead>
+        <tr>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" ar-st-sort="routeNumber" rowspan="2">
+                Маршрут
+            </th>
+            <th class="grid-header" style="text-align: center; vertical-align: middle;" ar-st-sort="routeNumber" rowspan="2">
+                Вид транспорта
+            </th>
+            <th ng-repeat="day in days" style="text-align: center; vertical-align: middle;" class="grid-header">
+                {{getDayOfMonth(day)}}
+            </th>
+        </tr>
+        <tr>
+            <th ng-repeat="day in days" style="text-align: center; vertical-align: middle;" class="grid-header">
+                {{getDayOfWeek(day)}}
+            </th>
+        </tr>
+    </thead>
+    <tbody ng-show="gridScope.grid.isLoading">
+    <tr>
+        <td colspan="{{days.length + 2}}" class="text-center"><img ng-src="{{'images/spinner.gif'}}"></td>
+    </tr>
+    </tbody>
+    <tbody ng-show="!gridScope.grid.isLoading && gridScope.grid.rows.length > 0 && gridScope.grid.rows[0].cnt > 0">
+    <tr ng-repeat="row in gridScope.grid.rows">
+        <td>
+            <span>{{row.routeNumber}}</span>
+        </td>
+        <td>
+            <span>{{row.routeType}}</span>
+        </td>
+        <td class="hover-table-color" style="text-align: center; vertical-align: middle; {{row.routes[day].manual ? 'background-color:#ff9900 !important' : ''}}" ng-repeat="day in days" ng-click="addEditRouteRatio(row, day)">
+            <span>{{getRouteRatioText(row.routes[day])}}</span>
+        </td>
+    </tr>
+    </tbody>
+    <tbody ng-show="!gridScope.grid.isLoading && (gridScope.grid.rows.length == 0 || gridScope.grid.rows[0].cnt == 0)">
+    <tr style="background-color: transparent;">
+        <td class="text-center" colspan="{{days.length + 2}}">
+            <p class="lead">Элементы не найдены</p>
+        </td>
+    </tr>
+    </tbody>
+    <tfoot>
+    <tr>
+        <td class="text-center" colspan="{{days.length + 2}}">
+            <div ar-grid-pagination rows-on-page="gridScope.colRowsOnPage" grid-scope="gridScope"></div>
+        </td>
+    </tr>
+    </tfoot>
+</table>

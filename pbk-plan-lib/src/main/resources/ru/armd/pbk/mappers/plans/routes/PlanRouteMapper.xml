@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.plans.routes.PlanRouteMapper">
+    
+    <select id="getPlanRouteViews" resultType="ru.armd.pbk.views.plans.routes.PlanRouteView">
+    	<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT DISTINCT
+				r.ID as id,
+				rh.ROUTE_NUMBER as routeNumber,
+				rtk.NAME as routeType,
+				(select pr2.ROUTE_RATIO from PBK_PLAN.PLAN_ROUTES pr2 where pr.ROUTE_ID = pr2.ROUTE_ID and pr2.WORK_DATE = #{filter.daySort}) daySort
+			FROM
+				PBK_PLAN.PLAN_ROUTES pr LEFT JOIN PBK_NSI.ROUTES r ON (pr.ROUTE_ID = r.ID) 
+				JOIN PBK_NSI.ROUTE_HISTS rh ON (r.ID = rh.HEAD_ID)
+				LEFT JOIN PBK_NSI.ROUTE_TS_KINDS rtk ON (rh.ROUTE_TS_KIND_ID = rtk.ID)
+				JOIN PBK_GISMGT.GM_ROUTES gm on rh.GM_ROUTE_ID = gm.ID
+			where
+				gm.CLOSE_DATE is null and 
+				(#{filter.routeNumber} is null or UPPER(rh.ROUTE_NUMBER) like UPPER('%${filter.routeNumber}%'))
+				AND (#{filter.routeTypeId} is null or rh.ROUTE_TS_KIND_ID = #{filter.routeTypeId})
+				and (r.ID in (select distinct cdr.ROUTE_ID 
+							from PBK_NSI.CITY_DISTRICT_ROUTES cdr 
+								join PBK_NSI.CITY_DISTRICT_HISTS cdh on (cdr.CITY_DISTRICT_ID = cdh.HEAD_ID AND cdh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+							where (#{filter.countyId} is null or cdh.[PLAN_CITY_COUNTY_ID] = #{filter.countyId})
+									]]>
+									<if test="filter.districtId != null">
+							           AND cdh.[HEAD_ID] IN (${filter.districtId})
+							        </if>
+							        <![CDATA[
+							        ))
+	           	and (#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(rh.V_END_DATE as DATE))
+		        and (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(rh.V_START_DATE as DATE))
+		        and (#{filter.rating} IS NULL OR exists 
+		        		(
+		        			select 1 from PBK_PLAN.PLAN_ROUTES pr 
+		        			where pr.ROUTE_RATIO = #{filter.rating}
+		        					and pr.ROUTE_ID = r.ID
+		        					and (#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= DATEADD(DAY, 14, cast(pr.WORK_DATE as DATE)))
+		        					and (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= DATEADD(DAY, 14, cast(pr.WORK_DATE as DATE))) 
+		        		))
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+	<select id="getRouteRatios" resultType="ru.armd.pbk.domain.plans.routes.RouteRatio">
+		<![CDATA[
+		SELECT
+			pr.ID as id,
+			pr.ROUTE_ID as routeId,
+			pr.WORK_DATE as workDate,
+			pr.ROUTE_RATIO as routeRatio,
+			pr.DESCR as descr,
+			pr.IS_MANUAL as manual
+		FROM
+           	PBK_PLAN.PLAN_ROUTES pr
+		WHERE
+           	(#{params.filter.dateFrom, jdbcType=DATE} is null or #{params.filter.dateFrom, jdbcType=DATE} <= DATEADD(DAY, 14, cast(pr.WORK_DATE as DATE)))
+	        AND (#{params.filter.dateTo, jdbcType=DATE} is null or #{params.filter.dateTo, jdbcType=DATE} >= DATEADD(DAY, 14, cast(pr.WORK_DATE as DATE)))
+           	AND pr.ROUTE_ID IN
+           	]]><foreach collection="routes" open="(" close=")" separator="," item="route">
+           		#{route.id}
+           	</foreach>
+    </select>
+    
+	<select id="getRouteRatiosByDate" resultType="ru.armd.pbk.domain.plans.routes.RouteRatio">
+		<![CDATA[
+			SELECT 
+				pr.ID as id,
+                d.[ID] as routeId,
+				pr.WORK_DATE as workDate,
+				pr.ROUTE_RATIO as routeRatio,
+				pr.DESCR as descr,
+				pr.IS_MANUAL as manual,
+	        	dh.[PROFIT_RATIO] as profitRatio
+			FROM [PBK_NSI].[ROUTES] d 
+				JOIN [PBK_NSI].[ROUTE_HISTS] dh on (d.ID = dh.HEAD_ID)
+				LEFT JOIN PBK_PLAN.PLAN_ROUTES pr on pr.ROUTE_ID = d.ID and cast(#{workDate} as DATE) = cast(pr.WORK_DATE as DATE)
+				join PBK_GISMGT.GM_ROUTES gm on dh.GM_ROUTE_ID = gm.ID
+			WHERE
+               cast(#{workDate} as DATE) BETWEEN dh.[V_START_DATE] and dh.[V_END_DATE] and gm.CLOSE_DATE is null
+		]]>           	
+    </select>
+	
+	<insert id="insert" parameterType="ru.armd.pbk.domain.plans.routes.RouteRatio" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        INSERT INTO
+        	PBK_PLAN.PLAN_ROUTES(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+				,WORK_DATE
+				,ROUTE_ID
+				,ROUTE_RATIO
+				,DESCR
+				,IS_MANUAL
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+	        	, #{workDate}
+	        	, #{routeId}
+	        	, #{routeRatio}
+	        	, #{descr}
+	        	, #{manual}
+        )
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_PLAN.PLAN_ROUTES' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+
+	<update id="update" parameterType="ru.armd.pbk.domain.plans.routes.RouteRatio">
+		<![CDATA[
+			UPDATE
+				PBK_PLAN.PLAN_ROUTES SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				, ROUTE_RATIO = #{routeRatio}, DESCR = isnull(cast(#{descr} as nvarchar(max)), DESCR), IS_MANUAL = #{manual}
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+	
+	<select id="getById" resultType="ru.armd.pbk.domain.plans.routes.RouteRatio">
+		<![CDATA[
+			SELECT
+            	ID as id,
+				WORK_DATE as workDate,				
+				ROUTE_ID as routeId,
+				ROUTE_RATIO as routeRatio,
+				DESCR as descr,
+				IS_MANUAL as manual
+			FROM
+				PBK_PLAN.PLAN_ROUTES
+			WHERE
+               ID = #{id}
+        ]]>
+    </select>
+	
+    <select id="getPassengersCount" resultType="ru.armd.pbk.domain.plans.routes.ASKPTicketCkecks">
+    	SELECT count(*) as ticketCount,
+       		tc.WORK_DATE as workDate,
+       		tc.ROUTE_ID as routeId,
+       		ISNULL(tc.TICKET_TYPE_ID, 1) as ticketId
+       	FROM [PBK_VIS].[ASKP_TICKET_CHECKS_BY_TICKET_TYPE] tc
+       	WHERE (#{routeId} IS NULL OR tc.ROUTE_ID = #{routeId}) AND tc.ROUTE_ID IS NOT NULL
+       		AND ISNULL(tc.TICKET_TYPE_ID, 1) IN (1, 2)
+       		AND cast(tc.WORK_DATE as DATE) IN 
+				<foreach item="wd" collection="workDates" open="(" separator="," close=")">
+	        		cast(#{wd} as DATE)
+	  			</foreach>
+       	GROUP BY tc.WORK_DATE, tc.ROUTE_ID, ISNULL(tc.TICKET_TYPE_ID, 1)
+    </select>
+</mapper>

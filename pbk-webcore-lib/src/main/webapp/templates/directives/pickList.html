@@ -1,0 +1,24 @@
+<div class="form-group">
+	<div class="row">
+		<div class="col-md-5">
+			<div class="list-group">
+				<div ar-checkbox-list items="pickList.active.items" header="pickList.active.header" load="pickList.active.load" selected-items="pickList.active.selectedItems"></div>
+			</div>
+		</div>
+		<div class="col-md-2 v-center text-center">
+			<div class="btn-group">
+				<button class="btn btn-default" ng-click="toActive()">
+					<i class="glyphicon glyphicon-chevron-left"></i>
+				</button>
+				<button class="btn btn-default" ng-click="toNoActive()">
+					<i class="glyphicon glyphicon-chevron-right"></i>
+				</button>
+			</div>
+		</div>
+		<div class="col-md-5">
+			<div class="list-group">
+				<div ar-checkbox-list items="pickList.noActive.items" header="pickList.noActive.header" load="pickList.noActive.load" selected-items="pickList.noActive.selectedItems"></div>
+			</div>
+		</div>
+	</div>
+</div>

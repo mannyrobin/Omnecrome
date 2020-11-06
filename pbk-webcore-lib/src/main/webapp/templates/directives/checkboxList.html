@@ -1,0 +1,12 @@
+<div class="form-group">
+	<div class="list-group">
+		<div class="list-group-item active">
+			{{header}} <input type="checkbox" ng-click="toggle()"
+				ng-checked="selectedItems.length == items.length" class="pull-right">
+		</div>
+		<div ng-repeat="item in items" class="list-group-item">
+			{{item.name}} <input type="checkbox"
+				ng-click="select(item.id)" ng-checked="selectedItems.indexOf(item.id) > -1" class="pull-right">
+		</div>
+	</div>
+</div>

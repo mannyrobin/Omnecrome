@@ -1,0 +1,33 @@
+# IntelliJ
+.idea
+/out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+#targets
+pbk-active-mq-lib/target/
+pbk-audit-lib/target/
+pbk-common-lib/target/
+pbk-core-lib/target/
+pbk-easu-fhd-lib/target/
+pbk-gismgt-lib/target/
+pbk-http-lib/target/
+pbk-job-webapp/target/
+pbk-nsi-lib/target/
+pbk-plan-lib/target/
+pbk-report-aspose-lib/target/
+pbk-report-lib/target/
+pbk-vis-lib/target/
+pbk-webapp-static/target/
+pbk-webapp/target/
+pbk-webcore-lib/target/
+
+#static content
+pbk-webapp-static/src
+
+#iml files
+*.iml
+

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.askp.TicketCheckByTicketMapper">
+	
+	<sql id="fieldDomain">
+        <![CDATA[
+              dh.[WORK_DATE] as workDate                 
+              , dh.[ASKP_ROUTE_CODE] as askpRouteCode
+              , dh.[MOVE_CODE] as moveCode
+              , dh.[TICKET_NAME] as ticketName  
+              , dh.[ASKP_CHECKS_COUNT] as askpChecksCounties
+              , dh.[TICKET_CODE] as ticketCode
+        ]]>
+    </sql>
+	
+	<update id="updateRoutesId">
+		<![CDATA[
+			UPDATE a
+			SET a.[ROUTE_ID] = (SELECT rh.HEAD_ID
+					 FROM PBK_NSI.ROUTE_HISTS rh
+					 WHERE rh.ASKP_ROUTE_CODE = a.ASKP_ROUTE_CODE AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate()) 
+			FROM [PBK_VIS].[ASKP_TICKET_CHECKS_BY_TICKET] a 
+			WHERE cast(a.[WORK_DATE] as DATE) = #{workDate, jdbcType=DATE}
+		]]>
+	</update>
+	
+	<delete id="deleteByWorkDate">
+		<![CDATA[
+			DELETE FROM [PBK_VIS].[ASKP_TICKET_CHECKS_BY_TICKET]
+			WHERE cast([WORK_DATE] as DATE) = #{workDate, jdbcType=DATE}			
+		]]>
+	</delete>
+
+	<insert id="insertChunck" parameterType="java.util.List">
+		INSERT  		
+		INTO [PBK_VIS].[ASKP_TICKET_CHECKS_BY_TICKET] 
+			(
+                [WORK_DATE]                
+                , [ASKP_ROUTE_CODE]
+                , [MOVE_CODE]
+                , [TICKET_NAME]
+                , [TICKET_CODE]   
+                , [ASKP_CHECKS_COUNT]        
+            ) VALUES 
+            <foreach collection="list" item="element" index="index" separator=",">
+                (#{element.workDate, jdbcType=DATE}	               
+                ,#{element.askpRouteCode}
+                ,#{element.moveCode}
+                ,#{element.ticketName}
+                ,#{element.ticketCode}
+                ,#{element.askpChecksCounties})            
+			</foreach>
+	</insert>
+	
+	<select id="getByWorkDate" resultType="ru.armd.pbk.domain.nsi.askp.TicketCheckByTicket">
+		<![CDATA[
+				SELECT 	               
+	               dh.ID as id ,
+	               ]]><include refid="fieldDomain" /><![CDATA[
+	               
+				FROM [PBK_VIS].[ASKP_TICKET_CHECKS_BY_TICKET] dh 
+				WHERE
+					dh.WORK_DATE = #{workDate}      			   			  
+	        ]]>
+	</select>
+	
+</mapper>

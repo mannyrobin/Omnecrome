@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gismgt.GmRegionMapper">
+	
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.gismgt.GmRegion" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into [PBK_GISMGT].[GM_REGIONS] (
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmFields" /><![CDATA[			
+    			, [OMK_CODE]
+    			, [NAME]
+    			, [SHORT_NAME]
+    			, [TRANSLIT_NAME]
+    			, [TERR_UNIT_TYPE_CODE]
+    			, [OCATO_CODE]
+    			, [DISTRICT_CODE]
+    			, [DISTRICT_MUID]
+            ) values (
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmValues" /><![CDATA[
+    			, #{omkCode}
+    			, #{name}
+    			, #{shortName}
+    			, #{translitName}
+    			, #{territorialUnitTypeCode}
+    			, #{okatoCode}    
+    			, #{districtCode}
+    			, #{districtMuid}		
+            )
+        ]]>   
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( '[PBK_GISMGT].[GM_REGIONS]' ) as id
+            ]]>
+        </selectKey>    
+    </insert>
+    
+    <select id="getByMuid" resultType="ru.armd.pbk.domain.viss.gismgt.GmRegion">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, [OMK_CODE] as omkCode
+    			, [NAME] as name
+    			, [SHORT_NAME] as shortName
+    			, [TRANSLIT_NAME] as translitName
+    			, [TERR_UNIT_TYPE_CODE] as territorialUnitTypeCode
+    			, [OCATO_CODE] as okatoCode
+    			, [DISTRICT_CODE] as districtCode
+    			, [DISTRICT_MUID] as districtMuid
+			from [PBK_GISMGT].[GM_REGIONS]
+            where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_REGIONS WHERE MUID = #{muid})			
+        ]]>
+    </select> 
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.gismgt.GmRegion">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, [OMK_CODE] as omkCode
+    			, [NAME] as name
+    			, [SHORT_NAME] as shortName
+    			, [TRANSLIT_NAME] as translitName
+    			, [TERR_UNIT_TYPE_CODE] as territorialUnitTypeCode
+    			, [OCATO_CODE] as okatoCode
+    			, [DISTRICT_CODE] as districtCode
+    			, [DISTRICT_MUID] as districtMuid
+			from [PBK_GISMGT].[GM_REGIONS]
+            where ID = #{id}			
+        ]]>
+    </select>   
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.gismgt.GmRegion">
+        <![CDATA[
+        	update [PBK_GISMGT].[GM_REGIONS]
+            set
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.updateGmFields" /><![CDATA[
+	    		, [OMK_CODE] = #{omkCode}
+    			, [NAME] = #{name}
+    			, [SHORT_NAME] = #{shortName}
+    			, [TRANSLIT_NAME] = #{translitName}
+    			, [TERR_UNIT_TYPE_CODE] = #{territorialUnitTypeCode}
+    			, [OCATO_CODE] = #{okatoCode}
+    			, [DISTRICT_CODE] = #{districtCode}
+    			, [DISTRICT_MUID] = #{districtMuid}
+			where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_REGIONS WHERE MUID = #{muid})
+        ]]>
+    </update>    
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+	    	SELECT
+	        	gm.ID as id, gm.NAME as name
+	        FROM
+	        	PBK_GISMGT.GM_REGIONS gm
+	        WHERE
+	        	gm.IS_DELETE = 0 AND
+	        	gm.ID NOT IN (SELECT dh.GM_REGION_ID FROM PBK_NSI.CITY_DISTRICT_HISTS dh 
+							  JOIN PBK_NSI.CITY_DISTRICTS d on d.ID = dh.HEAD_ID WHERE d.IS_DELETE = 0 AND dh.GM_REGION_ID IS NOT NULL) OR (#{currentId} IS NOT NULL AND gm.ID = #{currentId}) 
+    	]]> 
+    </select>
+</mapper>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gtfs.GtfsVehicleTaskMapper">
+
+	<insert id="insertChunckOnDate">
+		INSERT
+		INTO <include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/>.[ASDU_GTFS_VEHICLE_TASK]
+		(
+		[ROUTE_ID]
+		,[VEHICLE_ID]
+		,[GRAFIC]
+		,[SHIFT_NUM]
+		,[START_TIME]
+		,[END_TIME]
+		) VALUES
+		<foreach collection="domains" item="element" index="index"
+			separator=",">
+			(#{element.routeId}
+			,#{element.vehicleId}
+			,#{element.grafic}
+			,#{element.shiftNum}
+			,#{element.startTime}
+			,#{element.endTime})
+		</foreach>
+	</insert>
+
+</mapper>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.tasks.TaskRouteReportMapper">
+
+    <select id="getRouteNumbersByTaskId" resultType="String">
+        <![CDATA[
+	      SELECT
+	      	rh.ROUTE_NUMBER + CASE rtk.[COD] WHEN '1' THEN 'А' WHEN '2' THEN 'Тб' WHEN '3' THEN 'Тм' WHEN '4' THEN 'СТм' END
+	      FROM PBK_TASK.TASK_ROUTES tr join PBK_NSI.ROUTES r on tr.ROUTE_ID = r.ID 
+	      JOIN PBK_NSI.ROUTE_HISTS rh on (r.ID = rh.HEAD_ID) and rh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+	      LEFT JOIN PBK_NSI.ROUTE_TS_KINDS rtk on (rh.[ROUTE_TS_KIND_ID] = rtk.ID)
+	      WHERE tr.[TASK_ID] = #{taskId}
+    ]]>
+    </select>
+
+</mapper>

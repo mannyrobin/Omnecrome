@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<jxb:bindings version="2.0"
+		xmlns:xs="http://www.w3.org/2001/XMLSchema"
+		xmlns:jxb="http://java.sun.com/xml/ns/jaxb"
+		xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc">
+    <jxb:bindings schemaLocation="full.mtrans.xsd" node="/xs:schema" version="2.0"  jxb:extensionBindingPrefixes="xjc">
+        <jxb:schemaBindings>
+            <jxb:package name="ru.armd.pbk.gismgt.schema"/>
+        </jxb:schemaBindings>
+		<jxb:globalBindings>
+			<xjc:simple />
+		</jxb:globalBindings>
+    </jxb:bindings>
+</jxb:bindings>

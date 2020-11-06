@@ -1,0 +1,22 @@
+<div class="modal-header" draggable-modal>
+    <button type="button" class="close" data-dismiss="modal"
+            aria-label="Close" ng-click="close()">
+        <span aria-hidden="true">&times;</span>
+    </button>
+    <h4 class="modal-title">{{title}}</h4>
+</div>
+<div class="modal-body">
+    <form name="numberForm">
+        <div class="row form-group">
+            <div class="col-sm-12" ar-validate-field="value">
+                <label for="value">{{label}}</label>
+                <input type="text" class="form-control" ng-model="value" id="value" name="value" ar-number>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-primary" ng-click="save()" ng-disabled="numberForm.$invalid">Сохранить</button>
+    <button type="button" class="btn btn-default" ng-click="close()">Закрыть</button>
+</div>

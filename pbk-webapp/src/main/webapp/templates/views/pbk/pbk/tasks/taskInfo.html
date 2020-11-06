@@ -1,0 +1,72 @@
+<div>
+    <div ar-validation-errors></div>
+
+    <!-- FORM -->
+    <form name="taskInfoForm">
+        <h4>Основная информация</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-md-4'" field="fields[0]"></div>
+            <div ar-form-field col-class="'col-md-4'" field="fields[8]"></div>
+            <div ar-form-field col-class="'col-md-4'" field="fields[7]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-md-3'" field="fields[6]"></div>
+            <div ar-form-field col-class="'col-md-3'" field="fields[1]"></div>
+            <div ng-if="fields[7].value && fields[7].value.id != 6" ar-form-field col-class="'col-md-3'"
+                 field="fields[2]"></div>
+            <div ng-if="fields[2].value && fields[2].value.id != null" ar-form-field col-class="'col-md-3'"
+                 field="fields[3]"></div>
+        </div>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-md-4'" field="fields[5]"></div>
+            <div ng-if="fields[2].value && fields[2].value.id != null || fields[7].value.id == 4" ar-form-field col-class="'col-md-6'" field="fields[18]"></div>
+            <div><a id="linkToEmplCard" ng-href="javascript:alert('Повторите позже');"> Карточка сотрудника</a></div>
+        </div>
+        <h4>Информация о смене</h4>
+        <div ng-if="fields[8].value.id != 2" class="row form-group">
+            <div ar-form-field col-class="'col-md-4'" field="fields[9]"></div>
+        </div>
+        <div class="row form-group">
+            <div class="col-sm-6">
+                <h4>Часы работы</h4>
+                <div class="row form-group">
+                    <div ar-form-field col-class="'col-sm-5'" field="fields[10]"></div>
+                    <div style="margin-top: 30px;" class="col-sm-2 text-center">&mdash;</div>
+                    <div ar-form-field col-class="'col-sm-5'" field="fields[11]"></div>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <h4>Часы перерыва</h4>
+                <div class="row form-group">
+                    <div ar-form-field col-class="'col-sm-5'" field="fields[12]"></div>
+                    <div style="margin-top: 30px;" class="col-sm-2 text-center">&mdash;</div>
+                    <div ar-form-field col-class="'col-sm-5'" field="fields[13]"></div>
+                </div>
+            </div>
+        </div>
+
+        <h4>Информация о маршрутах</h4>
+        <div class="row form-group">
+            <div ng-if="fields[8].value.id != 2" ar-form-field col-class="'col-md-4'" field="fields[4]"></div>
+            <div ng-if="fields[8].value.id != 2" ar-form-field col-class="'col-md-2'" field="fields[19]"></div>
+            <div ar-form-field col-class="'col-md-6'" field="fields[14]"></div>
+        </div>
+
+        <h4>Дополнительная информация</h4>
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-3'" field="fields[15]"></div>
+        </div>
+        <div ng-if="fields[8].value.id == 2" class="row form-group">
+            <div ar-form-field col-class="'col-sm-6'" field="fields[16]"></div>
+            <div ar-form-field col-class="'col-sm-6'" field="fields[17]"></div>
+        </div>
+    </form>
+    <!-- END FORM -->
+
+</div>
+<div class="pull-right" ng-if="isNotReadOnlyUser">
+    <button type="button" class="btn btn-primary" ng-click="save()" ng-disabled="taskInfoForm.$invalid || !isChange">
+        Сохранить
+    </button>
+    <button type="button" class="btn btn-default" ng-click="reset()">Отменить изменения</button>
+</div>

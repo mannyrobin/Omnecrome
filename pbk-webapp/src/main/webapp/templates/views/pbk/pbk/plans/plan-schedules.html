@@ -1,0 +1,111 @@
+<div ar-grid-filter parameters="gridScope.filterParams"></div>
+<div ar-grid-title parameters="gridScope.titleParams"></div>
+<div class="row" style="padding-top: 20px;">
+    <div class="col-sm-2"><i ng-style="{color: scheduleColors.HOLIDAY}" class="glyphicon glyphicon-stop btn-md"></i> - выходной</div>
+    <div class="col-sm-2"><i ng-style="{color: scheduleColors.VACATION}" class="glyphicon glyphicon-stop btn-md"></i> - отпуск</div>
+    <div class="col-sm-2"><i ng-style="{color: scheduleColors.RESERVE}" class="glyphicon glyphicon-stop btn-md"></i> - резерв</div>
+</div>
+
+<div id="schedule-table" class="col-sm-12 row" style="font-family: 'Times New Roman', sans-serif;">
+<table st-table="gridScope.grid.rows" st-pipe="gridScope.grid.loadAction" st-safe-src="gridScope.grid.rows"
+       class='table table-hover {{getRowClass == null ? "table-striped" : ""}}'>
+    <!--<colgroup>-->
+    <!--<col ng-style="{'width': '10%'}">-->
+    <!--<col ng-style="{'width': '6%'}">-->
+    <!--<col ng-repeat="day in days">-->
+    <!--</colgroup>-->
+    <thead ng-show="!gridScope.grid.isLoading" style="display: block">
+    <tr>
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle; min-width: 175px;" ar-st-sort="surname" rowspan="3">
+            <small>Ф.И.О.</small>
+        </th>
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle; min-width: 75px" ar-st-sort="personalNumber" rowspan="3">
+            <small>таб. №</small>
+        </th>
+        <th ng-repeat="day in days" ng-style="{'min-width': dayWidth}" style="text-align: center; vertical-align: middle;" class="grid-header plan-table-border">
+            <small>{{getDayOfMonth(day)}}</small>
+        </th>
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle; min-width: 15px;" rowspan="3"></th>
+    </tr>
+    <tr>
+        <th ng-repeat="day in days" ng-style="{'min-width': dayWidth}" style="text-align: center; vertical-align: middle;" class="grid-header plan-table-border">
+            <small>{{getDayOfWeek(day)}}</small>
+        </th>
+    </tr>
+    <tr>
+        <th ng-repeat="day in days" ng-style="{'min-width': dayWidth}" style="text-align: center; vertical-align: middle;" class="grid-header plan-table-border">
+            <small><span title="{{getAllEmpsOfDayTitle(day)}}">{{getAllEmpsOfDay(day)}}</span></small>
+        </th>
+    </tr>
+    </thead>
+    <tbody ng-show="!gridScope.grid.isLoading && gridScope.grid.rows.cnt > 0" style="display: block; height: auto; max-height: 400px; overflow-y: scroll; overflow-x: auto;">
+    <tr ng-if="gridScope.grid.rows.nightSchedules && gridScope.grid.rows.nightSchedules.length > 0">
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle;" colspan="{{days.length + 2}}">Дневные, ночные</th>
+    </tr>
+    <tr ng-repeat="row in gridScope.grid.rows.nightSchedules">
+        <td class="plan-table-border" style="min-width: 175px">
+            <span><small>{{getFio(row)}}</small></span>
+        </td>
+        <td class="plan-table-border" style="min-width: 75px">
+            <span><small>{{row.personalNumber}}</small></span>
+        </td>
+        <td ng-repeat="day in days" class="hover-table-color plan-table-border" ng-style="{'min-width': dayWidth, 'background-color':'{{getCurrentDateColor(row.shifts[day])}}'}" style="text-align: center; vertical-align: middle;" title="{{getTooltip(row.shifts[day])}}" ng-click="addEditSchedule(row, day)">
+            <span><small>{{getCurrentDateText(row.shifts[day])}}</small></span>
+        </td>
+    </tr>
+    <tr ng-if="gridScope.grid.rows.nightSchedules && gridScope.grid.rows.saturdaySundaySchedules.length > 0">
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle;" colspan="{{days.length + 2}}">Выходные суббота, воскресенье</th>
+    </tr>
+    <tr ng-repeat="row in gridScope.grid.rows.saturdaySundaySchedules">
+        <td class="plan-table-border" style="min-width: 175px">
+            <span><small>{{getFio(row)}}</small></span>
+        </td>
+        <td class="plan-table-border" style="min-width: 75px">
+            <span><small>{{row.personalNumber}}</small></span>
+        </td>
+        <td ng-repeat="day in days" class="hover-table-color plan-table-border" ng-style="{'min-width': dayWidth, 'background-color':'{{getCurrentDateColor(row.shifts[day])}}'}" style="text-align: center; vertical-align: middle;" title="{{getTooltip(row.shifts[day])}}" ng-click="addEditSchedule(row, day)">
+            <span><small>{{getCurrentDateText(row.shifts[day])}}</small></span>
+        </td>
+    </tr>
+    <tr ng-if="gridScope.grid.rows.nightSchedules && gridScope.grid.rows.fridaySaturdaySchedules.length > 0">
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle;" colspan="{{days.length + 2}}">Выходные пятница, суббота</th>
+    </tr>
+    <tr ng-repeat="row in gridScope.grid.rows.fridaySaturdaySchedules">
+        <td class="plan-table-border" style="min-width: 175px">
+            <span><small>{{getFio(row)}}</small></span>
+        </td>
+        <td class="plan-table-border" style="min-width: 75px">
+            <span><small>{{row.personalNumber}}</small></span>
+        </td>
+        <td ng-repeat="day in days" class="hover-table-color plan-table-border" ng-style="{'min-width': dayWidth, 'background-color':'{{getCurrentDateColor(row.shifts[day])}}'}" style="text-align: center; vertical-align: middle;" title="{{getTooltip(row.shifts[day])}}" ng-click="addEditSchedule(row, day)">
+            <span><small>{{getCurrentDateText(row.shifts[day])}}</small></span>
+        </td>
+    </tr>
+    <tr ng-if="gridScope.grid.rows.nightSchedules && gridScope.grid.rows.sundayMondaySchedules.length > 0">
+        <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle;" colspan="{{days.length + 2}}">Выходные воскресенье, понедельник</th>
+    </tr>
+    <tr ng-repeat="row in gridScope.grid.rows.sundayMondaySchedules">
+        <td class="plan-table-border" style="min-width: 175px">
+            <span><small>{{getFio(row)}}</small></span>
+        </td>
+        <td class="plan-table-border" style="min-width: 75px">
+            <span><small>{{row.personalNumber}}</small></span>
+        </td>
+        <td ng-repeat="day in days" class="hover-table-color plan-table-border" ng-style="{'min-width': dayWidth, 'background-color':'{{getCurrentDateColor(row.shifts[day])}}'}" style="text-align: center; vertical-align: middle;" title="{{getTooltip(row.shifts[day])}}" ng-click="addEditSchedule(row, day)">
+            <span><small>{{getCurrentDateText(row.shifts[day])}}</small></span>
+        </td>
+    </tr>
+    </tbody>
+    <tbody ng-show="gridScope.grid.isLoading">
+    <tr>
+        <td colspan="{{days.length + 2}}" class="text-center plan-table-border"><img ng-src="{{'images/spinner.gif'}}"></td>
+    </tr>
+    </tbody>
+    <tbody ng-show="!gridScope.grid.isLoading && gridScope.grid.rows.cnt == 0">
+    <tr style="background-color: transparent;">
+        <td class="text-center plan-table-border" colspan="{{days.length + 2}}">
+            <p class="lead">Элементы не найдены</p>
+        </td>
+    </tr>
+    </tbody>
+</table></div>

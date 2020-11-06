@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.StopReportMapper">
+
+	 <select id="getReportViews" resultType="ru.armd.pbk.views.nsi.StopReportView">
+        <![CDATA[
+			SELECT
+               ROW_NUMBER() OVER (]]><include refid="ru.armd.pbk.mappers.CommonSql.orderBySql" /><![CDATA[) AS id,
+               t.*
+            FROM (
+				SELECT
+					d.[ID] as id
+	               , dh.[NAME] as name
+	               , dgm.[NAME] as gmStopName              
+				FROM [PBK_NSI].[STOPS] d JOIN [PBK_NSI].[STOP_HISTS] dh on (d.ID = dh.HEAD_ID) LEFT JOIN [PBK_GISMGT].[GM_STOPS] dgm on (dh.GM_STOP_ID = dgm.ID)
+				WHERE 
+					dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+				  	and (#{filter.name} is null or UPPER(dh.NAME) like UPPER('%${filter.name}%'))
+				  	and (d.IS_DELETE = 0)
+				  	]]><if test="filter.ids != null">
+						AND d.ID IN (${filter.ids})
+					</if>
+        	) t
+        	<include refid="ru.armd.pbk.mappers.CommonSql.orderBySql_t" />
+    </select>
+    
+</mapper>

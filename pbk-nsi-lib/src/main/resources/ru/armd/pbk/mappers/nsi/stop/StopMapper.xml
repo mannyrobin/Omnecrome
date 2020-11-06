@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.stop.StopMapper">
+
+	 <sql id="fieldDomain">
+        <![CDATA[
+			,d.[IS_DELETE] as isDelete
+		  	,dh.[CREATE_DATE] as createDate
+		  	,dh.[CREATE_USER_ID] as createUserId
+		  	,dh.[UPDATE_DATE] as updateDate
+		  	,dh.[UPDATE_USER_ID] as updateUserId
+		  	,dh.[V_START_DATE] as versionStartDate
+		  	,dh.[V_END_DATE] as versionEndDate
+		  	,dh.[HEAD_ID] as headId
+		  	,dh.[NAME] as name
+           	,dh.[GM_STOP_ID] as gmStopId
+            ,dh.[ASDU_STOP_ID] as asduStopId     	
+        ]]>
+     </sql>   
+	 
+        
+    <insert id="insertHead" parameterType="ru.armd.pbk.domain.HeadVersionDomain" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.STOPS(
+	        [IS_DELETE]
+        ) VALUES (
+        	#{isDelete}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.STOPS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+	<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.stop.Stop" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        insert into PBK_NSI.STOP_HISTS (
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+        	, [HEAD_ID]
+        	, [NAME]
+          	, [GM_STOP_ID]
+            , [ASDU_STOP_ID]
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+        	, #{headId}
+        	, #{name}
+			, #{gmStopId}	
+            , #{asduStopId}   		      	
+        )
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.STOP_HISTS' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+	
+	<update id="update" parameterType="ru.armd.pbk.domain.nsi.stop.Stop">
+		<![CDATA[
+			UPDATE PBK_NSI.STOP_HISTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+				,NAME = #{name}
+           	    ,GM_STOP_ID = #{gmStopId}
+                ,ASDU_STOP_ID = #{asduStopId}
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+	
+	<update id="updateAsduId" parameterType="ru.armd.pbk.domain.nsi.stop.Stop">
+		<![CDATA[
+			UPDATE PBK_NSI.STOP_HISTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				, [ASDU_STOP_ID] = #{asduStopId} 
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+	
+	<select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT
+				distinct d.ID as id, dh.NAME + ' (' + cdh.NAME + ')' as name
+	        FROM
+	        	PBK_NSI.STOPS d
+				JOIN PBK_NSI.STOP_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				LEFT JOIN PBK_GISMGT.GM_STOPS gs ON (dh.GM_STOP_ID = gs.ID)
+				LEFT JOIN PBK_GISMGT.GM_REGIONS gr ON (gs.REGION_MUID = gr.MUID)
+				LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON (cdh.GM_REGION_ID = gr.ID)
+	        WHERE
+	        	UPPER(dh.NAME) like UPPER('%${stopName}%')
+		]]>
+	</select>
+    
+    <update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.STOPS
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+        
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_NSI.STOPS
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.stop.Stop">
+		<![CDATA[
+			SELECT
+              distinct dh.[ID] as id,
+               (
+            	SELECT
+		        	STUFF((SELECT DISTINCT ', ' +(routeHist.ROUTE_NUMBER)
+		        FROM
+		        	[PBK_DB].[PBK_NSI].[ROUTE_HISTS] routeHist
+		            right join [PBK_DB].[PBK_GISMGT].[GM_ROUTES] gmRoute on gmRoute.ID=routeHist.[GM_ROUTE_ID]
+		            right join [PBK_GISMGT].[GM_ROUTE_VARIANTS] gmRouteVar on gmRouteVar.MUID = gmRoute.ROUTE_VARIANT_MUID
+		            right join [PBK_GISMGT].[GM_ROUTE_ROUNDS] gmRouteRnds on (gmRouteRnds.ROUTE_VARIANT_MUID=gmRouteVar.MUID
+		            and gmRouteRnds.RR_TYPE_MUID = (SELECT MUID FROM [PBK_GISMGT].GM_RR_TYPES where cod = '00'))
+		            right join [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] trajectories on trajectories.RR_MUID=gmRouteRnds.MUID
+		            right join [PBK_GISMGT].[GM_ROUTE_TRAJECTORY_STOP_PLACES] trajectoryStops on trajectoryStops.ROUTE_TRAJECTORY_MUID=trajectories.MUID
+		            right join [PBK_GISMGT].[GM_STOP_PLACES] gmStopPlaces on gmStopPlaces.MUID=trajectoryStops.STOP_PLACE_MUID
+		            right join [PBK_GISMGT].[GM_STOPS] s on gmStopPlaces.STOP_MUID=s.MUID JOIN PBK_NSI.STOP_HISTS stopsHist on (s.ID = stopsHist.GM_STOP_ID AND stopsHist.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				WHERE routeHist.V_END_DATE >= PBK_CORE.getVersionEndDate() AND
+					s.ID = dh.GM_STOP_ID AND routeHist.ROUTE_NUMBER IS NOT NULL FOR XML PATH('')), 1, 1,'')) as routeNames
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[STOPS] d JOIN [PBK_NSI].[STOP_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE 1 = 1
+               and dh.[ID] = #{id}
+        ]]>
+    </select>
+    
+    <select id="getActual" resultType="ru.armd.pbk.domain.nsi.stop.Stop">
+		<![CDATA[
+			SELECT 
+            	distinct dh.[ID] as id
+            	,dh.[NAME] + ' (' + cdh.NAME + ')' as name
+            	,dh.[NAME] as nameWithoutDistrict
+               ,(
+            	SELECT
+		        	STUFF((SELECT DISTINCT ', ' +(routeHist.ROUTE_NUMBER)
+		        FROM
+		        	[PBK_DB].[PBK_NSI].[ROUTE_HISTS] routeHist
+		            right join [PBK_DB].[PBK_GISMGT].[GM_ROUTES] gmRoute on gmRoute.ID=routeHist.[GM_ROUTE_ID]
+		            right join [PBK_GISMGT].[GM_ROUTE_VARIANTS] gmRouteVar on gmRouteVar.MUID = gmRoute.ROUTE_VARIANT_MUID
+		            right join [PBK_GISMGT].[GM_ROUTE_ROUNDS] gmRouteRnds on (gmRouteRnds.ROUTE_VARIANT_MUID=gmRouteVar.MUID
+		            and gmRouteRnds.RR_TYPE_MUID = (SELECT MUID FROM [PBK_GISMGT].GM_RR_TYPES where cod = '00'))
+		            right join [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] trajectories on trajectories.RR_MUID=gmRouteRnds.MUID
+		            right join [PBK_GISMGT].[GM_ROUTE_TRAJECTORY_STOP_PLACES] trajectoryStops on trajectoryStops.ROUTE_TRAJECTORY_MUID=trajectories.MUID
+		            right join [PBK_GISMGT].[GM_STOP_PLACES] gmStopPlaces on gmStopPlaces.MUID=trajectoryStops.STOP_PLACE_MUID
+		            right join [PBK_GISMGT].[GM_STOPS] s on gmStopPlaces.STOP_MUID=s.MUID JOIN PBK_NSI.STOP_HISTS stopsHist on (s.ID = stopsHist.GM_STOP_ID AND stopsHist.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				WHERE routeHist.V_END_DATE >= PBK_CORE.getVersionEndDate() AND
+					s.ID = dh.GM_STOP_ID AND routeHist.ROUTE_NUMBER IS NOT NULL FOR XML PATH('')), 1, 1,'')) as routeNames
+               	,d.[IS_DELETE] as isDelete
+				,dh.[CREATE_DATE] as createDate
+				,dh.[CREATE_USER_ID] as createUserId
+				,dh.[UPDATE_DATE] as updateDate
+				,dh.[UPDATE_USER_ID] as updateUserId
+				,dh.[V_START_DATE] as versionStartDate
+				,dh.[V_END_DATE] as versionEndDate
+				,dh.[HEAD_ID] as headId
+	      		,dh.[GM_STOP_ID] as gmStopId
+	       		,dh.[ASDU_STOP_ID] as asduStopId     
+			FROM
+				[PBK_NSI].[STOPS] d JOIN [PBK_NSI].[STOP_HISTS] dh on (d.ID = dh.HEAD_ID)
+				LEFT JOIN PBK_GISMGT.GM_STOPS gs ON (dh.GM_STOP_ID = gs.ID)
+				LEFT JOIN PBK_GISMGT.GM_REGIONS gr ON (gs.REGION_MUID = gr.MUID)
+				LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON (cdh.GM_REGION_ID = gr.ID)
+			WHERE
+               dh.[HEAD_ID] = #{domainId}
+			   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+	</select>
+	
+	<select id="getDomain" resultType="ru.armd.pbk.domain.nsi.stop.Stop">
+		<![CDATA[
+			SELECT 
+               distinct dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[STOPS] d JOIN [PBK_NSI].[STOP_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+               ((#{gmId} is not null and dh.[GM_STOP_ID] = #{gmId})
+               or (#{asduStopId} is not null and dh.[ASDU_STOP_ID] = #{asduStopId})) 
+			   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+	</select>
+	
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.stop.StopView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+               distinct d.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+               , (select name from [PBK_GISMGT].GM_STOPS st where st.ID = dh.GM_STOP_ID) as gmStopName               
+			FROM [PBK_NSI].[STOPS] d JOIN [PBK_NSI].[STOP_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE 
+				dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+			  	and (#{filter.name} is null or UPPER(dh.NAME) like UPPER('%${filter.name}%'))
+			  	and ((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR d.IS_DELETE = 0)
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getHistoryViews" resultType="ru.armd.pbk.views.nsi.stop.StopHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+				dh.NAME as name
+				,dh.[GM_STOP_ID] as gmStopId
+                ,dh.[ASDU_STOP_ID] as asduStopId
+			FROM
+				PBK_NSI.STOP_HISTS dh LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+			WHERE
+          		dh.HEAD_ID = #{filter.stopHeadId}
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+</mapper>

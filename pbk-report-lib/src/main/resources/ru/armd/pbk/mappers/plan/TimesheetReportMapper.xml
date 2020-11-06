@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.plan.TimesheetReportMapper">
+
+	<select id="getTimesheetReportView" resultType="ru.armd.pbk.views.plan.TimesheetReportView">
+		<![CDATA[
+	SELECT	eh.NAME as name,
+					eh.PATRONUMIC as patronumic,
+					eh.SURNAME as surname,
+					eh.PERSONNEL_NUMBER as personalNumber,
+					ISNULL(ps.WORK_FACT_HOURS, 0) as factHours,
+					ewm.WORK_PLAN_HOURS as planHours,
+					ps.SHIFT_ID as shiftId,
+					ps.WORK_DATE as workDate
+                ,q.sunFactHours as sumFactHours
+				,q.sumPlanHours as sumPlanHours
+				,q.sumFactDays as sumFactDays
+				,q.sumPlanDays as sumPlanDays
+				FROM [PBK_PLAN].[PLAN_SCHEDULES] ps
+  			JOIN PBK_NSI.EMPLOYEE_HISTS eh on eh.HEAD_ID = ps.EMPLOYEE_ID 	
+				JOIN (SELECT
+					ps2.EMPLOYEE_ID as EMPLOYEE_ID,
+			ps2.DEPT_ID as DEPT_ID,
+			sum(ISNULL(ps2.WORK_FACT_HOURS, 0)) as sunFactHours
+			,sum(ewm2.WORK_PLAN_HOURS) as sumPlanHours
+			,count(case when ps2.WORK_FACT_HOURS != 0 then ps2.WORK_DATE else null end) as sumFactDays
+			,count(ps2.WORK_DATE) as sumPlanDays
+					FROM [PBK_PLAN].[PLAN_SCHEDULES] ps2
+  			JOIN PBK_NSI.EMPLOYEE_HISTS eh2 on eh2.HEAD_ID = ps2.EMPLOYEE_ID 				
+				AND eh2.V_END_DATE = (SELECT MAX(eh1.V_END_DATE)
+						FROM PBK_NSI.EMPLOYEE_HISTS eh1
+						WHERE ps2.WORK_DATE BETWEEN CAST(eh1.V_START_DATE as DATE) 
+							AND CAST(eh1.V_END_DATE as DATE) 
+							AND eh1.HEAD_ID = ps2.EMPLOYEE_ID
+							AND eh1.FOR_PLAN_USE = 1)
+  			JOIN PBK_NSI.EMPLOYEE_WORK_MODES ewm2 ON (ps2.EMPLOYEE_ID = ewm2.EMPLOYEE_ID AND ps2.WORK_DATE = ewm2.WORK_DATE)
+  			WHERE ps2.SHIFT_ID not in (1,4,5)
+				AND ps2.WORK_DATE BETWEEN #{dateFrom, jdbcType=DATE} AND #{dateTo, jdbcType=DATE} 
+  					group by ps2.EMPLOYEE_ID, ps2.DEPT_ID 
+					) q
+					on  eh.HEAD_ID = q.EMPLOYEE_ID and eh.DEPT_ID = q.DEPT_ID		
+				AND eh.V_END_DATE = (SELECT MAX(eh1.V_END_DATE)
+						FROM PBK_NSI.EMPLOYEE_HISTS eh1
+						WHERE ps.WORK_DATE BETWEEN CAST(eh1.V_START_DATE as DATE) 
+							AND CAST(eh1.V_END_DATE as DATE) 
+						AND eh1.HEAD_ID = ps.EMPLOYEE_ID
+						AND eh1.FOR_PLAN_USE = 1)
+  			JOIN PBK_NSI.EMPLOYEE_WORK_MODES ewm ON (ps.EMPLOYEE_ID = ewm.EMPLOYEE_ID AND ps.WORK_DATE = ewm.WORK_DATE)
+  			WHERE ps.WORK_DATE BETWEEN #{dateFrom, jdbcType=DATE} AND #{dateTo, jdbcType=DATE} 
+  					AND eh.DEPT_ID = #{deptId}
+			ORDER BY surname, name, patronumic, personalNumber, workDate
+		]]>
+	</select>
+
+</mapper>

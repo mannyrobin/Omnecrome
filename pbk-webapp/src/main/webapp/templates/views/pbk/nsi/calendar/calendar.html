@@ -1,0 +1,26 @@
+<div class="errors"><p ng-repeat="error in errors">{{error}}</p></div>
+
+<span class="h5" style="color: #808080">Справочник ведется в АСУ ПБК<br/></span>
+<br/>
+
+<div class="calendar" ng-model="eventSources" ui-calendar="uiConfig.calendar" calendar="calendarInstance"></div>
+
+<div class="row" style="padding-top: 20px;">
+    <div class="col-sm-4 col-lg-3"><i ng-style="{color: calendarColors[0]}" class="glyphicon glyphicon-stop btn-md"></i> - рабочий день</div>
+    <div class="col-sm-4 col-lg-3"><i ng-style="{color: calendarColors[1]}" class="glyphicon glyphicon-stop btn-md"></i> - выходной день</div>
+    <div class="col-sm-4 col-lg-3"><i ng-style="{color: calendarColors[2]}" class="glyphicon glyphicon-stop btn-md"></i> - праздник</div>
+</div>
+
+<div class="row" ng-show="isNotReadOnlyUser">
+    <form name="fillCalendarForm" class="form-inline">
+        <div ar-validate-field="dateRange" class="form-group" style="padding-top: 20px;">
+            <label for="dateRange">Заполнить календарь</label>
+            <div id = "dateRange" ng-model="dateRange" name="dateRange"  style="display: inline-block" ar-datepicker-range from-placeholder="с"
+                 to-placeholder="по" required></div>
+            <button type="button" class="btn btn-primary"
+                    action="fillCalendar()"
+                    ar-confirm-click="Вы уверены, что хотите заполнить календарь на выбранный диапазон? Данные будут перезаписаны. Продолжить?"
+                    ng-disabled="fillCalendarForm.$invalid">Заполнить</button>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.tasks.TaskStateMapper">
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+		SELECT
+        	ID AS id,
+        	NAME AS name
+      	FROM
+        	PBK_TASK.TASK_STATES
+        WHERE (#{currentStateId} IS NULL) OR ID = #{currentStateId}
+        	OR ((SELECT COD FROM PBK_TASK.TASK_STATES WHERE ID = #{currentStateId}) = 'CREATED' 
+        			AND COD IN ('IN_PROGRESS', 'IN_RESERVE', 'CANCELED'))
+        	OR ((SELECT COD FROM PBK_TASK.TASK_STATES WHERE ID = #{currentStateId}) = 'IN_PROGRESS' 
+        			AND COD IN ('DONE', 'CANCELED', 'IN_RESERVE'))
+        	OR ((SELECT COD FROM PBK_TASK.TASK_STATES WHERE ID = #{currentStateId}) = 'DONE' 
+        			AND COD IN ('CLOSED'))
+        	OR ((SELECT COD FROM PBK_TASK.TASK_STATES WHERE ID = #{currentStateId}) = 'CANCELED' 
+        			AND COD IN ('CREATED'))
+        	OR ((SELECT COD FROM PBK_TASK.TASK_STATES WHERE ID = #{currentStateId}) = 'CLOSED' 
+        			AND COD IN (''))
+        	OR ((SELECT COD FROM PBK_TASK.TASK_STATES WHERE ID = #{currentStateId}) = 'IN_RESERVE' 
+        			AND COD IN ('IN_PROGRESS', 'CANCELED'))
+        	OR (#{currentStateId} = 100 AND COD IN (SELECT COD FROM PBK_TASK.TASK_STATES WHERE 
+        			COD NOT IN ('CANCELED')))
+    </select>
+    
+    <select id="getSelectListGroup" resultType="ru.armd.pbk.core.views.SelectItem">
+    	select ts2.ID, ts2.COD, ts2.NAME, count(*)
+    	FROM (
+	    	SELECT ts.ID, ts.COD, ts.NAME 
+	    	FROM PBK_TASK.TASKS t, PBK_TASK.TASK_STATES ts
+	    	WHERE t.ID IN
+				<foreach item="item" index="index" collection="taskIds" open="(" separator="," close=")">
+	                 #{item}
+	            </foreach>
+	        AND (ts.ID = t.TASK_STATE_ID
+	        	OR ((SELECT COD FROM PBK_TASK.TASK_STATES WHERE ID = t.TASK_STATE_ID) = 'CREATED' 
+	        			AND COD IN ('IN_PROGRESS', 'IN_RESERVE'/*, 'CANCELED'*/))
+	        	OR ((SELECT COD FROM PBK_TASK.TASK_STATES WHERE ID = t.TASK_STATE_ID) = 'IN_PROGRESS' 
+	        			AND COD IN ('DONE'/*, 'CANCELED'*/, 'IN_RESERVE'))
+	        	OR ((SELECT COD FROM PBK_TASK.TASK_STATES WHERE ID = t.TASK_STATE_ID) = 'DONE' 
+	        			AND COD IN ('CLOSED'))
+	        	OR ((SELECT COD FROM PBK_TASK.TASK_STATES WHERE ID = t.TASK_STATE_ID) = 'CANCELED' 
+	        			AND COD IN ('CREATED'))
+	        	OR ((SELECT COD FROM PBK_TASK.TASK_STATES WHERE ID = t.TASK_STATE_ID) = 'CLOSED' 
+	        			AND COD IN (''))
+	        	OR ((SELECT COD FROM PBK_TASK.TASK_STATES WHERE ID = t.TASK_STATE_ID) = 'IN_RESERVE' 
+	        			AND COD IN ('IN_PROGRESS'/*, 'CANCELED'*/))
+	        	)
+		) ts2
+		GROUP BY ts2.ID, ts2.COD, ts2.NAME HAVING count(*) = #{taskIdsCount}
+		ORDER BY ts2.NAME       	
+    </select>
+</mapper>

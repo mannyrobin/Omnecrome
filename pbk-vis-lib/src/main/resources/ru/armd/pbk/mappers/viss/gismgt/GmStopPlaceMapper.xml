@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gismgt.GmStopPlaceMapper">
+	
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.gismgt.GmStopPlace" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into [PBK_GISMGT].[GM_STOP_PLACES] (
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmFields" /><![CDATA[	
+    			, [NAME]    			
+				, [WKT_GEOM]
+				, [SUFFIX]
+				, [STOP_MUID]
+				, [ORDER_MUID]
+				, [START_DATE]
+				, [CHANGE_DATE]
+				, [END_DATE]
+				, [STOP_STATE_MUID]
+				, [STOP_MODE_MUID]
+				, [PHOTO]
+				, [IS_TECHNICAL]
+				, [HAS_FFD]
+				, [HAS_BAY]
+				, [HAS_BUS]
+				, [HAS_TROLLEY]
+				, [HAS_TRAM]
+				, [HAS_SPEED_TRAM]
+				, [HAS_DISPLAY_PANEL]
+				, [DISPLAY_PANEL_TYPE]
+				, [DISPLAY_PANEL_IMEI]
+				, [DISPLAY_PANEL_SIM]
+				, [DISPLAY_PANEL_ASUT]
+				, [BUILDING_MUID]
+				, [BUILDING_DISTANCE]
+				, [BUILDING_ADDRESS]
+				, [GRAPH_SECTION_MUID]
+				, [GRAPH_SECTION_OFFSET]
+				, [GRAPH_TRAM_SECTION_MUID]
+				, [GRAPH_TRAM_SECTION_OFFSET]
+				, [COMMENT]
+            ) values (
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmValues" /><![CDATA[
+    			, #{name}
+    			, #{wktGeom}
+    			, #{suffix}
+    			, #{stopMuid}
+    			, #{orderMuid}
+    			, #{startDate}
+    			, #{changeDate}
+    			, #{endDate}
+    			, #{stopStateMuid}
+    			, #{stopModeMuid}
+    			, #{photo}
+    			, #{isTechnical}
+    			, #{hasFacilitiesForDisabled}
+    			, #{hasBay}
+    			, #{hasBus}
+    			, #{hasTrolley}
+    			, #{hasTram}
+    			, #{hasSpeedTram}
+    			, #{hasDisplayPanel}
+    			, #{displayPanelType}
+    			, #{displayPanelIMEI}
+    			, #{displayPanelSim}
+    			, #{displayPanelASUT}
+    			, #{buildingMuid}
+    			, #{buildingDistance}
+    			, #{buildingAddressString}
+    			, #{graphSectionMuid}
+    			, #{graphSectionOffset}
+    			, #{graphTramSectionMuid}
+    			, #{graphTramSectionOffset}
+    			, #{comment}
+            )
+        ]]>       
+    </insert>
+    
+    <select id="getByMuid" resultType="ru.armd.pbk.domain.viss.gismgt.GmStopPlace">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, [NAME] as name   			
+				, [WKT_GEOM] as wktGeom
+				, [SUFFIX] as suffix
+				, [STOP_MUID] as stopMuid
+				, [ORDER_MUID] as orderMuid
+				, [START_DATE] as startDate
+				, [CHANGE_DATE] as changeDate
+				, [END_DATE] as endDate
+				, [STOP_STATE_MUID] as stopStateMuid
+				, [STOP_MODE_MUID] as stopModeMuid
+				, [PHOTO] as photo
+				, [IS_TECHNICAL] as isTechnical
+				, [HAS_FFD] as hasFacilitiesForDisabled
+				, [HAS_BAY] as hasBay
+				, [HAS_BUS] as hasBus
+				, [HAS_TROLLEY] as hasTrolley
+				, [HAS_TRAM] as hasTram
+				, [HAS_SPEED_TRAM] as hasSpeedTram
+				, [HAS_DISPLAY_PANEL] as hasDisplayPanel
+ 				, [DISPLAY_PANEL_TYPE] as displayPanelType
+				, [DISPLAY_PANEL_IMEI] as displayPanelIMEI
+				, [DISPLAY_PANEL_SIM] as displayPanelSim
+				, [DISPLAY_PANEL_ASUT] as displayPanelASUT
+				, [BUILDING_MUID] as buildingMuid
+				, [BUILDING_DISTANCE] as buildingDistance
+				, [BUILDING_ADDRESS] as buildingAddressString
+				, [GRAPH_SECTION_MUID] as graphSectionMuid
+				, [GRAPH_SECTION_OFFSET] as graphSectionOffset
+				, [GRAPH_TRAM_SECTION_MUID] as graphTramSectionMuid
+				, [GRAPH_TRAM_SECTION_OFFSET] as graphTramSectionOffset
+				, [COMMENT] as comment
+			from [PBK_GISMGT].[GM_STOP_PLACES] a
+            where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_STOP_PLACES WHERE MUID = #{muid})			
+        ]]>
+    </select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.gismgt.GmStopPlace">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, [NAME] as name   			
+				, [WKT_GEOM] as wktGeom
+				, [SUFFIX] as suffix
+				, [STOP_MUID] as stopMuid
+				, [ORDER_MUID] as orderMuid
+				, [START_DATE] as startDate
+				, [CHANGE_DATE] as changeDate
+				, [END_DATE] as endDate
+				, [STOP_STATE_MUID] as stopStateMuid
+				, [STOP_MODE_MUID] as stopModeMuid
+				, [PHOTO] as photo
+				, [IS_TECHNICAL] as isTechnical
+				, [HAS_FFD] as hasFacilitiesForDisabled
+				, [HAS_BAY] as hasBay
+				, [HAS_BUS] as hasBus
+				, [HAS_TROLLEY] as hasTrolley
+				, [HAS_TRAM] as hasTram
+				, [HAS_SPEED_TRAM] as hasSpeedTram
+				, [HAS_DISPLAY_PANEL] as hasDisplayPanel
+ 				, [DISPLAY_PANEL_TYPE] as displayPanelType
+				, [DISPLAY_PANEL_IMEI] as displayPanelIMEI
+				, [DISPLAY_PANEL_SIM] as displayPanelSim
+				, [DISPLAY_PANEL_ASUT] as displayPanelASUT
+				, [BUILDING_MUID] as buildingMuid
+				, [BUILDING_DISTANCE] as buildingDistance
+				, [BUILDING_ADDRESS] as buildingAddressString
+				, [GRAPH_SECTION_MUID] as graphSectionMuid
+				, [GRAPH_SECTION_OFFSET] as graphSectionOffset
+				, [GRAPH_TRAM_SECTION_MUID] as graphTramSectionMuid
+				, [GRAPH_TRAM_SECTION_OFFSET] as graphTramSectionOffset
+				, [COMMENT] as comment
+			from [PBK_GISMGT].[GM_STOP_PLACES] a
+            where ID = #{id}			
+        ]]>
+    </select>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.gismgt.GmStopPlace">
+        <![CDATA[
+        	update [PBK_GISMGT].[GM_STOP_PLACES]
+            set
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.updateGmFields" /><![CDATA[
+	    		, [NAME] = #{name}			
+				, [WKT_GEOM] = #{wktGeom}
+				, [SUFFIX] = #{suffix}
+				, [STOP_MUID] = #{stopMuid}
+				, [ORDER_MUID] = #{orderMuid}
+				, [START_DATE] = #{startDate}
+				, [CHANGE_DATE] = #{changeDate}
+				, [END_DATE] = #{endDate}
+				, [STOP_STATE_MUID] = #{stopStateMuid}
+				, [STOP_MODE_MUID] = #{stopModeMuid}
+				, [PHOTO] = #{photo}
+				, [IS_TECHNICAL] = #{isTechnical}
+				, [HAS_FFD] = #{hasFacilitiesForDisabled}
+				, [HAS_BAY] = #{hasBay}
+				, [HAS_BUS] = #{hasBus}
+				, [HAS_TROLLEY] = #{hasTrolley}
+				, [HAS_TRAM] = #{hasTram}
+				, [HAS_SPEED_TRAM] = #{hasSpeedTram}
+				, [HAS_DISPLAY_PANEL] = #{hasDisplayPanel}
+ 				, [DISPLAY_PANEL_TYPE] = #{displayPanelType}
+				, [DISPLAY_PANEL_IMEI] = #{displayPanelIMEI}
+				, [DISPLAY_PANEL_SIM] = #{displayPanelSim}
+				, [DISPLAY_PANEL_ASUT] = #{displayPanelASUT}
+				, [BUILDING_MUID] = #{buildingMuid}
+				, [BUILDING_DISTANCE] = #{buildingDistance}
+				, [BUILDING_ADDRESS] = #{buildingAddressString}
+				, [GRAPH_SECTION_MUID] = #{graphSectionMuid}
+				, [GRAPH_SECTION_OFFSET] = #{graphSectionOffset}
+				, [GRAPH_TRAM_SECTION_MUID] = #{graphTramSectionMuid}
+				, [GRAPH_TRAM_SECTION_OFFSET] = #{graphTramSectionOffset}
+				, [COMMENT] = #{comment}
+			where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_STOP_PLACES WHERE MUID = #{muid})
+        ]]>
+    </update>    
+</mapper>

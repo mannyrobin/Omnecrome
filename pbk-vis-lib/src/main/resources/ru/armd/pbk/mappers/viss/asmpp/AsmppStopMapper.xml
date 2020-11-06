@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.asmpp.AsmppStopMapper">
+
+	<insert id="insert" parameterType="ru.armd.pbk.domain.viss.asmpp.AsmppStop">
+		INSERT
+		INTO [PBK_VIS].[ASMPP_STOPS]
+		(
+		[WORK_DATE]
+		, [ROUTE_ID]
+		, [ROUTE_NUM]
+		, [GRAFIC]
+		, [DIRECTION]
+		, [STOP_SEQUENCE]
+		, [STOP_ID]
+		, [STOP_NAME]
+		, [PASSENGERSINCLUDED]
+		, [PASSENGERSLEFT]
+		, [TRANSPORTED]
+		, [TRIP_ID]
+		, [DEPOT_ID]
+		, [TIME]
+		) VALUES
+			(#{workDate}
+			,#{routeId}
+			,#{routeNum}
+			,#{grafic}
+			,#{direction}
+			,#{stopSequence}
+			,#{stopId}
+			,#{stopName}
+			,#{passengersincluded}
+			,#{passengersleft}
+			,#{transported}
+			,#{tripId}
+			,#{depotId}
+			,#{time}
+			)
+	</insert>
+
+	<update id="update" parameterType="ru.armd.pbk.domain.viss.asmpp.AsmppStop">
+		<![CDATA[
+            UPDATE [PBK_VIS].[ASMPP_STOPS]
+            SET
+                 [WORK_DATE] = #{workDate}
+                ,[ROUTE_ID] = #{routeId}
+                ,[ROUTE_NUM] = #{routeNum}
+                ,[GRAFIC] = #{grafic}
+                ,[DIRECTION] = #{direction}
+                ,[STOP_SEQUENCE] = #{stopSequence}
+                ,[STOP_ID] = #{stopId}
+                ,[STOP_NAME] = #{stopName}
+                ,[PASSENGERSINCLUDED] = #{passengersincluded}
+                ,[PASSENGERSLEFT] = #{passengersleft}
+                ,[TRANSPORTED] = #{transported}
+                ,[TRIP_ID] = #{tripId}
+                ,[DEPOT_ID] = #{depotId}
+				,[TIME] = #{time}
+            WHERE [ID] = #{id}
+        ]]>
+	</update>
+
+	<insert id="insertChunck" parameterType="java.util.List">
+		INSERT
+		INTO [PBK_VIS].[ASMPP_STOPS]
+		(
+		[WORK_DATE]
+		, [ROUTE_ID]
+		, [ROUTE_NUM]
+		, [GRAFIC]
+		, [DIRECTION]
+		, [STOP_SEQUENCE]
+		, [STOP_ID]
+		, [STOP_NAME]
+		, [PASSENGERSINCLUDED]
+		, [PASSENGERSLEFT]
+		, [TRANSPORTED]
+		, [TRIP_ID]
+		, [DEPOT_ID]
+		, [TIME]
+		) VALUES
+		<foreach collection="list" item="element" index="index"
+			separator=",">
+			(#{element.workDate}
+			,#{element.routeId}
+			,#{element.routeNum}
+			,#{element.grafic}
+			,#{element.direction}
+			,#{element.stopSequence}
+			,#{element.stopId}
+			,#{element.stopName}
+			,#{element.passengersincluded}
+			,#{element.passengersleft}
+			,#{element.transported}
+			,#{element.tripId}
+			,#{element.depotId}
+			,#{element.time}
+			)
+		</foreach>
+	</insert>
+	
+	<select id="getRouteMoveSelectList" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+    		SELECT distinct agr.GRAFIC as id, agr.GRAFIC as name
+			FROM [PBK_VIS].ASMPP_STOPS agr		
+			WHERE 1 = 1
+				AND (#{asduRouteId} is not null and agr.ROUTE_ID = #{asduRouteId})
+				AND (#{dateFrom, jdbcType=DATE} IS not NULL AND #{dateFrom, jdbcType=DATE} <= agr.WORK_DATE)
+		        AND (#{dateTo, jdbcType=DATE} IS not NULL AND #{dateTo, jdbcType=DATE} >= agr.WORK_DATE)
+		    order by name
+    	]]>
+    </select>
+	
+	<select id="getRouteSelectList" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+	    	SELECT distinct agr.[ROUTE_ID] as id     
+			       , agr.[ROUTE_SHORT_NAME] + ' (' + rtk.NAME+ ')' as name  
+			      
+			FROM [PBK_VIS].[ASDU_GTFS_ROUTES] agr
+			JOIN PBK_VIS.ASMPP_STOPS asmpp on agr.ROUTE_ID = asmpp.ROUTE_ID
+			JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gm on agr.ROUTE_TYPE = gm.SHORT_NAME
+			JOIN PBK_NSI.ROUTE_TS_KINDS rtk on rtk.GM_ROUTE_TS_KIND_ID = gm.ID
+			
+			WHERE 1 = 1
+		]]>
+		<if test="dateFrom != null ">
+		<![CDATA[
+		 AND #{dateFrom, jdbcType=DATE} <= agr.WORK_DATE
+		 AND #{dateFrom, jdbcType=DATE} <= cast(asmpp.WORK_DATE as datetime) + cast(cast(asmpp.time as time) as datetime) - CAST('03:00:00' as datetime)
+		]]>
+		</if>
+		<if test="dateTo != null ">
+		<![CDATA[
+		 AND #{dateFrom, jdbcType=DATE} <= agr.WORK_DATE
+		 AND DATEADD(day, 1, #{dateTo, jdbcType=DATE}) >= cast(asmpp.WORK_DATE as datetime) + cast(cast(asmpp.time as time) as datetime) - CAST('03:00:00' as datetime)
+        ]]>
+		</if>
+
+		<if test="tsType != null and tsType != '-1'">
+			AND rtk.ID IN (${tsType})
+		</if>
+        	<![CDATA[
+        		AND (#{routeName} IS NULL OR UPPER(agr.ROUTE_SHORT_NAME) like UPPER('${routeName}%'))       	
+        		order by name
+        ]]>
+    </select>
+    
+    <select id="getRouteTripSelectList" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+	    	SELECT distinct agr.TRIP_ID as id, agr.TRIP_ID as name
+			FROM [PBK_VIS].ASMPP_STOPS agr
+            WHERE 1 = 1
+		        AND (#{dateFrom, jdbcType=DATE} IS NOT NULL AND #{dateFrom, jdbcType=DATE} <= agr.WORK_DATE)
+	            AND (#{dateTo, jdbcType=DATE} IS NOT NULL AND #{dateTo, jdbcType=DATE} >= agr.WORK_DATE)
+            ]]>
+        	<![CDATA[
+        		AND (#{routeId} is not null AND agr.ROUTE_ID = #{routeId})
+        		AND (#{grafic} is null or #{grafic} = -1 or agr.GRAFIC = #{grafic})
+        		order by name
+        	]]>        	
+    </select>
+    
+     <select id="getRouteTripNumSelectList" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+	    	SELECT distinct agr.[ROUTE_NUM] as id, agr.[ROUTE_NUM] as name
+			FROM [PBK_VIS].ASMPP_STOPS agr
+            WHERE 1 = 1
+		        AND (#{dateFrom, jdbcType=DATE} IS NOT NULL AND #{dateFrom, jdbcType=DATE} <= agr.WORK_DATE)
+	            AND (#{dateTo, jdbcType=DATE} IS NOT NULL AND #{dateTo, jdbcType=DATE} >= agr.WORK_DATE)
+            ]]>
+        	<![CDATA[
+        		AND (#{routeId} is not null AND agr.ROUTE_ID = #{routeId})
+        		AND (#{tripId} is not null AND agr.TRIP_ID = #{tripId})
+        		AND (#{grafic} is not null AND  agr.GRAFIC = #{grafic})
+        		order by name
+        	]]>        	
+    </select>
+
+	<select id="getDomains" resultType="ru.armd.pbk.domain.viss.asmpp.AsmppStop">
+		select
+			ID as id
+		, [WORK_DATE] as workDate
+		, [ROUTE_ID] as routeId
+		, [ROUTE_NUM] as routeNum
+		, [GRAFIC] as grafic
+		, [DIRECTION] as direction
+		, [STOP_SEQUENCE] as stopSequence
+		, [STOP_ID] as stopId
+		, [STOP_NAME] as stopName
+		, [PASSENGERSINCLUDED] as passengersincluded
+		, [PASSENGERSLEFT] as passengersleft
+		, [TRANSPORTED] as transported
+		, [TRIP_ID] as tripId
+		, [DEPOT_ID] as depotId
+		, [TIME] as time
+		FROM [PBK_VIS].[ASMPP_STOPS]
+		where (#{workDate} is not null and #{workDate} = WORK_DATE)
+		and (#{routeId} is not null and #{routeId} = ROUTE_ID)
+		and (#{routeNum} is not null and #{routeNum} = ROUTE_NUM)
+		and (#{grafic} is not null and #{grafic} = GRAFIC)
+		and (#{direction} is not null and #{direction} = DIRECTION)
+		and (#{stopSequence} is not null and #{stopSequence} = STOP_SEQUENCE)
+		and (#{stopId} is not null and #{stopId} = STOP_ID)
+		and (#{stopName} is not null and #{stopName} = STOP_NAME)
+		and (#{passengersIncluded} is not null and #{passengersIncluded} = PASSENGERSINCLUDED)
+		and (#{passengersLeft} is not null and #{passengersLeft} = PASSENGERSLEFT)
+		and (#{transported} is not null and #{transported} = TRANSPORTED)
+		and (#{tripId} is not null and #{tripId} = TRIP_ID)
+		and (#{depotId} is not null and #{depotId} = DEPOT_ID)
+		and (#{time} is not null and #{time} = TIME)
+	</select>
+    
+</mapper>

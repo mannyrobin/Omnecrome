@@ -1,0 +1,22 @@
+<div class="pull-right">
+    <nobr>
+    	<span ng-repeat="button in parameters.extraButtons">
+	        <button ng-show="button.show == null || button.show(row)"
+	            type="button" ng-click="button.action(row)" ar-tooltip="{{button.tip}}" class="btn btn-xs btn-success">
+	            <i class="{{button.class}}"></i>
+	        </button>
+        </span>
+        
+        <button type="button" ng-click="parameters.actions.edit(row)"
+                ng-show="parameters.perms.edit && parameters.actions.edit != null && parameters.check.isEditEnable(row)"
+                ar-tooltip="{{parameters.labels.editTip}}" class="btn btn-xs btn-warning">
+            <i class="glyphicon glyphicon glyphicon-pencil"></i>
+        </button>
+
+        <button type="button" action="parameters.actions.remove(row)"
+                ng-show="parameters.perms.remove && parameters.actions.remove != null && parameters.check.isRemoveEnable(row)"
+                ar-tooltip="{{parameters.labels.removeTip}}" ar-confirm-click="{{parameters.labels.removeConfirmFunc != null ? parameters.labels.removeConfirmFunc(row) : parameters.labels.removeConfirm}}" class="btn btn-xs btn-danger">
+            <i class="glyphicon glyphicon-remove"></i>
+        </button>
+    </nobr>
+</div>

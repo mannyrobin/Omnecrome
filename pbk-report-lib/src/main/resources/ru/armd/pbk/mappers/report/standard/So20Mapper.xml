@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So20Mapper">
+	<select id="getGridViews" resultType="ru.armd.pbk.views.report.So20CheckResultView"
+			parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+		<![CDATA[
+		with y as (
+		SELECT
+
+			tasks.ID                                         AS taskID,
+			rh.ROUTE_NUMBER + CASE tt.[COD]
+							  WHEN '1'
+								  THEN '-А'
+							  WHEN '2'
+								  THEN '-Тб'
+							  WHEN '3'
+								  THEN '-Тр'
+							  WHEN '4'
+								  THEN '-СТр' END              AS routeNumber,
+			acc.MOVE_CODE                                    AS moveCode,
+			dep.FULL_NAME                                    AS moc,
+			shift.NAME                                       AS shift,
+			acc.CHECK_TIME                                   AS checkTime,
+			eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC AS fio,
+			(
+				SELECT count(*)
+				FROM [PBK_NSI].[TICKET_HISTS] AS th
+				WHERE
+					withdrawn.TICKET_ID = th.HEAD_ID
+					AND th.V_END_DATE >= PBK_CORE.getVersionEndDate()
+					AND th.COD = 299
+			)                                                AS scm,
+			(
+				SELECT count(*)
+				FROM [PBK_NSI].[TICKET_HISTS] AS th
+				WHERE
+					withdrawn.TICKET_ID = th.HEAD_ID
+					AND th.V_END_DATE >= PBK_CORE.getVersionEndDate()
+					AND th.COD = 298
+			)                                                AS scmo,
+			(
+				SELECT count(*)
+				FROM [PBK_NSI].[TICKET_HISTS] AS th
+				WHERE
+					withdrawn.TICKET_ID = th.HEAD_ID
+					AND th.V_END_DATE >= PBK_CORE.getVersionEndDate()
+					AND th.COD = 35
+			)                                                AS vesb,
+			(
+				SELECT count(*)
+				FROM [PBK_NSI].[TICKET_HISTS] AS th
+				WHERE
+					withdrawn.TICKET_ID = th.HEAD_ID
+					AND th.V_END_DATE >= PBK_CORE.getVersionEndDate()
+					AND th.COD NOT IN (35, 298, 299)
+			)                                                AS other
+
+
+		FROM
+			[PBK_TASK].TASKS AS tasks
+			INNER JOIN [PBK_TASK].TASK_STATES AS taskStates ON tasks.TASK_STATE_ID = taskStates.ID
+			INNER JOIN [PBK_PLAN].PLAN_SCHEDULES AS shedules ON tasks.PLAN_SCHEDULE_ID = shedules.ID
+			INNER JOIN PBK_NSI.SHIFTS AS shift ON shedules.SHIFT_ID = shift.ID
+			INNER JOIN [PBK_NSI].DEPARTMENT_HISTS AS dep
+				ON shedules.DEPT_ID = dep.HEAD_ID AND (dep.[V_END_DATE] IS NULL OR
+													   dep.[V_END_DATE] >=
+													   [PBK_CORE].getVersionEndDate())
+			INNER JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh
+				ON shedules.EMPLOYEE_ID = eh.HEAD_ID AND (eh.[V_END_DATE] IS NULL OR
+														  eh.[V_END_DATE] >=
+														  [PBK_CORE].getVersionEndDate())
+
+			INNER JOIN PBK_VIS.ASKP_CONTACTLESS_CARDS acc ON acc.TASK_ID = tasks.ID
+
+			INNER JOIN PBK_NSI.ROUTE_HISTS rh
+				ON (acc.ROUTE_ID = rh.HEAD_ID AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			INNER JOIN PBK_NSI.ROUTE_TS_KINDS rtk ON (rh.[ROUTE_TS_KIND_ID] = rtk.ID)
+			INNER JOIN PBK_NSI.TS_TYPES tt ON (rtk.COD = tt.COD)
+
+			LEFT JOIN [PBK_TASK].TASK_WITHDRAWN_CARDS AS withdrawn
+				ON withdrawn.TASK_ID = tasks.ID AND acc.ROUTE_ID = withdrawn.ROUTE_ID
+
+		WHERE
+			taskStates.ID IN (3, 5)
+			AND shedules.WORK_DATE >= #{filter.dateFrom, jdbcType=DATE} AND
+			shedules.WORK_DATE <= #{filter.dateTo, jdbcType=DATE}
+
+			]]><if test="filter.employeeId != null"><![CDATA[
+                    AND shedules.EMPLOYEE_ID IN (${filter.employeeId})
+        	]]></if><![CDATA[
+
+        	]]><if test="filter.routes != null"><![CDATA[
+                    AND rh.HEAD_ID IN (${filter.routes})
+        	]]></if><![CDATA[
+		)
+		SELECT
+		  (SELECT count(*) FROM y) AS cnt,
+		  *
+		FROM y
+
+		ORDER BY routeNumber, CAST(checkTime AS DATE), fio, checkTime
+		OFFSET (#{page} - 1) * #{count} ROWS FETCH FIRST #{count} ROWS ONLY
+		]]>
+	</select>
+
+	<select id="getCheckPlanView" resultType="ru.armd.pbk.views.report.So20CheckPlanView">
+		<![CDATA[
+		SELECT
+			tasks.id                              AS id,
+			ps.WORK_DATE                          AS checkDate,
+			rh.ROUTE_NUMBER + CASE tt.[COD]
+							  WHEN '1'
+								  THEN '-А'
+							  WHEN '2'
+								  THEN '-Тб'
+							  WHEN '3'
+								  THEN '-Тр'
+							  WHEN '4'
+								  THEN '-СТр' END AS routeNumber,
+			s.NAME                                AS shift,
+			dh.NAME                               AS moc
+
+		FROM [PBK_TASK].[TASKS] tasks
+			INNER JOIN [PBK_PLAN].[PLAN_SCHEDULES] ps ON tasks.PLAN_SCHEDULE_ID = ps.ID
+			INNER JOIN PBK_NSI.SHIFTS s ON (ps.SHIFT_ID = s.ID)
+			INNER JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh
+				ON (tasks.DEPT_ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			INNER JOIN [PBK_TASK].[TASK_STATES] task_states ON tasks.TASK_STATE_ID = task_states.ID
+			INNER JOIN PBK_TASK.TASK_ROUTES tr ON tr.TASK_ID = tasks.ID
+			INNER JOIN PBK_NSI.ROUTES r ON (tr.ROUTE_ID = r.ID)
+			INNER JOIN PBK_NSI.ROUTE_HISTS rh ON (r.ID = rh.HEAD_ID)
+			INNER JOIN PBK_NSI.ROUTE_TS_KINDS rtk ON (rh.[ROUTE_TS_KIND_ID] = rtk.ID)
+			INNER JOIN PBK_NSI.TS_TYPES tt ON (rtk.COD = tt.COD)
+		WHERE 1 = 1
+			  AND ((tasks.TASK_STATE_ID IN (1, 6) AND cast(ps.WORK_DATE AS DATE) > cast(GETDATE() AS DATE)) OR
+				   (tasks.TASK_STATE_ID = 2 AND cast(ps.WORK_DATE AS DATE) > cast(DATEADD(DAY, 1, GETDATE()) AS DATE)))
+			  AND rh.V_END_DATE = (
+			SELECT MAX(rh2.V_END_DATE)
+			FROM PBK_NSI.ROUTE_HISTS rh2
+			WHERE rh2.HEAD_ID = rh.HEAD_ID
+				  AND cast(rh2.V_END_DATE AS DATE) >= cast(ps.WORK_DATE AS DATE)
+				  AND cast(rh2.V_START_DATE AS DATE) <= cast(ps.WORK_DATE AS DATE))
+
+		ORDER BY routeNumber, checkDate, moc
+		]]>
+	</select>
+
+
+</mapper>

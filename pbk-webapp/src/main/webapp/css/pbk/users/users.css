@@ -1,0 +1,11 @@
+.inner-user {
+    background: #5cb85c;
+}
+
+.ldap-user {
+    background: #5bc0de;
+}
+
+.blocked-user {
+    background: #e97c8e;
+}

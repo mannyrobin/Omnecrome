@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fhd:ExportTsVenicleResponse xmlns:com="http://mgt.ru/pbk/xsd/1/Common" xmlns:dept="http://mgt.ru/pbk/xsd/fhd/1/Departments" xmlns:dr="http://mgt.ru/pbk/xsd/fhd/1/DataRequest" xmlns:emp="http://mgt.ru/pbk/xsd/fhd/1/Employees" xmlns:ewm="http://mgt.ru/pbk/xsd/fhd/1/EmployeeWorkModes" xmlns:fhd="http://mgt.ru/pbk/xsd/fhd/1/MessageData" xmlns:tsv="http://mgt.ru/pbk/xsd/fhd/1/TsVenicles" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://mgt.ru/pbk/xsd/fhd/1/MessageData ../../../../pbk-easu-fhd-lib/src/main/resources/xsd/MessageData.xsd ">
+  <tsv:venicles>
+    <tsv:venicle>
+      <tsv:ident>1</tsv:ident>
+      <tsv:depoNumber>1</tsv:depoNumber>
+      <tsv:kind>Автобус</tsv:kind>
+      <tsv:capacity>МВ</tsv:capacity>
+      <tsv:model>Новая модель автобуса</tsv:model>
+      <tsv:make>БМВ</tsv:make>
+      <tsv:useStartDate>2004-09-19</tsv:useStartDate>
+      <tsv:useEndDate>2014-09-19</tsv:useEndDate>
+    </tsv:venicle>
+  </tsv:venicles>
+</fhd:ExportTsVenicleResponse>

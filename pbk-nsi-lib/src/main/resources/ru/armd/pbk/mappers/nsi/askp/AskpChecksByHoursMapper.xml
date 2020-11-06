@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.askp.AskpChecksByHoursMapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.askp.AskpTicketChecksByHourView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[
+                SELECT DISTINCT
+                    t.[WORK_DATE] as workDate
+                FROM (
+                    SELECT DISTINCT
+                        t.[ROUTE_ID]
+                        , t.[WORK_DATE]
+                    FROM [PBK_VIS].[ASKP_TICKET_CHECKS_BY_HOUR] t
+                    WHERE (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= t.WORK_DATE)
+                        AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= t.WORK_DATE)
+                        AND t.[ROUTE_ID] in (${filter.routes})
+                    ) t
+                JOIN [PBK_NSI].[WORK_DAYS] wd on wd.WORK_DATE = t.WORK_DATE 
+                WHERE 1 = 1
+        ]]><if test="filter.isWorkDate != null"><![CDATA[
+                    AND (#{filter.isWorkDate} = 1 AND wd.WORK_DAY_TYPE_ID = 1) or (#{filter.isWorkDate} = 0 AND wd.WORK_DAY_TYPE_ID in (2, 3))   
+        ]]></if>       
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+        <include refid="ru.armd.pbk.mappers.CommonSql.mssqlTurboMode" />
+    </select>
+    
+    <select id="getDetailedViews" resultType="ru.armd.pbk.views.nsi.askp.AskpTicketChecksByHourView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <![CDATA[
+            SELECT
+                routeNumber
+                , workDate
+                , hour
+                , checks
+            FROM (
+                SELECT DISTINCT
+                    CASE rtk.[COD] WHEN '1' THEN 'А-' WHEN '2' THEN 'Тб-' WHEN '3' THEN 'Тр-' WHEN '4' THEN 'СТр-' END + rh.ROUTE_NUMBER as routeNumber
+                    , t.[WORK_DATE] as workDate
+                    , t.[HOUR] as hour
+                    , t.[CHECKS] as checks
+                FROM (
+                    SELECT
+                        t.[ROUTE_ID]
+                        , t.[WORK_DATE]
+                        , t.[HOUR]
+                        , sum(t.[ASKP_CHECKS_COUNT]) as CHECKS
+                    FROM [PBK_VIS].[ASKP_TICKET_CHECKS_BY_HOUR] t
+                    WHERE (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= t.WORK_DATE)
+                        AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= t.WORK_DATE)
+                        AND t.[ROUTE_ID] in (${filter.routes})
+                    GROUP BY [ROUTE_ID], [WORK_DATE], [HOUR]) t
+                JOIN PBK_NSI.ROUTE_HISTS rh ON (t.[ROUTE_ID] = rh.[HEAD_ID] AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+                LEFT JOIN PBK_NSI.ROUTE_TS_KINDS rtk on (rh.[ROUTE_TS_KIND_ID] = rtk.ID)
+            ) t
+            WHERE ${filter.where}
+            ORDER BY routeNumber, workDate, hour
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.mssqlTurboMode" />
+    </select>
+
+</mapper>

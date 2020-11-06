@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.askp.TicketCheckByTypeMapper">
+	
+	<insert id="insertByWorkDate">
+		<![CDATA[
+			INSERT INTO [PBK_VIS].[ASKP_TICKET_CHECKS_BY_TICKET_TYPE] (
+				[WORK_DATE]
+				, [ASKP_ROUTE_CODE]			
+				, [TICKET_TYPE_ID]
+				, [ASKP_CHECKS_COUNT]
+			)
+			SELECT *, count(*)
+			FROM(
+				SELECT
+				#{workDate, jdbcType=DATE} as WORK_DATE
+				, tc.ASKP_ROUTE_CODE as ASKP_ROUTE_CODE 
+				, ISNULL(th.TICKET_TYPE_ID, 1) as TICKET_TYPE_ID
+        	FROM ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.[ASKP_TICKET_CHECKS] tc
+         	INNER JOIN [PBK_NSI].[TICKET_HISTS] th on th.HEAD_ID = tc.TICKET_ID
+        	WHERE (null IS NULL OR tc.ROUTE_ID = null) AND tc.ROUTE_ID IS NOT NULL
+         			AND ISNULL(th.TICKET_TYPE_ID, 1) IN (1, 2)) t        		
+        	GROUP BY t.WORK_DATE, t.ASKP_ROUTE_CODE, t.TICKET_TYPE_ID			
+		]]>
+	</insert>
+
+	<update id="updateRoutesId">
+		<![CDATA[
+			UPDATE a
+			SET a.[ROUTE_ID] = (SELECT rh.HEAD_ID
+					 FROM PBK_NSI.ROUTE_HISTS rh
+					 WHERE rh.ASKP_ROUTE_CODE = a.ASKP_ROUTE_CODE AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate()) 
+			FROM [PBK_VIS].[ASKP_TICKET_CHECKS_BY_TICKET_TYPE] a 		
+			WHERE cast(a.[WORK_DATE] as DATE) = #{workDate, jdbcType=DATE} 
+		]]>
+	</update>
+	
+	<delete id="deleteByWorkDate">
+		<![CDATA[
+			DELETE FROM [PBK_VIS].[ASKP_TICKET_CHECKS_BY_TICKET_TYPE]
+			WHERE cast([WORK_DATE] as DATE) = #{workDate, jdbcType=DATE}			
+		]]>
+	</delete>
+
+</mapper>

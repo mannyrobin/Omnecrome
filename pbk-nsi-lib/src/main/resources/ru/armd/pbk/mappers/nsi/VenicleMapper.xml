@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.VenicleMapper">
+
+	<sql id="fieldDomain">
+		<![CDATA[
+              ,d.[IS_DELETE] as isDelete
+              ,dh.[CREATE_DATE] as createDate
+              ,dh.[CREATE_USER_ID] as createUserId
+              ,dh.[UPDATE_DATE] as updateDate
+              ,dh.[UPDATE_USER_ID] as updateUserId
+              ,dh.[V_START_DATE] as versionStartDate
+              ,dh.[V_END_DATE] as versionEndDate
+              ,dh.[HEAD_ID] as headId
+
+              ,dh.[ASDU_VENICLE_ID] as asduVenicleId
+			  ,dh.[TS_MODEL_ID]	 as tsModelId
+              ,dh.[DEPO_NUMBER] as depoNumber
+              ,dh.[STATE_NUMBER] as stateNumber
+              ,dh.[VIN_NUMBER] as vinNumber
+              ,dh.[ASDU_DEPOT_ID] as asduDepotId
+        ]]>
+	</sql>
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.venicle.VenicleView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+    	<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+		<![CDATA[
+			SELECT
+               d.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			   , t.NAME as tsTypeName
+			   , c.NAME as tsCapacities
+			   , m.MAKE as make
+			   , m.MODEL as model
+			FROM [PBK_NSI].[TS_VENICLES] d JOIN [PBK_NSI].[TS_VENICLE_HISTS] dh on (d.ID = dh.HEAD_ID)
+				JOIN [PBK_NSI].[TS_MODELS] m on (m.[ID] = dh.[TS_MODEL_ID])
+				JOIN PBK_NSI.TS_CAPACITIES c ON (m.TS_CAPACITY_ID = c.ID)
+				JOIN PBK_NSI.TS_TYPES t ON (c.TS_TYPE_ID = t.ID)
+			WHERE 1 = 1
+				and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+				AND (#{filter.make} is null or UPPER(m.MAKE) like UPPER('%${filter.make}%'))
+				AND (#{filter.model} is null or UPPER(m.MODEL) like UPPER('%${filter.model}%'))
+				AND (#{filter.depoNumber} is null or UPPER(dh.DEPO_NUMBER) like UPPER('%${filter.depoNumber}%'))
+				AND (#{filter.stateNumber} is null or UPPER(dh.STATE_NUMBER) like UPPER('%${filter.stateNumber}%'))
+				AND (#{filter.vinNumber} is null or UPPER(dh.VIN_NUMBER) like UPPER('%${filter.vinNumber}%'))
+				and ((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR d.IS_DELETE = 0)
+				]]><if test="filter.tsType != null"><![CDATA[
+                	AND t.ID IN (${filter.tsType})
+        		]]></if>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+	<select id="getHistoryViews" resultType="ru.armd.pbk.views.nsi.venicle.VenicleHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+				dh.[ASDU_VENICLE_ID] as asduVenicleId
+			  	,dh.[TS_MODEL_ID]	 as tsModelId
+              	,dh.[DEPO_NUMBER] as depoNumber
+              	,dh.[STATE_NUMBER] as stateNumber
+              	,dh.[VIN_NUMBER] as vinNumber
+              	,dh.[ASDU_DEPOT_ID] as asduDepotId
+			FROM
+				PBK_NSI.TS_VENICLE_HISTS dh LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+			WHERE
+          		dh.HEAD_ID = #{filter.venicleHeadId}
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+	<insert id="insertHead" parameterType="ru.armd.pbk.domain.HeadVersionDomain" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        insert into PBK_NSI.TS_VENICLES(
+	        [IS_DELETE]
+        ) VALUES (
+        	#{isDelete}
+        )
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.TS_VENICLES' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+
+	<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.Venicle" keyProperty="id" keyColumn="id">
+		<![CDATA[
+			insert into PBK_NSI.TS_VENICLE_HISTS(
+					]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+					]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+				, [HEAD_ID]
+				, [ASDU_VENICLE_ID]
+				, [TS_MODEL_ID]
+				, [DEPO_NUMBER]
+				, [STATE_NUMBER]
+				, [VIN_NUMBER]
+				, [ASDU_DEPOT_ID]
+			) VALUES (
+				   ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+				   ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+				, #{headId}
+				, #{asduVenicleId}
+				, #{tsModelId}
+				, #{depoNumber}
+				, #{stateNumber}
+				, #{vinNumber}
+				, #{asduDepotId}
+			)
+        ]]>
+         <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.TS_VENICLE_HISTS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.nsi.Venicle">
+		<![CDATA[
+			UPDATE PBK_NSI.TS_VENICLE_HISTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+				,ASDU_VENICLE_ID = #{asduVenicleId}
+			  	,TS_MODEL_ID = #{tsModelId}
+              	,DEPO_NUMBER = #{depoNumber}
+              	,STATE_NUMBER = #{stateNumber}
+              	,VIN_NUMBER = #{vinNumber}
+              	,ASDU_DEPOT_ID = #{asduDepotId}
+			WHERE
+			  ID = #{id}
+        ]]>
+    </update>
+    
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_NSI.TS_VENICLES
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.TS_VENICLES
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+
+	<select id="getById" resultType="ru.armd.pbk.domain.nsi.Venicle">
+		<![CDATA[
+            SELECT
+				dh.[ID] as id
+                ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[TS_VENICLES] d JOIN [PBK_NSI].[TS_VENICLE_HISTS] dh on (d.ID = dh.HEAD_ID)
+            WHERE
+           		dh.ID = #{id}
+        ]]>
+	</select>
+
+	<select id="getDomains" resultType="ru.armd.pbk.domain.nsi.Venicle">
+		<![CDATA[
+            SELECT
+				dh.[ID] as id
+                ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[TS_VENICLES] d JOIN [PBK_NSI].[TS_VENICLE_HISTS] dh on (d.ID = dh.HEAD_ID)
+            WHERE 1 = 1
+              and (#{depoNumber} is null or dh.[DEPO_NUMBER] = #{depoNumber})
+              and (#{asduVenicleId} is null or dh.[ASDU_VENICLE_ID] = #{asduVenicleId})
+              and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+	</select>
+	
+	<select id="getDomain" resultType="ru.armd.pbk.domain.nsi.Venicle">
+		<![CDATA[
+            SELECT
+				dh.[ID] as id
+                ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[TS_VENICLES] d JOIN [PBK_NSI].[TS_VENICLE_HISTS] dh on (d.ID = dh.HEAD_ID)
+            WHERE 1 = 1
+              and (#{depoNumber} is not null and dh.[DEPO_NUMBER] = #{depoNumber})
+              and (#{asduVenicleId} is not null and dh.[ASDU_VENICLE_ID] = #{asduVenicleId})
+              and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+	</select>
+
+	<select id="getActual" resultType="ru.armd.pbk.domain.nsi.Venicle">
+		<![CDATA[
+            SELECT
+				dh.[ID] as id
+                ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[TS_VENICLES] d JOIN [PBK_NSI].[TS_VENICLE_HISTS] dh on (d.ID = dh.HEAD_ID)
+            WHERE
+           		dh.[HEAD_ID] = #{domainId}
+				and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+	</select>
+	
+	<select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+        	d.ID as id, dh.DEPO_NUMBER as name
+        FROM
+        	PBK_NSI.TS_VENICLES d JOIN PBK_NSI.TS_VENICLE_HISTS dh on (d.ID = dh.HEAD_ID)
+        WHERE
+        	(d.IS_DELETE = 0 OR (#{currentId} IS NULL OR d.ID = #{currentId})) AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    </select>
+    
+    <select id="isExist" resultType="boolean">
+	    <include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+   			SELECT
+   				1
+   			FROM
+   				PBK_NSI.TS_VENICLE_HISTS
+   			WHERE
+   				(#{headId} is null OR HEAD_ID != #{headId})
+   				AND (#{asduVenicleId} is null OR ASDU_VENICLE_ID = #{asduVenicleId})
+   				AND V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    	<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+    </select>
+</mapper>

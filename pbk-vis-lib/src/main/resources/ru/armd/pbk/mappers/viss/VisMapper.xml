@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.VisMapper">
+
+	<select id="getGridViews" resultType="ru.armd.pbk.views.viss.VisView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          select 
+          	d.id as id, 
+          	d.cod as cod,
+          	d.name as name, 
+          	d.description as description                  
+          from PBK_VIS.VISS d
+          WHERE (#{filter.name} is null or UPPER(d.NAME) like UPPER('%${filter.name}%')) 
+          and (#{filter.cod} is null or UPPER(d.COD) like UPPER('%${filter.cod}%'))
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+	<select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+		SELECT
+			ID as id,
+			NAME as name
+		FROM
+			PBK_VIS.VISS
+    </select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.Vis">
+		SELECT 
+			<include refid="ru.armd.pbk.mappers.CommonSql.tplSelectDictionaryValuesWithId" />
+		FROM
+       		PBK_VIS.VISS
+		WHERE
+       		ID = #{id}
+    </select>
+</mapper>

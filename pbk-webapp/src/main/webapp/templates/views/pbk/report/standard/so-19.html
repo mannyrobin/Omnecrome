@@ -1,0 +1,182 @@
+<div ar-grid-filter parameters="gridScope.filterParams"></div>
+<div ar-grid-title parameters="gridScope.titleParams"></div>
+
+<table st-table="gridScope.grid.rows" st-pipe="gridScope.grid.loadAction" st-safe-src="gridScope.grid.rows"
+	   class='table table-hover {{getRowClass == null ? "table-striped" : ""}}'>
+	<colgroup>
+	</colgroup>
+	<thead>
+	<tr>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+			<span>№</span>
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+			Дата
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+			Смена
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+			Отдел ГКУ
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+			Контролеры МГТ
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+			Контролеры ГКУ
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+			Место встречи
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+			Округ
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+			Маршрут б/с
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" colspan="7">
+			Виды совместных бригад
+		</th>
+		<th class="grid-header so19bordersL" style="text-align: center; vertical-align: middle;" rowspan="2">
+			Допол-но МГТ
+		</th>
+		<th class="grid-header so19bordersR" style="text-align: center; vertical-align: middle;" rowspan="2">
+			Допол-но ГКУ
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+			Допол-но МГТ без ГКУ
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+			Кол-во человек в день МГТ
+		</th>
+		<th class="grid-header so19markCol" style="text-align: center; vertical-align: middle;" rowspan="2">
+			Совместных бригад
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+			МГТ в совместных бригадах
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;" rowspan="2">
+			ГКУ в совместных бригадах
+		</th>
+	</tr>
+	<tr>
+		<th class="grid-header so19markCol" style="text-align: center; vertical-align: middle;">
+			без ГКУ (2 МГТ)
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;">
+			1 МГТ 1 ГКУ
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;">
+			1 МГТ 2 ГКУ
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;">
+			1 МГТ 3 ГКУ
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;">
+			2 МГТ 1 ГКУ
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;">
+			2 МГТ 2 ГКУ
+		</th>
+		<th class="grid-header" style="text-align: center; vertical-align: middle;">
+			2 МГТ 3 ГКУ
+		</th>
+	</tr>
+	</thead>
+	<tbody ng-show="gridScope.grid.isLoading">
+	<tr>
+		<td colspan="13" class="text-center"><img ng-src="{{'images/spinner.gif'}}"></td>
+	</tr>
+	</tbody>
+	<tbody ng-show="!gridScope.grid.isLoading && gridScope.grid.rows.length > 0 && gridScope.grid.rows[0].cnt > 0">
+	<tr ng-repeat="row in gridScope.grid.rows"
+		style="{{row.workDate == null ? 'font-weight:bold;' : ''}}">
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.workDate != null ? gridScope.tableState.pagination.start + $index + 1 : ''}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.workDate != null ? row.workDate : 'Итого'}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.shiftName}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.gkuPodrName}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.mgtEmployees}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.gkuEmployees}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.venue}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.county}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.routes}}</span>
+		</td>
+
+		<td class="so19markCol" style="text-align: center; vertical-align: middle;">
+			<span>{{row.brKind0}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.brKind11}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.brKind12}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.brKind13}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.brKind21}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.brKind22}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.brKind23}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.dopMGT}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.dopGKU}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.dopMGTnoGKU}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.mgtCountInDay}}</span>
+		</td>
+		<td class="so19markCol" style="text-align: center; vertical-align: middle; font-weight:bold;">
+			<span>{{row.brCommon}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.mgtCountInCommonBr}}</span>
+		</td>
+		<td style="text-align: center; vertical-align: middle;">
+			<span>{{row.gkuCountInCommonBr}}</span>
+		</td>
+	</tr>
+	</tbody>
+	<tbody ng-show="!gridScope.grid.isLoading && (gridScope.grid.rows.length == 0 || gridScope.grid.rows[0].cnt == 0)">
+	<tr style="background-color: transparent;">
+		<td class="text-center" colspan="12">
+			<p class="lead">Элементы не найдены</p>
+		</td>
+	</tr>
+	</tbody>
+	<tfoot>
+	<tr>
+		<td class="text-center" colspan="12">
+			<div ar-grid-pagination rows-on-page="gridScope.colRowsOnPage" grid-scope="gridScope"></div>
+		</td>
+	</tr>
+	</tfoot>
+</table>
+
+<!--div ar-grid-table grid-scope="gridScope"></div-->

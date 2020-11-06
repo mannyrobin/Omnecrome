@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.tasks.TaskWithdrawCardReportMapper">
+
+	<sql id="fieldDomain">
+        <![CDATA[
+		  ,dh.[CREATE_DATE] as createDate
+		  ,dh.[CREATE_USER_ID] as createUserId
+		  ,dh.[UPDATE_DATE] as updateDate
+		  ,dh.[UPDATE_USER_ID] as updateUserId
+		  ,dh.[VIOLATOR_FIO] as violatorFio
+		  ,dh.[OWNER_FIO] as ownerFio
+		  ,dh.[CARD_NUMBER] as cardNumber
+		  ,dh.[TASK_ID] as taskId
+		  ,dh.[TICKET_ID] as cardId
+		  ,dh.[ROUTE_ID] as routeId
+		  ,dh.[FILE_ID] as fileId
+		  ,dh.[BSO_ID] as bsoId
+          ,dh.[CHIP_NUM] as chipNum
+        ]]>
+    </sql>
+    
+	 <select id="getReportViews" resultType="ru.armd.pbk.views.tasks.TaskWithdrawCardReportView">
+        <![CDATA[
+          SELECT
+          	dh.ID as id
+          	]]><include refid="fieldDomain" /><![CDATA[
+          	, ps.WORK_DATE as taskDate
+			, eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as employeeName
+          	, (SELECT t.NAME from PBK_NSI.TICKET_HISTS t where t.[HEAD_ID] = dh.[TICKET_ID] and t.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()) as cardName
+          	, r.ROUTE_NUMBER  +' ('+gmts.NAME+')' as routeNumber 
+          	, bs.[BSO_NUMBER] as actNumber
+          	, th.[NAME] as ticketName
+          FROM
+          	PBK_TASK.TASK_WITHDRAWN_CARDS as dh
+			join [PBK_TASK].[TASKS] tasks on tasks.ID = dh.TASK_ID
+			join [PBK_PLAN].[PLAN_SCHEDULES] ps on tasks.PLAN_SCHEDULE_ID = ps.ID
+			left join [PBK_NSI].[EMPLOYEE_HISTS] eh ON (eh.HEAD_ID = ps.EMPLOYEE_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			left join [PBK_NSI].ROUTE_HISTS r ON (r.[HEAD_ID] = dh.ROUTE_ID and r.[V_END_DATE] >= [PBK_CORE].getVersionEndDate())
+			left JOIN PBK_GISMGT.GM_ROUTES gm on (r.GM_ROUTE_ID = gm.ID)
+		    left JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+		    left JOIN PBK_NSI.BSOS as bs on dh.BSO_ID = bs.ID
+		    left JOIN PBK_NSI.TICKET_HISTS th on dh.TICKET_ID = th.HEAD_ID and th.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+          WHERE
+            (#{filter.taskId} is null or #{filter.taskId} = dh.[TASK_ID]) 
+            AND (#{filter.dateFrom, jdbcType=DATE} is null or #{filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE as DATE))
+		    AND (#{filter.dateTo, jdbcType=DATE} is null or #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE as DATE))
+		    AND (#{filter.employeeId} IS NULL OR eh.HEAD_ID = #{filter.employeeId})
+		    AND (#{filter.actNumber} is null OR (UPPER(bs.BSO_NUMBER) like UPPER('%${filter.actNumber}%')))
+		    AND (#{filter.cardNumber} is null OR (UPPER(dh.CARD_NUMBER) like UPPER('%${filter.cardNumber}%')))
+		    AND (#{filter.ownerFio} is null OR (UPPER(dh.OWNER_FIO) like UPPER('%${filter.ownerFio}%')))
+		    AND (#{filter.violatorFio} is null OR (UPPER(dh.VIOLATOR_FIO) like UPPER('%${filter.violatorFio}%')))
+		    AND (#{filter.routeName} is null OR (UPPER(r.ROUTE_NUMBER) like UPPER('%${filter.routeName}%')))
+            AND (#{filter.deptAuthId} IS NULL OR tasks.DEPT_ID = #{filter.deptAuthId})
+            ]]><if test="filter.routeIds != null">
+               AND r.HEAD_ID IN (${filter.routeIds})
+            </if>       
+        <include refid="ru.armd.pbk.mappers.CommonSql.orderBySql" />
+    </select>
+
+</mapper>

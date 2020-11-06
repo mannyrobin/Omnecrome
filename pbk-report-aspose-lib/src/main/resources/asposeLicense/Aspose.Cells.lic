@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<License>
+  <Data>
+    <LicensedTo>Syssoft LLC</LicensedTo>
+    <LicenseType>Developer Small Business</LicenseType>
+    <LicenseNote>Limited to 1 developer.</LicenseNote>
+    <OrderID>140122030016</OrderID>
+    <OEM>This is not a redistributable license</OEM>
+    <Products>
+      <Product>Aspose.Cells for Java</Product>
+    </Products>
+    <EditionType>Enterprise</EditionType>
+    <SerialNumber>60eec369-77f2-4728-91fd-410807944484</SerialNumber>
+    <SubscriptionExpiry>20150122</SubscriptionExpiry>
+    <LicenseVersion>2.2</LicenseVersion>
+  </Data>
+  <Signature>hwARM5taVMKPfWOteFLtiJUKQ8RaHMxRM7jCnoK7sZ2v8M61KZ69pyxSkD1Xf2Q9/jYHOvG+qofqeepWAhbJBEJAGcOfYRuBw3bd5KjHpei58qWjdl/f4JUgpdiajemkDw7DFxD15QIYKUTAk/HSPdfXw7QnqW0rvenZ9moODyI=</Signature>
+</License>

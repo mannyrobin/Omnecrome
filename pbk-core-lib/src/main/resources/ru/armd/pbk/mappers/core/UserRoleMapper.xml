@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.core.UserRoleMapper">
+    <select id="getGridViews" resultType="ru.armd.pbk.views.core.RoleView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          SELECT
+	        usr_roles.[ID] as id
+            ,roles.[NAME] as name
+            ,roles.[DESCRIPTION] as description
+          FROM [PBK_CORE].[USER_ROLES] usr_roles inner join [PBK_CORE].[ROLES] roles on usr_roles.ROLE_ID=roles.ID
+          WHERE usr_roles.USER_ID=#{filter.userId}
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+          roles.ID as id,
+          roles.NAME as name
+        FROM
+        [PBK_CORE].[ROLES] roles
+        WHERE
+        roles.ID NOT IN (SELECT [ROLE_ID] FROM [PBK_CORE].[USER_ROLES] user_role where user_role.[USER_ID]=#{userId})
+    </select>
+
+    <select id="getIds" resultType="long">
+        <![CDATA[
+            SELECT ID as id
+            FROM PBK_CORE.USER_ROLES ur
+            WHERE ur.USER_ID = #{userId}
+        ]]>
+    </select>
+
+    <select id="getDomains" resultType="ru.armd.pbk.domain.core.UserRole">
+        <![CDATA[
+            SELECT
+                ID as id
+                , USER_ID userId
+                , ROLE_ID roleId
+            FROM PBK_CORE.USER_ROLES ur
+            WHERE ur.USER_ID = #{userId}
+        ]]>
+    </select>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.core.UserRole">
+        <![CDATA[
+            SELECT
+                ID as id
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectCreateAuditValues" /><![CDATA[
+                , USER_ID userId
+                , ROLE_ID roleId
+            FROM PBK_CORE.USER_ROLES ur
+            WHERE ur.ID = #{id}
+        ]]>
+    </select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.core.UserRole" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_CORE].[USER_ROLES] (
+              [CREATE_DATE]
+              ,[CREATE_USER_ID]
+              ,[ROLE_ID]
+              ,[USER_ID]
+            ) VALUES (
+              #{createDate},
+              #{createUserId},
+              #{roleId},
+              #{userId}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_CORE.USER_ROLES' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM [PBK_CORE].[USER_ROLES]  WHERE ID in
+        <include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+
+</mapper>

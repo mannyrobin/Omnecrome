@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.askp.AskpByStopReportMapper">
+
+	 <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.askp.AskpStopIntervalsByHourView">
+	 	<![CDATA[
+            SELECT distinct
+                t.STOP_NAME as stopName
+                , t.STOP_ID as stopId
+                , t.HOUR as hour
+                , t.TRIP_ID as tripId
+                , t.TRIP_VARIANT as tripKind
+                , t.ORDER_NUM as orderNum
+                , ISNULL(sum(t.CHECKS), 0) as checks
+                , ISNULL(sum(t.CHECKS_PAID), 0) as checksPaid
+            FROM
+                (
+                SELECT distinct
+                    t.ASDU_ROUTE_ID
+                    , t.STOP_NAME 
+                    , t.STOP_ID
+                    , DATEDIFF(HOUR, t.WORK_DATE, t.STOP_ARRIVAL_TIME) as [HOUR]
+                    , t.ASKP_CHECKS_COUNT as CHECKS
+                    , t.ASKP_CHECKS_COUNT_PAID as CHECKS_PAID
+                    , t.TRIP_ID
+                    , t.ORDER_NUM
+                    , t.GRAFIC
+                    , t.TRIP_VARIANT
+                FROM PBK_VIS.STOP_INTERVALS t
+                JOIN PBK_NSI.ROUTE_HISTS rh ON
+                    t.ASDU_ROUTE_ID = rh.ASDU_ROUTE_ID
+                    AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+                    AND rh.[HEAD_ID] = ${filter.route}
+                WHERE (#{filter.date, jdbcType=DATE} = t.WORK_DATE)
+	        ]]><if test="filter.moveCode != null"><![CDATA[
+	                    AND t.GRAFIC = ${filter.moveCode}
+	        ]]></if><![CDATA[
+	                ) t
+	            GROUP BY t.STOP_NAME, t.STOP_ID, t.TRIP_ID, t.TRIP_VARIANT, t.ORDER_NUM, t.HOUR
+	            ORDER BY tripId, tripKind, orderNum, stopName, stopId, hour
+	        ]]>
+	 	<include refid="ru.armd.pbk.mappers.CommonSql.mssqlTurboMode" />
+	 </select>
+	 
+</mapper>

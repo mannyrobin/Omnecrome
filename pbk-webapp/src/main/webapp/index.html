@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html ng-app="armada">
+<html lang="en">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <base href="/">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+
+    <link rel="stylesheet" type="text/css" href="css/angular/bootstrap-datetimepicker.css"/>
+    <link rel="stylesheet" type="text/css" href="css/angular/fullcalendar.min.css"/>
+    <link rel="stylesheet" type="text/css" href="css/angular/filters.css"/>
+
+    <script type="text/javascript" src="js/angular/error-handling.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="lib/bootstrap/css/bootstrap.css"/>
+    <link rel="stylesheet" type="text/css" href="lib/bootgrid/jquery.bootgrid.css"/>
+    <link rel="stylesheet" type="text/css" href="lib/angular-ui-notification/angular-ui-notification.min.css"/>
+    <link rel="stylesheet" type="text/css" href="lib/oi-select/select.min.css"/>
+    <link rel="stylesheet" type="text/css" href="lib/uiCropper/ui-cropper.css"/>
+    <link rel="stylesheet" type="text/css" href="lib/bootstrap-touch-spin/jquery.bootstrap-touchspin.min.css"/>
+    <link rel="stylesheet" type="text/css" href="lib/jquery-ui/jquery-ui.min.css"/>
+    <link rel="stylesheet" type="text/css" href="lib/xeditable/xeditable.css"/>
+    <link rel="stylesheet" type="text/css" href="lib/ngprogress/ngProgress.css"/>
+    <link rel="stylesheet" type="text/css" href="css/angular/main.css"/>
+
+    <link rel="stylesheet" type="text/css" href="css/pbk/audit/audit-levels.css"/>
+    <link rel="stylesheet" type="text/css" href="css/pbk/users/users.css"/>
+    <link rel="stylesheet" type="text/css" href="css/pbk/nsi/bsos.css"/>
+    <link rel="stylesheet" type="text/css" href="css/pbk/loginForm.css"/>
+    <script type="text/javascript" src="lib/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="lib/jquery-ui/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="lib/angular/angular.min.js"></script>
+    <script type="text/javascript" src="lib/angular/angular-animate.min.js"></script>
+    <script type="text/javascript" src="lib/angular/angular-ui-router.js"></script>
+    <script type="text/javascript" src="lib/angular/lodash.compat.js"></script>
+    <script type="text/javascript" src="lib/angular/ng-map.min.js"></script>
+    <script type="text/javascript" src="lib/angular/restangular.js"></script>
+    <script type="text/javascript" src="lib/angular/smart-table.min.js"></script>
+    <script type="text/javascript" src="lib/angular/angular-breadcrumb.min.js"></script>
+    <script type="text/javascript" src="lib/angular-ui-notification/angular-ui-notification.min.js"></script>
+    <script type="text/javascript" src="lib/angular/angular-cookies.min.js"></script>
+    <script type="text/javascript" src="lib/angular/angular-local-storage.min.js"></script>
+    <script type="text/javascript" src="lib/oi-select/select-tpls.min.js"></script>
+    <script type="text/javascript" src="lib/xeditable/xeditable.min.js"></script>
+    <script type="text/javascript" src="lib/ngprogress/ngprogress.min.js"></script>
+    <script type="text/javascript" src="lib/uiCropper/ui-cropper.js"></script>
+    <script type="text/javascript" src="lib/angular/contextMenu.js"></script>
+    <script type="text/javascript" src="lib/bower-components/wicket.js"></script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+
+    <script type="text/javascript" src="lib/bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="lib/bootstrap-touch-spin/jquery.bootstrap-touchspin.min.js"></script>
+    <script type="text/javascript" src="lib/angular-ui-bootstrap/ui-bootstrap-tpls-0.13.3.js"></script>
+    <script type="text/javascript" src="lib/moment/moment.min.js"></script>
+    <script type="text/javascript" src="lib/moment/ru.js"></script>
+    <script type="text/javascript" src="lib/bootstrap-datetimepicker/js/datetimepicker-armada.js"></script>
+
+    <script type="text/javascript" src="lib/angular/ya-map-2.1.js"></script>
+    <script type="text/javascript" src="lib/angular/ui-router-tabs.js"></script>
+
+    <script type="text/javascript" src="lib/angular/mapbox-gl.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/angular/mapbox-gl.css"/>
+
+    <script type="text/javascript" src="lib/angular/calendar.js"></script>
+    <script type="text/javascript" src="lib/bower-components/fullcalendar.min.js"></script>
+    <script type="text/javascript" src="lib/bower-components/gcal.js"></script>
+
+    <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&coordorder=longlat" type="text/javascript"></script>
+</head>
+
+
+<body>
+<div class="container-fluid main-container" ui-view ng-cloak></div>
+
+
+<script type="text/javascript" src="js/angular/app.js"></script>
+<script type="text/javascript" src="js/angular/run.js"></script>
+
+<!-- COMMON SCRIPTS -->
+<script type="text/javascript" src="js/angular/controllers/BaseHistController.js"></script>
+<script type="text/javascript" src="js/angular/controllers/BaseHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/BaseEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/BaseMapCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/BaseTabsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/ImageCropper.js"></script>
+<script type="text/javascript" src="js/angular/controllers/ConfirmClosingDirtyFormCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/ConfirmDialogCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/EditNumberCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/EditDateCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/HeaderCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/MainCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/RequestErrorCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/SitemapCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/services/AppConfig.js"></script>
+<script type="text/javascript" src="js/angular/services/BaseItemService.js"></script>
+<script type="text/javascript" src="js/angular/services/DateTimeService.js"></script>
+<script type="text/javascript" src="js/angular/services/ErrorCatcher.js"></script>
+<script type="text/javascript" src="js/angular/services/GridService.js"></script>
+<script type="text/javascript" src="js/angular/services/PickListService.js"></script>
+<script type="text/javascript" src="js/angular/services/MapService.js"></script>
+<script type="text/javascript" src="js/angular/services/ModalService.js"></script>
+<script type="text/javascript" src="js/angular/services/PermissionService.js"></script>
+<script type="text/javascript" src="js/angular/services/UrlService.js"></script>
+<script type="text/javascript" src="js/angular/services/UserService.js"></script>
+<script type="text/javascript" src="js/angular/services/UtilService.js"></script>
+<script type="text/javascript" src="js/angular/services/FileViewerService.js"></script>
+<script type="text/javascript" src="js/angular/services/map/YaMapService.js"></script>
+<script type="text/javascript" src="js/angular/services/map/WktParseService.js"></script>
+<script type="text/javascript" src="js/angular/services/map/ArMapService.js"></script>
+<script type="text/javascript" src="js/angular/services/map/OtherMapService.js"></script>
+
+
+<!-- PBK SCRIPTS -->
+
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/VersionInfoCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/AuditsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/AuditInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/AuditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/audit-types/AuditTypeCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/audit-types/AuditTypeInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/audit-types/AuditTypesCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/services/pbk/admin/AuditTypesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/admin/AuditsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/admin/ModulesService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/AuditLogsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/admin/AuditLogsService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/SettingsEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/SettingsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/SettingsMainCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/admin/SettingsService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/PlanCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/PlansCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/schedules/PlanSchedulesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/schedules/ScheduleEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/schedules/ScheduleFillDlgCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/plans/PlanSchedulesService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/brigades/PlanBrigadesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/brigades/BrigadeShiftEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/plans/PlanBrigadesService.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/brigades/BrigadeApproveCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/brigades/BrigadeDisApproveCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/brigades/BrigadesExportCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/brigades/BrigadesImportCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/brigades/BrigadeReCreateCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/routes-ratio/RouteRatiosCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/routes-ratio/RouteRatioEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/routes-ratio/RouteRatioReCalcCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/routes-ratio/PlanRoutesService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/tasks/PlanTasksCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/tasks/TaskAddCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/tasks/DistributeRoutesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/tasks/PlanTaskCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/timesheets/PlanTimesheetsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/plans/timesheets/TimesheetEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/plans/PlanTimesheetsService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskWithdrawnCardsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskWithdrawnCardCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TasksWithdrawnCardsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskWithdrawnCardInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskWithdrawnCardEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TasksStatusChangeCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskRoutesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskFilesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskFilesEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskFilesAddCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskReportInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskAskpPuskChecksByRoutesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskAskpPuskChecksByHoursCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskAskpPuskCheckForRouteCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskAskpPuskCheckForHourCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskUsedBsosCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TasksCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/tasks/TaskAskpContactlessCardsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/tasks/TaskWithdrawnCardsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/tasks/TasksService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/tasks/TaskReportsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/tasks/TaskStatesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/tasks/TaskFilesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/tasks/TaskTypesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/tasks/TaskUsedBsosService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/tasks/TaskAskpContactlessCardsService.js"></script>
+
+<script type="text/javascript" src="js/angular/services/pbk/nsi/askp-pusk-check/AskpPuskChecksService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/RolesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/RoleCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/RoleInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/admin/RolesPermissionService.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/RolePermissionCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/RolePermissionEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/RolePermissionAddCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/RolesEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/admin/RolesService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/current-user/CurrentUserCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/current-user/CurrentUserInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/current-user/CurrentUserRolesCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/UsersCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/UserEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/admin/UsersService.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/UserCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/UserInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/UserRolesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/UserRoleAddCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/admin/UserRolesService.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/admin/UserPassChangeCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/services/pbk/nsi/branches/BranchesService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/bso-number-rules/BsoNumberRuleEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/bso-number-rules/BsoNumberRuleInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/bso-number-rules/BsoNumberRulesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/bso-number-rules/BsoNumberRuleCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/bso-number-rules/BsoNumberRulesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/bso-types/BsoTypesService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/bsos/BsosCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/bsos/BsoGenerateCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/bsos/BsoBindCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/bsos/BsoTrashCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/bsos/BsoTrashInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/bsos/BsosService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/BsosReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/report/askp/AskpReportCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/askp/AskpReportByStopCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/report/unionanalysis/UnionAnalysisByTripMoveRouteCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/unionanalysis/UnionAnalysisByTripStopCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/unionanalysis/UnionAnalysisByMoveRouteCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/unionanalysis/UnionAnalysisOnDateCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/unionanalysis/UnionAnalysisCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/unionanalysis/UnionAnalysisByRouteCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/unionanalysis/UnionAnalysisByRouteService.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/unionanalysis/UnionAnalysisByStopCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/unionanalysis/UnionAnalysisByStopService.js"></script>
+
+<script type="text/javascript" src="js/angular/services/pbk/report/unionanalysis/UnionAnalysisByMoveRouteService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/unionanalysis/UnionAnalysisByTripMoveRouteService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/unionanalysis/UnionAnalysisByTripStopService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/department/DepartmentHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/department/DepartmentsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/department/DepartmentLocationCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/department/DepartmentEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/department/DepartmentHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/department/DepartmentCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/department/DepartmentInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/department/DepartmentParksCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/department/DepartmentParkAddCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/department/DepartmentRulesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/department/DepartmentRuleEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/department/DepartmentRuleInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/department/DepartmentsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/department/DepartmentParksService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/DepartmentsReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/sex/SexesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/sex/SexCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/sex/SexInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/sex/SexesService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/task-report-field/TaskReportFieldsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/task-report-field/TaskReportFieldCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/task-report-field/TaskReportFieldInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/task-report-field/TaskReportFieldsService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/parks/ParkHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/parks/ParkCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/parks/ParkEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/parks/ParkInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/parks/ParkHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/parks/ParksCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/parks/ParksService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/ParksReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/parks/ParkDriverAddCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/parks/ParkDriversCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/parks/ParkDriversService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/districts/DistrictRouteAddCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/districts/DistrictRoutesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/districts/DistrictRoutesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/districts/DistrictVenuesService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/duties/DutyCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/duties/DutyEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/duties/DutyInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/duties/DutiesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/duties/DutiesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/StopIntervalsStatsService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/askp/AskpAnalysisCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/askp/AskpAnalysisByRoutesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/askp/AskpChecksByHoursCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/askp/AskpChecksByMovesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/askp/AskpChecksByStopsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/askp/AskpChecksCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/askp/AskpChecksUpdateCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/askp/AskpAnalysisByRoutesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/askp/AskpChecksByHoursService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/askp/AskpChecksByMovesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/askp/AskpChecksByStopsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/askp/AskpChecksUpdateService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ticket/TicketHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ticket/TicketsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ticket/TicketCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ticket/TicketInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ticket/TicketHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ticket/TicketsEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/ticket/TicketsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/TicketTypesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/TicketsReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/driver/DriverHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/driver/DriverInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/driver/DriverHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/driver/DriverCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/driver/DriversCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/driver/DriversEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/driver/DriversService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/DriversReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/EquipmentsReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/TasksExportReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/TaskWithdrawCardReportService.js"></script> 
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/shift/ShiftInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/shift/ShiftReservesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/shift/ShiftReserveEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/shift/ShiftCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/shift/ShiftsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/shift/ShiftsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/shift/ShiftDepartmentsService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/grafics/GraficInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/grafics/GraficEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/grafics/GraficCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/grafics/GraficsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/grafic/GraficsService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venicle/VeniclesHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venicle/VenicleCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venicle/VenicleHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venicle/VenicleEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venicle/VenicleInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venicle/VeniclesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/venicle/VenicleService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/VehiclesReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ts-model/TSModelInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ts-model/TSModelCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ts-model/TSModelsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ts-model/TSModelsEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/ts-model/TSModelsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/TsModelsReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/equipment/EquipmentsHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/equipment/EquipmentInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/equipment/EquipmentHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/equipment/EquipmentCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/equipment/EquipmentsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/equipment/EquipmentsEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/equipment/EquipmentsService.js"></script>
+
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/employee/EmployeeHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/employee/EmployeeCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/employee/EmployeeInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/employee/EmployeeHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/employee/EmployeesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/employee/EmployeesEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/employee/EmployeeCalendarCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/employee/EmployeesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/employee/EmployeeCalenderService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/EmployeesReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/gkuops/GkuopHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/gkuops/GkuopCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/gkuops/GkuopInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/gkuops/GkuopHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/gkuops/GkuopsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/gkuops/GkuopEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/gkuop/GkuopsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/GkuopsReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/districts/DistrictHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/districts/DistrictsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/districts/DistrictEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/districts/DistrictHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/districts/DistrictInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/districts/DistrictCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/districts/DistrictsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/DistrictsReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/districts/DistrictRouteAddCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/districts/DistrictRoutesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/districts/DistrictRoutesService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/districts/DistrictVenuesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/districts/DistrictVenueAddCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/contactless-cards/ContractlessCardOwnersHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/contactless-cards/ContractlessCardHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/contactless-cards/ContactlessCardsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/contactless-cards/ContactlessCardHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/contactless-cards/ContactlessCardEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/contactless-cards/ContactlessCardCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/contactless-cards/ContactlessCardInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/contactless-cards/ContactlessCardsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/ContactlessCardsReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/official-cards/OfficialCardOwnersHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/official-cards/OfficialHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/official-cards/OfficialCardsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/official-cards/OfficialCardEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/official-cards/OfficialCardCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/official-cards/OfficialCardInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/official-cards/OfficialCardHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/official-cards/OfficialCardsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/OfficialCardsReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/stops/StopHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/stops/StopsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/stops/StopEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/stops/StopHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/stops/StopLocationCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/stops/StopCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/stops/StopInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/stops/StopsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/StopsReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/bonuses/BonusInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/bonuses/BonusCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/bonuses/BonusesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/bonuses/BonusEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/bonuses/PeriodsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/pbk/bonuses/PeriodEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/bonuses/BonusesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/pbk/bonuses/PeriodsService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/counties/CountyHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/counties/CountiesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/counties/CountyEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/counties/CountyHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/counties/CountyCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/counties/CountyInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/counties/CountyDistrictsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/counties/CountyDistrictEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/CountiesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/CountiesReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venues/VenueHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venues/VenueCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venues/VenueRoutesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venues/VenueRouteMapCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venues/VenueRouteAddCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venues/VenueHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venues/VenuesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venues/VenueEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venues/VenueInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venues/VenueLocationCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venues/VenueDistrictsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/venues/VenueDistrictAddCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/services/pbk/nsi/venues/VenuesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/venues/VenueRoutesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/venues/VenueRouteTypesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/venues/VenueDistrictsService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ts-types/TsTypesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ts-types/TsTypeEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ts-types/TsTypeCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ts-types/TsTypeInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/TsTypesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/TsTypesReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ts-capacities/TsCapacitiesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ts-capacities/TsCapacityEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ts-capacities/TsCapacityCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/ts-capacities/TsCapacityInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/TsCapacitiesService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/TsCapacitiesReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/pusks/PuskOwnersHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/pusks/PuskHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/pusks/PusksCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/pusks/PuskEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/pusks/PuskCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/pusks/PuskInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/pusks/PuskHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/pusks/PusksService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/PusksReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/dvrs/DvrOwnersHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/dvrs/DvrsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/dvrs/DvrHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/dvrs/DvrRecordPlayCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/dvrs/DvrRecordsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/dvrs/DvrEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/dvrs/DvrCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/dvrs/DvrInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/dvrs/DvrHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/dvrs/DvrsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/dvrs/DvrRecordsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/DvrsReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/routes/RouteHistoryDetailsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/routes/RoutesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/routes/RouteHistoryCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/routes/RouteEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/routes/RouteCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/routes/MapRoutesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/RoutesReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/RouteRatiosReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/routes/RouteMapCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/routes/RouteInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/routes/RoutesService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/route-ts-kinds/RouteTsKindsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/route-ts-kinds/RouteTsKindEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/route-ts-kinds/RouteTsKindCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/route-ts-kinds/RouteTsKindInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/route-ts-kinds/RouteTsKindsService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/RouteTsKindsReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/nsi/calendar/CalendarCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/nsi/calendar/CalenderService.js"></script>
+
+<script type="text/javascript" src="js/angular/services/pbk/report/askp/AskpReportByStopService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/askp/AskpByMoveReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/askp/AskpByStopReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/askp/AskpByHourReportService.js"></script>
+
+
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So1Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So2Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So3Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So4Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So5Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So6Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So7Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So8Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So9Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So10Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So11Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So12Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So13Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So14Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So15Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So16Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So16AsmppCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So17Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So18Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So19Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So20Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So21Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So22Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So23Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So24Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/So25Ctrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/pbk/report/standard/StandardReportsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So1Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So2Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So3Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So4Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So5Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So6Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So7Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So8Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So9Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So10Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So11Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So12Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So13Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So14Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So15Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So16Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So17Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So18Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So19Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So20Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So21Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So22Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So23Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So24Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So25Service.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/BaseSoReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So1ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So2ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So3ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So4ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So5ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So6ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So7ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So8ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So9ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So10ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So11ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So12ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So13ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So14ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So15ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So16ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So17ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So18ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So19ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So20ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So21ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So22ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So23ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So24ReportService.js"></script>
+<script type="text/javascript" src="js/angular/services/pbk/report/So25ReportService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/vis/vis/VissCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/vis/vis/VisCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/vis/vis/VisInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/vis/askp/AskpPuskCheckBindsCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/vis/exchange-object/ExchangeObjectCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/vis/exchange-object/ExchangeObjectsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/vis/exchange-object/ExchangeObjectInfoCtrl.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/vis/exchange-config/ExchangeConfigsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/vis/exchange-config/ExchangeConfigCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/vis/exchange-config/ExchangeConfigInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/vis/exchange-config/ExchangeConfigsEditCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/vis/exchange-config/ExchangeConfigsStartCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/exchange-config/ExchangeConfigsService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/vis/exchange/ExchangesCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/vis/exchange/ExchangeCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/vis/exchange/ExchangeInfoCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/vis/exchange/ExchangeAttemptsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/controllers/vis/exchange/ExchangeResultsCtrl.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/exchange/ExchangesService.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/exchange/ExchangeAttemptsService.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/exchange/ExchangeResultsService.js"></script>
+
+<script type="text/javascript" src="js/angular/services/vis/VisService.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/TransportTypeService.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/ExchangeObjectService.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/ExchangeOperationService.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/ExchangeStateService.js"></script>
+
+<script type="text/javascript" src="js/angular/services/vis/asmpp/AsmppStopsService.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/gismgt/routes/GmRoutesService.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/gismgt/stops/GmStopsService.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/gismgt/route-ts-kinds/GmRouteTsKindsService.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/gismgt/ts-types/GmTsTypesService.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/gismgt/districts/GmDistrictsService.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/gismgt/regions/GmRegionsService.js"></script>
+<script type="text/javascript" src="js/angular/services/vis/gismgt/parks/GmParksService.js"></script>
+
+<script type="text/javascript" src="js/angular/controllers/pbk/LoginCtrl.js"></script>
+
+
+<!-- DIRECTIVES -->
+<script type="text/javascript" src="js/angular/directives/DatetimepickerRange.js"></script>
+<script type="text/javascript" src="js/angular/directives/ValidateField.js"></script>
+<script type="text/javascript" src="js/angular/directives/DatepickerRange.js"></script>
+<script type="text/javascript" src="js/angular/directives/TimepickerRange.js"></script>
+<script type="text/javascript" src="js/angular/directives/Datetimepicker.js"></script>
+<script type="text/javascript" src="js/angular/directives/Daymonthpicker.js"></script>
+<script type="text/javascript" src="js/angular/directives/Timepicker.js"></script>
+<script type="text/javascript" src="js/angular/directives/FileModel.js"></script>
+<script type="text/javascript" src="js/angular/directives/grid/GridButtons.js"></script>
+<script type="text/javascript" src="js/angular/directives/grid/GridFilter.js"></script>
+<script type="text/javascript" src="js/angular/directives/grid/GridMenu.js"></script>
+<script type="text/javascript" src="js/angular/directives/grid/GridExport.js"></script>
+<script type="text/javascript" src="js/angular/directives/grid/GridPagination.js"></script>
+<script type="text/javascript" src="js/angular/directives/grid/GridTable.js"></script>
+<script type="text/javascript" src="js/angular/directives/grid/GridTitle.js"></script>
+<script type="text/javascript" src="js/angular/directives/form/FormField.js"></script>
+<script type="text/javascript" src="js/angular/directives/Combobox.js"></script>
+<script type="text/javascript" src="js/angular/directives/LazyTabs.js"></script>
+<script type="text/javascript" src="js/angular/directives/arConfirmClick.js"></script>
+<script type="text/javascript" src="js/angular/directives/googleMap.js"></script>
+<script type="text/javascript" src="js/angular/directives/Number.js"></script>
+<script type="text/javascript" src="js/angular/directives/PickList.js"></script>
+<script type="text/javascript" src="js/angular/directives/CheckboxList.js"></script>
+<script type="text/javascript" src="js/angular/directives/IntNumber.js"></script>
+<script type="text/javascript" src="js/angular/directives/LongNumber.js"></script>
+<script type="text/javascript" src="js/angular/directives/TouchSpin.js"></script>
+<script type="text/javascript" src="js/angular/directives/Tooltip.js"></script>
+<script type="text/javascript" src="js/angular/directives/DraggableModal.js"></script>
+<script type="text/javascript" src="js/angular/directives/CenterModal.js"></script>
+<script type="text/javascript" src="js/angular/directives/arStSort.js"></script>
+<script type="text/javascript" src="js/angular/directives/CalendarWrapper.js"></script>
+<script type="text/javascript" src="js/angular/directives/ValidationErrors.js"></script>
+<script type="text/javascript" src="js/angular/directives/MoneyField.js"></script>
+<script type="text/javascript" src="js/angular/directives/FormatField.js"></script>
+<script type="text/javascript" src="js/angular/directives/map/arMap.js"></script>
+<script type="text/javascript" src="js/angular/directives/arFocus.js"></script>
+<script type="text/javascript" src="js/angular/directives/arEnterFocus.js"></script>
+<script type="text/javascript" src="js/angular/directives/tooltip/CustomTooltip.js"></script>
+
+
+
+
+<!-- FILTERS -->
+<script type="text/javascript" src="js/angular/filters/toTrusted.js"></script>
+<script type="text/javascript" src="js/angular/filters/toKb.js"></script>
+
+</body>
+</html>

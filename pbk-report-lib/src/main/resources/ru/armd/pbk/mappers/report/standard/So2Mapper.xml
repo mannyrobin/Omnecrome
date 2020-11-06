@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So2Mapper">
+
+    <select id="getEmployees" resultType="ru.armd.pbk.views.report.So2EmployeeView">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[
+          SELECT
+            DISTINCT e.ID AS id
+            , eh.SURNAME AS surname
+            , eh.NAME AS name
+            , eh.PATRONUMIC AS patronumic
+            , eh.PERSONNEL_NUMBER AS personalNumber
+            , dh.NAME as departmentName
+          FROM
+            [PBK_NSI].[EMPLOYEES] e
+            JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh ON e.ID = eh.HEAD_ID           
+            LEFT JOIN [PBK_NSI].[DEPARTMENTS] d ON eh.DEPT_ID = d.ID
+            LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON d.ID = dh.HEAD_ID
+          WHERE 1=1
+          	AND EXISTS(
+          		SELECT
+          			1
+          		FROM
+            		[PBK_NSI].[EMPLOYEE_HISTS] eh
+            		LEFT JOIN [PBK_PLAN].[PLAN_SCHEDULES] ps ON (eh.HEAD_ID = ps.EMPLOYEE_ID AND eh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+				WHERE
+					e.ID = eh.HEAD_ID
+					AND ((#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+            		AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+            		AND (eh.FIRE_DATE IS NULL OR cast(eh.FIRE_DATE as DATE) > cast(ps.WORK_DATE AS DATE))
+					AND (cast(eh.V_END_DATE AS DATE) > cast(ps.WORK_DATE AS DATE)) OR (ps.WORK_DATE IS NULL))
+					AND eh.position_NAME like'%онтрол%'
+			]]><if test="filter.departmentId != null">
+            AND eh.DEPT_ID IN (${filter.departmentId})
+          </if><![CDATA[
+            and (#{filter.deptAuthId} is null or eh.DEPT_ID = #{filter.deptAuthId})
+            	)
+            AND e.IS_DELETE = 0
+            AND dh.FOR_PLAN_USE = 1        
+            AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+			AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} < cast(eh.V_END_DATE AS DATE))
+			AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+			AND eh.position_NAME like upper('%Контрол%')
+            AND (#{filter.fio} is null or UPPER(eh.NAME) like UPPER('%${filter.fio}%') or UPPER(eh.SURNAME) like UPPER('%${filter.fio}%') or UPPER(eh.PATRONUMIC) like UPPER('%${filter.fio}%'))
+          ]]><if test="filter.departmentId != null">
+            AND eh.DEPT_ID IN (${filter.departmentId})
+          </if><![CDATA[
+            and (#{filter.deptAuthId} is null or eh.DEPT_ID = #{filter.deptAuthId})
+            AND (eh.FIRE_DATE IS NULL OR (#{filter.dateFrom, jdbcType=DATE} is not null AND eh.FIRE_DATE >= #{filter.dateFrom, jdbcType=DATE}))
+          ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd"/>
+    </select>
+
+    <select id="getShiftHoursForEmployee" resultType="ru.armd.pbk.domain.So2ShiftHours">
+        <![CDATA[
+          SELECT
+            ps.WORK_DATE AS date,
+            ps.EMPLOYEE_ID as employeeId,
+            CASE WHEN ps.SHIFT_ID IN (1, 4, 5) THEN ps.SHIFT_ID ELSE NULL END AS absenceShiftId, /* 1- выходной, 4 - отпуск, 5 - больничный */
+            CASE WHEN ps.SHIFT_ID NOT IN (1, 4, 5) THEN isnull(ps.WORK_FACT_HOURS, 0) ELSE NULL END AS shiftHours /* 1- выходной, 4 - отпуск, 5 - больничный */
+          FROM
+            [PBK_PLAN].[PLAN_SCHEDULES] ps
+            LEFT JOIN [PBK_NSI].[DEPARTMENTS] d ON ps.DEPT_ID = d.ID
+            LEFT JOIN [PBK_NSI].[DEPARTMENT_HISTS] dh ON d.ID = dh.HEAD_ID
+            LEFT JOIN [PBK_NSI].[EMPLOYEE_HISTS] eh ON (ps.EMPLOYEE_ID = eh.HEAD_ID AND eh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+          WHERE 1=1
+            AND dh.FOR_PLAN_USE = 1
+            AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (#{params.filter.dateFrom, jdbcType=DATE} IS NULL OR #{params.filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+            AND (#{params.filter.dateTo, jdbcType=DATE} IS NULL OR #{params.filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+          ]]><if test="params.filter.departmentId != null">
+            AND ps.DEPT_ID IN (${params.filter.departmentId})
+          </if> AND ps.EMPLOYEE_ID IN
+          <foreach collection="employees" open="(" close=")" separator="," item="employee">
+	           		#{employee.id}
+	        </foreach><![CDATA[
+            and (#{params.filter.deptAuthId} is null or ps.DEPT_ID = #{params.filter.deptAuthId})
+            AND (eh.FIRE_DATE IS NULL AND eh.FOR_PLAN_USE = 1 OR eh.FIRE_DATE >= cast(ps.WORK_DATE as DATE))
+        ]]>
+    </select>
+    
+    <select id="getDateStart" resultType="date">
+        <![CDATA[
+          SELECT
+              isnull(#{filter.dateFrom, jdbcType=DATE}, cast('0001-01-01' AS DATE))
+        ]]>
+    </select>
+
+    <select id="getDateEnd" resultType="date">
+        <![CDATA[
+          SELECT
+              isnull(#{filter.dateTo, jdbcType=DATE}, cast('9999-12-31' AS DATE))
+        ]]>
+    </select>
+</mapper>

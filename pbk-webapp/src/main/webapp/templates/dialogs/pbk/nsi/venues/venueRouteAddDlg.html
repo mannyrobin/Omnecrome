@@ -1,0 +1,43 @@
+<div class="modal-header" draggable-modal>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="close()">
+        <span aria-hidden="true">&times;</span>
+    </button>
+    <h4 class="modal-title">{{title}}</h4>
+</div>
+
+<div class="modal-body">
+    <div ar-validation-errors></div>
+
+    <!-- FORM -->
+    <form name="venuesForm">       
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-4'" field="fields[0]"></div>
+            <div ar-form-field col-class="'col-sm-5'" field="fields[1]"></div>
+            <div ar-form-field col-class="'col-sm-2'" field="fields[3]"></div>
+            <div class="col-sm-1 field-button  pull-right">
+            	<button ng-show="!isAllCountyRoute" type="button" ng-click="fillAllClick()"
+                	ar-tooltip="Все маршруты округов" class="btn btn-success">
+            		<i class="glyphicon glyphicon glyphicon-globe"></i>
+        		</button>
+        		<button ng-show="isAllCountyRoute" type="button" ng-click="fillAllClick()"
+                	ar-tooltip="Все маршруты района" class="btn btn-info">
+            		<i class="glyphicon glyphicon glyphicon-globe"></i>
+        		</button>
+            </div>            
+        </div>      
+        <div class="row form-group" style="display: none;" >
+        	<div ar-form-field col-class="'col-sm-6'" field="fields[2]"></div>
+        </div>
+        <ar-map id="mapYa" ng-show="isMapYa" ar-map service="mapServiceYa" init-func="onLoadMap()" class="form-group">
+        </ar-map>
+        <ar-map id="mapOther" ng-show="isMapOther" ar-map is-not-reset="true" service="mapServiceOther" class="form-group">
+        </ar-map>
+    </form>
+    <!-- END FORM -->
+
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-primary" ng-click="save()" ng-disabled="venuesForm.$invalid">Сохранить</button>
+    <button type="button" class="btn btn-default" ng-click="close()">Закрыть</button>
+</div>

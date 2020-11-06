@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gismgt.GmGisMapper">
+	
+    <insert id="insertActiveRouteStops">
+		<![CDATA[
+			INSERT INTO [PBK_NSI].[ROUTE_STOPS]
+	           ([ROUTE_ID]
+	           ,[GM_STOP_ID]
+	           ,[STOP_NAME]
+	           ,[NAME_WITHOUT_DISTRICT]
+	           ,[WKT_GEOM]
+	           ,[ROUTE_NAMES]
+	           ,[IS_ACTIVE]
+	           ,[GM_TRAJECTORY_TYPE_ID])
+		     (SELECT
+					routeHist.HEAD_ID
+		          	,stops.ID as id
+		            ,stops.[NAME] + ' (' + cdh.NAME + ')' as name
+		            ,stops.[NAME] as nameWithoutDistrict
+		            ,gmStopPlaces.[WKT_GEOM] as wktPointStr
+		            ,(SELECT
+						STUFF((	SELECT DISTINCT ', ' + (routeHist.ROUTE_NUMBER)
+								FROM
+									[PBK_DB].[PBK_NSI].[ROUTE_HISTS] routeHist
+									join [PBK_DB].[PBK_GISMGT].[GM_ROUTES] gmRoute on gmRoute.ID = routeHist.[GM_ROUTE_ID]
+
+									right join [PBK_GISMGT].[GM_ROUTE_VARIANTS] gmRouteVar on gmRouteVar.ROUTE_MUID = gmRoute.MUID
+										and gmRouteVar.[VERSION] = (select max(t.[version]) from [PBK_GISMGT].[GM_ROUTE_VARIANTS] t where t.MUID = gmRouteVar.MUID)
+
+									right join [PBK_GISMGT].[GM_ROUTE_ROUNDS] gmRouteRnds on (gmRouteRnds.ROUTE_VARIANT_MUID = gmRouteVar.MUID
+										and gmRouteRnds.VERSION = (select max(t.version) from [PBK_GISMGT].[GM_ROUTE_ROUNDS] t where t.MUID = gmRouteRnds.MUID and t.RR_TYPE_MUID = 1))
+
+									right join [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] trajectories on trajectories.RR_MUID = gmRouteRnds.MUID
+										and trajectories.VERSION = (select max(t.VERSION) from [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] t where t.MUID =  trajectories.MUID)
+
+									right join [PBK_GISMGT].[GM_ROUTE_TRAJECTORY_STOP_PLACES] trajectoryStops on trajectoryStops.ROUTE_TRAJECTORY_MUID = trajectories.MUID
+										and trajectoryStops.VERSION = (select max(t.VERSION) from [PBK_GISMGT].[GM_ROUTE_TRAJECTORY_STOP_PLACES] t where t.MUID = trajectoryStops.MUID)
+
+									right join [PBK_GISMGT].[GM_STOP_PLACES] gmStopPlaces on gmStopPlaces.MUID = trajectoryStops.STOP_PLACE_MUID
+										and gmStopPlaces.VERSION = (select max(t.VERSION) from [PBK_GISMGT].[GM_STOP_PLACES] t where t.MUID = gmStopPlaces.MUID)
+
+									right join [PBK_GISMGT].[GM_STOPS] s on gmStopPlaces.STOP_MUID = s.MUID
+										and s.VERSION = (select max(t.VERSION) from [PBK_GISMGT].[GM_STOPS] t where t.MUID =  s.MUID)
+								WHERE
+									s.ID = stops.ID AND routeHist.ROUTE_NUMBER IS NOT NULL FOR XML PATH('')), 1, 2,'')
+		            ) as routeNames
+					, 0
+					, trajectories.TRAJECTORY_TYPE_MUID
+-- 						      сделать цикл по route
+		          FROM [PBK_DB].[PBK_NSI].[ROUTE_HISTS] routeHist
+		            join [PBK_DB].[PBK_GISMGT].[GM_ROUTES] gmRoute on (gmRoute.ID = routeHist.[GM_ROUTE_ID]
+					  and routeHist.V_END_DATE >= PBK_CORE.getVersionEndDate()
+		              AND routeHist.HEAD_ID = #{routeID})
+
+		            join [PBK_GISMGT].[GM_ROUTE_VARIANTS] gmRouteVar on gmRouteVar.ROUTE_MUID = gmRoute.MUID 				
+						and gmRouteVar.[VERSION] = (select max(t.[version]) from [PBK_GISMGT].[GM_ROUTE_VARIANTS] t where t.MUID = gmRouteVar.MUID)
+
+					join [PBK_GISMGT].[GM_ROUTE_ROUNDS] gmRouteRnds on (gmRouteRnds.ROUTE_VARIANT_MUID = gmRouteVar.MUID
+						and gmRouteRnds.VERSION = (select max(t.version) from [PBK_GISMGT].[GM_ROUTE_ROUNDS] t where t.MUID = gmRouteRnds.MUID and t.RR_TYPE_MUID = 1))
+
+					join [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] trajectories on trajectories.RR_MUID = gmRouteRnds.MUID
+						and trajectories.VERSION = (select max(t.VERSION) from [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] t where t.MUID = trajectories.MUID)
+
+		            join [PBK_GISMGT].[GM_ROUTE_TRAJECTORY_STOP_PLACES] trajectoryStops on trajectoryStops.ROUTE_TRAJECTORY_MUID = trajectories.MUID
+						and trajectoryStops.VERSION = (select max(t.VERSION) from [PBK_GISMGT].[GM_ROUTE_TRAJECTORY_STOP_PLACES] t where t.MUID = trajectoryStops.MUID)
+
+		            join [PBK_GISMGT].[GM_STOP_PLACES] gmStopPlaces on gmStopPlaces.MUID = trajectoryStops.STOP_PLACE_MUID
+						and gmStopPlaces.VERSION = (select max(t.VERSION) from [PBK_GISMGT].[GM_STOP_PLACES] t where t.MUID = gmStopPlaces.MUID)
+
+		            join [PBK_GISMGT].[GM_STOPS] stops on gmStopPlaces.STOP_MUID = stops.MUID
+						and stops.VERSION = (select max(t.VERSION) from [PBK_GISMGT].[GM_STOPS] t where t.MUID = stops.MUID)
+
+					LEFT JOIN PBK_GISMGT.GM_REGIONS gr ON (stops.REGION_MUID = gr.MUID)
+						and gr.VERSION = (select max(t.VERSION) from [PBK_GISMGT].[GM_REGIONS] t where t.MUID = gr.MUID)
+
+					LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON (cdh.GM_REGION_ID = gr.ID)
+		         )
+		]]>
+	</insert>
+	
+	<update id="updateInactiveRouteStops">
+		<![CDATA[
+			UPDATE [PBK_NSI].[ROUTE_STOPS]
+			SET IS_ACTIVE = CASE IS_ACTIVE WHEN 0 THEN 1 ELSE 0 END
+		]]>
+	</update>
+	
+	<delete id="deleteInactiveRouteStops">
+		<![CDATA[
+			DELETE FROM [PBK_NSI].[ROUTE_STOPS]
+			WHERE IS_ACTIVE = 0
+		]]>
+	</delete>
+
+	<select id="getRouteIdsList" resultType="Long">
+		SELECT routeHist.HEAD_ID
+		FROM [PBK_DB].[PBK_NSI].[ROUTES] route
+				 join [PBK_DB].[PBK_NSI].[ROUTE_HISTS] routeHist on (route.ID = routeHist.HEAD_ID
+					and routeHist.V_END_DATE >= PBK_CORE.getVersionEndDate())
+		WHERE route.IS_DELETE = 0
+	</select>
+	
+</mapper>

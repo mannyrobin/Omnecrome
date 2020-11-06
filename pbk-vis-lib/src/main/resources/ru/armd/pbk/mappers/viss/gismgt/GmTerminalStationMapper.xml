@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gismgt.GmTerminalStationMapper">
+	
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.gismgt.GmTerminalStation" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into [PBK_GISMGT].[GM_TERMINAL_STATIONS] (
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmFields" /><![CDATA[	
+    			, [PHONE]
+    			, [NAME]
+    			, [GRAPH_SECTION_MUID]
+    			, [ADDRESS]
+    			, [WKT_GEOM]
+    			, [PARK_MUID]
+    			, [START_DATE]
+    			, [ORDER_MUID]
+    			, [STREET_MUID]
+    			, [GRAPH_SECTION_OFFSET]
+    			, [HAS_PARKING]
+    			, [BUILDING_MUID]
+    			, [PHOTO]
+    			, [HAS_BUS]
+				, [HAS_TROLLEY]
+				, [HAS_TRAM]
+				, [HAS_SPEED_TRAM]
+    			
+            ) values (
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmValues" /><![CDATA[
+    			, #{phone}
+    			, #{name}
+    			, #{graphSectionMuid}
+    			, #{addressString}
+    			, #{wktGeom}
+    			, #{parkMuid}
+    			, #{startDate}
+    			, #{orderMuid}
+    			, #{streetMuid}
+    			, #{graphSectionOffset}
+    			, #{hasParking}
+    			, #{buildingMuid}
+    			, #{photo}
+    			, #{hasBus}
+    			, #{hasTrolley}
+    			, #{hasTram}
+    			, #{hasSpeedTram}
+            )
+        ]]>      
+    </insert>
+    
+    <select id="getByMuid" resultType="ru.armd.pbk.domain.viss.gismgt.GmTerminalStation">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, PHONE as transportKindId
+	    		, NAME as name
+	    		, GRAPH_SECTION_MUID as graphSectionId
+	    		, ADDRESS as addressString
+	    		, WKT_GEOM as wktGeom
+	    		, PARK_MUID as parkId
+	    		, START_DATE as startDate
+	    		, ORDER_MUID as orderId
+	    		, STREET_MUID as streetId
+	    		, GRAPH_SECTION_OFFSET as graphSectionOffset
+	    		, HAS_PARKING as hasParking
+	    		, BUILDING_MUID as buildingId
+	    		, PHOTO as photo
+	    		, HAS_BUS as hasBus
+				, HAS_TROLLEY as hasTrolley
+				, HAS_TRAM as hasTram
+				, HAS_SPEED_TRAM as hasSpeedTram
+			from [PBK_GISMGT].[GM_TERMINAL_STATIONS] a
+            where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_TERMINAL_STATIONS WHERE MUID = #{muid})			
+        ]]>
+    </select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.gismgt.GmTerminalStation">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, PHONE as transportKindId
+	    		, NAME as name
+	    		, GRAPH_SECTION_MUID as graphSectionId
+	    		, ADDRESS as addressString
+	    		, WKT_GEOM as wktGeom
+	    		, PARK_MUID as parkId
+	    		, START_DATE as startDate
+	    		, ORDER_MUID as orderId
+	    		, STREET_MUID as streetId
+	    		, GRAPH_SECTION_OFFSET as graphSectionOffset
+	    		, HAS_PARKING as hasParking
+	    		, BUILDING_MUID as buildingId
+	    		, PHOTO as photo
+	    		, HAS_BUS as hasBus
+				, HAS_TROLLEY as hasTrolley
+				, HAS_TRAM as hasTram
+				, HAS_SPEED_TRAM as hasSpeedTram
+			from [PBK_GISMGT].[GM_TERMINAL_STATIONS] a
+            where ID = #{id}			
+        ]]>
+    </select>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.gismgt.GmTerminalStation">
+        <![CDATA[
+        	update [PBK_GISMGT].[GM_TERMINAL_STATIONS]
+            set
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.updateGmFields" /><![CDATA[
+	    		, PHONE = #{phone}
+	    		, NAME = #{name}
+	    		, GRAPH_SECTION_MUID = #{graphSectionMuid}
+	    		, ADDRESS = #{addressString}
+	    		, WKT_GEOM = #{wktGeom}
+	    		, PARK_MUID = #{parkMuid}
+	    		, START_DATE = #{startDate}
+	    		, ORDER_MUID = #{orderMuid}
+	    		, STREET_MUID = #{streetMuid}
+	    		, GRAPH_SECTION_OFFSET = #{graphSectionOffset}
+	    		, HAS_PARKING = #{hasParking}
+	    		, BUILDING_MUID = #{buildingMuid}
+	    		, PHOTO = #{photo}
+	    		, [HAS_BUS] = #{hasBus}
+				, [HAS_TROLLEY] = #{hasTrolley}
+				, [HAS_TRAM] = #{hasTram}
+				, [HAS_SPEED_TRAM] = #{hasSpeedTram}
+			where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_TERMINAL_STATIONS WHERE MUID = #{muid})
+        ]]>
+    </update>    
+</mapper>

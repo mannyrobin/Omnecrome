@@ -1,0 +1,16 @@
+<div>
+    <div ar-validation-errors></div>
+    <form name="stopForm">
+        <div class="row form-group">
+            <div ar-form-field col-class="'col-sm-5'" field="fields[0]"></div>
+            <div ar-form-field col-class="'col-sm-5'" field="fields[1]"></div>
+            <div ar-form-field col-class="'col-sm-2'" field="fields[2]"></div>
+        </div>
+        <div class="form-group">
+            <ar-map id="mapYa" ng-show="isMapYa" ar-map service="mapServiceYa" init-func="onLoadMap()" class="form-group">
+            </ar-map>
+            <ar-map id="mapOther" ng-show="isMapOther" ar-map service="mapServiceOther" class="form-group">
+            </ar-map>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.tasks.TaskFileMapper">
+    
+    <select id="getGridViews" resultType="ru.armd.pbk.views.tasks.TaskFileView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+           SELECT * 
+           FROM (
+           		SELECT 
+              tf.NAME as name
+            , tf.ID as id
+            , tf.TASK_ID as taskId
+            , CAST((CAST(tf.SIZE as FLOAT) / 1048576) as DECIMAL(18,3)) as size
+            , tf.STREAM_ID as streamId
+            , tf.DESCRIPTION as description
+			, null as url
+			, null as duration
+	          FROM PBK_TASK.TASK_FILES tf
+			  union all
+			  SELECT 
+				'Видео-'+convert(varchar(25), DATE_RECORD, 120)
+				,ID as id
+				,TASK_ID as taskId
+				,FILE_SIZE as size
+				,null as streamId
+				,'Запись с видеорегистратора' as DESCRIPTION
+				, URL as url
+				, [DURATION] as duration
+			  FROM [PBK_VIS].[DVR_RECORDS]) as a           
+             
+           WHERE   (#{filter.taskId} = a.taskId)
+    	      AND (#{filter.name} is null or UPPER(a.name) like UPPER('%${filter.name}%'))
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select> 
+    
+       
+
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.tasks.TaskFile">
+        <![CDATA[
+            SELECT
+                 [ID] as id
+	    		,[CREATE_DATE] as createDate
+			    ,[CREATE_USER_ID] as createUserId
+                ,[NAME] as name
+                ,[SIZE] as size
+                ,[DESCRIPTION] as description
+                ,[STREAM_ID] as streamId
+            FROM [PBK_TASK].[TASK_FILES]
+            WHERE [ID] = #{id}
+       ]]>
+    </select>
+
+    <select id="getDomains" resultType="ru.armd.pbk.domain.tasks.TaskFile">
+        <![CDATA[
+            SELECT
+                 [ID] as id
+	    		,[CREATE_DATE] as createDate
+			    ,[CREATE_USER_ID] as createUserId
+                ,[NAME] as name
+                ,[SIZE] as size
+                ,[DESCRIPTION] as description
+                ,[STREAM_ID] as streamId
+            FROM [PBK_TASK].[TASK_FILES]
+            WHERE 1 = 1
+              and (#{name} is null or [NAME] = #{name})
+        ]]>
+    </select>
+   
+    <insert id="insert" parameterType="ru.armd.pbk.domain.tasks.TaskFile" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_TASK].[TASK_FILES] (
+                [CREATE_DATE]
+                ,[CREATE_USER_ID]
+                ,[NAME]
+                ,[TASK_ID]
+                ,[SIZE]
+                ,[DESCRIPTION]
+                ,[STREAM_ID]
+            ) VALUES (
+                #{createDate}
+                , #{createUserId}
+                , #{name}
+                , #{taskId}
+                , #{size}
+                , #{description}
+                , #{streamId}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_TASK.TASK_FILES' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+    
+  
+    
+  <update id="update" parameterType="ru.armd.pbk.domain.tasks.TaskFile">
+        <![CDATA[
+            UPDATE [PBK_TASK].[TASK_FILES] SET
+               [DESCRIPTION] = #{description}
+            WHERE
+              ID = #{id}
+        ]]>
+    </update> 
+    
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+                PBK_TASK.TASK_FILES
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete> 
+    
+    <update id="updateTaskScan">
+    	<![CDATA[
+    		UPDATE PBK_TASK.TASKS
+    		SET TASK_SCAN_FILE_ID = #{fileId}
+    		WHERE 
+    			ID = #{taskId} 
+    	]]>
+    </update>
+
+</mapper>

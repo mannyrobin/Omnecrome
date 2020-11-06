@@ -1,0 +1,161 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+            xmlns:dr="http://mgt.ru/pbk/xsd/fhd/1/DataRequest" targetNamespace="http://mgt.ru/pbk/xsd/fhd/1/DataRequest"
+            xmlns:com="http://mgt.ru/pbk/xsd/1/Common" 
+            elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+  <xsd:import namespace="http://mgt.ru/pbk/xsd/1/Common" schemaLocation="Common.xsd"/>
+
+  <xsd:complexType name="DataRequest">
+    <xsd:sequence>
+      <xsd:element name="Filter">
+        <xsd:annotation>
+          <xsd:documentation>Фильтр для получения сущностей</xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:annotation>
+              <xsd:documentation/>
+            </xsd:annotation>
+            <xsd:element name="Conditions">
+              <xsd:annotation>
+                <xsd:documentation>Условие для получения сущностей</xsd:documentation>
+              </xsd:annotation>
+              <xsd:complexType>
+                <xsd:sequence>
+                  <xsd:choice minOccurs="0">
+                    <xsd:element name="departmentIds">
+                      <xsd:annotation>
+                        <xsd:documentation>Список идентификаторов подразделений, по которым запрашиваются сущности</xsd:documentation>
+                      </xsd:annotation>
+                      <xsd:complexType>
+                        <xsd:sequence>
+                          <xsd:element name="departmentId" maxOccurs="100">
+                            <xsd:annotation>
+                              <xsd:documentation>Идентификатор подразделения</xsd:documentation>
+                            </xsd:annotation>
+                            <xsd:simpleType>
+                              <xsd:restriction base="xsd:token">
+                                <xsd:minLength value="1"/>
+                                <xsd:maxLength value="19"/>
+                                <xsd:pattern value="\c{20}"/>
+                              </xsd:restriction>
+                            </xsd:simpleType>
+                          </xsd:element>
+                        </xsd:sequence>
+                      </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="employeesIds">
+                      <xsd:annotation>
+                        <xsd:documentation>Список идентификаторов сотрудников, по которым запрашиваются сущности</xsd:documentation>
+                      </xsd:annotation>
+                      <xsd:complexType>
+                        <xsd:sequence>
+                          <xsd:element name="employeeId" maxOccurs="100">
+                            <xsd:annotation>
+                              <xsd:documentation>Идентификатор сотрудника</xsd:documentation>
+                            </xsd:annotation>
+                            <xsd:simpleType>
+                              <xsd:restriction base="xsd:token">
+                                <xsd:minLength value="1"/>
+                                <xsd:maxLength value="19"/>
+                                <xsd:pattern value="\c{20}"/>
+                              </xsd:restriction>
+                            </xsd:simpleType>
+                          </xsd:element>
+                        </xsd:sequence>
+                      </xsd:complexType>
+                    </xsd:element>
+                  </xsd:choice>
+                  <xsd:element name="Timeslot" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Временной интервал, за который запрашиваются сущности</xsd:documentation>
+                    </xsd:annotation>
+                    <xsd:complexType>
+                      <xsd:attribute name="startDate" type="xsd:dateTime" use="required">
+                        <xsd:annotation>
+                          <xsd:documentation>Начальная дата временного интервала запроса</xsd:documentation>
+                        </xsd:annotation>
+                      </xsd:attribute>
+                      <xsd:attribute name="endDate" type="xsd:dateTime" use="required">
+                        <xsd:annotation>
+                          <xsd:documentation>Конечная дата временного интервала запроса</xsd:documentation>
+                        </xsd:annotation>
+                      </xsd:attribute>
+                    </xsd:complexType>
+                  </xsd:element>
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="Paging" minOccurs="0">
+        <xsd:annotation>
+          <xsd:documentation>Параметры постраничной выдачи </xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+          <xsd:attribute name="pageNumber" use="required">
+            <xsd:annotation>
+              <xsd:documentation>Номер страницы выдачи.</xsd:documentation>
+            </xsd:annotation>
+            <xsd:simpleType>
+              <xsd:restriction base="xsd:int">
+                <xsd:minInclusive value="1"/>
+              </xsd:restriction>
+            </xsd:simpleType>
+          </xsd:attribute>
+          <xsd:attribute name="pageLength" use="required">
+            <xsd:annotation>
+              <xsd:documentation>Количество элементов на странице выдачи.</xsd:documentation>
+            </xsd:annotation>
+            <xsd:simpleType>
+              <xsd:restriction base="xsd:int">
+                <xsd:minInclusive value="1"/>
+              </xsd:restriction>
+            </xsd:simpleType>
+          </xsd:attribute>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name="Id">
+      <xsd:annotation>
+        <xsd:documentation>Идентификатор</xsd:documentation>
+      </xsd:annotation>
+      <xsd:simpleType>
+        <xsd:restriction base="xsd:ID">
+          <xsd:maxLength value="50"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+    </xsd:attribute>
+    <xsd:attribute name="kind" use="required">
+      <xsd:annotation>
+        <xsd:documentation>Тип запроса</xsd:documentation>
+      </xsd:annotation>
+      <xsd:simpleType>
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="DEPARTMENTS">
+            <xsd:annotation>
+              <xsd:documentation>Запрос подразделений</xsd:documentation>
+            </xsd:annotation>
+          </xsd:enumeration>
+          <xsd:enumeration value="EMPLOYEES">
+            <xsd:annotation>
+              <xsd:documentation>Запрос сотрудников</xsd:documentation>
+            </xsd:annotation>
+          </xsd:enumeration>
+          <xsd:enumeration value="EMPLOYEE_WORK_MODES">
+            <xsd:annotation>
+              <xsd:documentation>Запрос балансов рабочего времени</xsd:documentation>
+            </xsd:annotation>
+          </xsd:enumeration>
+          <xsd:enumeration value="TS_VENICLES">
+            <xsd:annotation>
+              <xsd:documentation>Запрос ТС</xsd:documentation>
+            </xsd:annotation>
+          </xsd:enumeration>
+        </xsd:restriction>
+      </xsd:simpleType>
+    </xsd:attribute>
+  </xsd:complexType>
+</xsd:schema>

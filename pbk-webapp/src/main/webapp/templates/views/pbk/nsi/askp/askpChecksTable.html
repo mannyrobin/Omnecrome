@@ -1,0 +1,55 @@
+<span class="h5" style="color: #808080">{{::gridScope.caption}}<br/></span><br />
+<div ar-grid-filter parameters="gridScope.filterParams"></div>
+<div ar-grid-title parameters="gridScope.titleParams"></div>
+
+<table st-table="gridScope.grid.rows" st-pipe="gridScope.grid.loadAction" st-safe-src="gridScope.grid.rows"
+       class='table table-hover {{getRowClass == null ? "table-striped" : ""}}'>
+    <colgroup>
+        <col ng-repeat="header in gridScope.headers">
+        <col ng-repeat="header in gridScope.extheaders"/>
+    </colgroup>
+    <thead>
+        <tr>                  
+            <th ng-repeat="header in gridScope.headers" class="grid-header" style="{{::header.style}}" ar-st-sort="{{!header.disableSort ? header.id : ''}}">
+                {{::header.label}}
+            </th>
+            <th ng-repeat="header in gridScope.extheaders" class="grid-header" style="{{::header.style}}">
+                {{::header.label}}
+            </th>
+        </tr>
+    </thead>
+    <tbody ng-show="gridScope.grid.isLoading">
+        <tr>
+            <td colspan="{{(gridScope.extheaders == null || gridScope.extheaders.length == 0 ? 1 : gridScope.extheaders.length) + gridScope.headers.length}}" class="text-center">
+                <img ng-src="{{'images/spinner.gif'}}">
+            </td>
+        </tr>
+    </tbody>
+    <tbody ng-show="!gridScope.grid.isLoading && gridScope.grid.rows.length > 0 && gridScope.grid.rows[0].cnt > 0">
+        <tr ng-repeat="row in gridScope.grid.rows">
+            <td ng-repeat="header in gridScope.headers" style="{{::header.styleFunc(row)}}">
+                <span>{{row[header.id]}}</span>
+            </td>            
+            <td ng-if="header.hrefClick != null && header.hrefShow != null && header.hrefShow(row)" ng-class="row.extcolDetails === undefined ? '' : 'hover-table-color'" ng-click="header.hrefClick(row, header.label)" ng-repeat="header in gridScope.extheaders" ng-style="{'background-color':'{{getColor(row.extcolDetails[header.label])}}', 'text-align': 'center', 'vertical-align': 'middle'}">            	
+                <span>{{row.extcols[header.id]}}</span>
+            </td>
+            <td ng-if="header.hrefClick == null || header.hrefShow == null || !header.hrefShow(row)" ng-repeat="header in gridScope.extheaders" style="text-align: center; vertical-align: middle;">            	
+                <span>{{row.extcols[header.id]}}</span>
+            </td>            
+        </tr>
+    </tbody>
+    <tbody ng-show="!gridScope.grid.isLoading && (gridScope.grid.rows.length == 0 || gridScope.grid.rows[0].cnt == 0)">
+        <tr style="background-color: transparent;">
+            <td class="text-center" colspan="{{(gridScope.extheaders == null || gridScope.extheaders.length == 0 ? 1 : gridScope.extheaders.length) + gridScope.headers.length}}">
+                <p class="lead">Элементы не найдены</p>
+            </td>
+        </tr>
+    </tbody>
+    <tfoot>
+        <tr>
+            <td class="text-center" colspan="{{(gridScope.extheaders == null || gridScope.extheaders.length == 0 ? 1 : gridScope.extheaders.length) + gridScope.headers.length}}">
+                <div ng-if="gridScope.showRowCount === undefined || gridScope.showRowCount" ar-grid-pagination rows-on-page="gridScope.colRowsOnPage" grid-scope="gridScope"></div>
+            </td>
+        </tr>
+    </tfoot>
+</table>

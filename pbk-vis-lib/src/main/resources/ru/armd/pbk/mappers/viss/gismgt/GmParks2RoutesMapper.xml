@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gismgt.GmParks2RoutesMapper">
+	
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.gismgt.GmParks2Routes" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into [PBK_GISMGT].[GM_PARK_ROUTES] (
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmFields" /><![CDATA[	
+    			, [ROUTE_MUID]
+    			, [PARK_MUID]
+            ) values (
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmValues" /><![CDATA[
+    			, #{routeMuid}
+    			, #{parkMuid}
+            )
+        ]]>      
+    </insert>
+    
+    <select id="getByMuid" resultType="ru.armd.pbk.domain.viss.gismgt.GmParks2Routes">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, ROUTE_MUID as routeId
+	    		, PARK_MUID as parkId
+			from [PBK_GISMGT].[GM_PARK_ROUTES] a
+            where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_PARK_ROUTES WHERE MUID = #{muid})			
+        ]]>
+    </select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.gismgt.GmParks2Routes">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, ROUTE_MUID as routeId
+	    		, PARK_MUID as parkId
+			from [PBK_GISMGT].[GM_PARK_ROUTES] a
+            where ID = #{id}			
+        ]]>
+    </select>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.gismgt.GmParks2Routes">
+        <![CDATA[
+        	update [PBK_GISMGT].[GM_PARK_ROUTES]
+            set
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.updateGmFields" /><![CDATA[
+	    		, ROUTE_MUID = #{routeMuid}
+	    		, PARK_MUID = #{parkMuid}
+			where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_PARK_ROUTES WHERE MUID = #{muid})
+        ]]>
+    </update>  
+    
+    <select id="getDomain" resultType="ru.armd.pbk.domain.viss.gismgt.GmParks2Routes">
+		<![CDATA[
+			SELECT 
+               d.[ID] as id               
+			FROM [PBK_GISMGT].[GM_PARK_ROUTES] d
+			WHERE
+               #{parkMuid} is not null and d.[PARK_MUID] = #{parkMuid}
+               AND  #{routeMuid} is not null and d.[PARK_MUID] = #{routeMuid}	  
+        ]]>
+	</select>  
+</mapper>

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.core.RolePermissionsMapper">
+    <select id="getGridViews" resultType="ru.armd.pbk.views.core.RolesPermissionEditView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+    	<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+          	SELECT distinct obj.[ID] as id
+	      		, obj.[NAME] as name
+		  		, (	<include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+		  				SELECT 1 
+						FROM [PBK_CORE].[PERMISSIONS]
+						WHERE CAN_READ_CHANGE = 1 and OBJECT_ID=obj.ID
+					<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />) as canReadChange 
+				, (	<include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+		  				SELECT 1 
+						FROM [PBK_CORE].[PERMISSIONS]
+						WHERE CAN_DELETE_CHANGE = 1 and OBJECT_ID=obj.ID
+					<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />) as canDeleteChange 
+				, (	<include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+		  				SELECT 1 
+						FROM [PBK_CORE].[PERMISSIONS]
+						WHERE CAN_UPDATE_CHANGE = 1 and OBJECT_ID=obj.ID
+					<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />) as canUpdateChange 
+				, (	<include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+		  				SELECT 1 
+						FROM [PBK_CORE].[PERMISSIONS]
+						WHERE CAN_CREATE_CHANGE = 1 and OBJECT_ID=obj.ID
+					<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />) as canCreateChange
+				, (	<include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+						SELECT 1 
+						FROM [PBK_CORE].[PERMISSIONS] p
+						INNER JOIN [PBK_CORE].[ROLE_PERMISSIONS] rp on rp.PERMISSION_ID = p.ID						
+						WHERE p.CAN_READ = 1 and p.OBJECT_ID=obj.ID and
+						(#{filter.roleId} is not null and rp.ROLE_ID = #{filter.roleId})
+				    <include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />) as canRead
+				, (	<include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+						SELECT 1 
+						FROM [PBK_CORE].[PERMISSIONS] p
+						INNER JOIN [PBK_CORE].[ROLE_PERMISSIONS] rp on rp.PERMISSION_ID = p.ID						
+						WHERE p.CAN_DELETE = 1 and p.OBJECT_ID=obj.ID and
+						(#{filter.roleId} is not null and rp.ROLE_ID = #{filter.roleId})
+				    <include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />) as canDelete
+				, (	<include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+						SELECT 1 
+						FROM [PBK_CORE].[PERMISSIONS] p
+						INNER JOIN [PBK_CORE].[ROLE_PERMISSIONS] rp on rp.PERMISSION_ID = p.ID						
+						WHERE p.CAN_UPDATE = 1 and p.OBJECT_ID=obj.ID and
+						(#{filter.roleId} is not null and rp.ROLE_ID = #{filter.roleId})
+				    <include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />) as canUpdate
+				, (	<include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+						SELECT 1 
+						FROM [PBK_CORE].[PERMISSIONS] p
+						INNER JOIN [PBK_CORE].[ROLE_PERMISSIONS] rp on rp.PERMISSION_ID = p.ID						
+						WHERE p.CAN_CREATE = 1 and p.OBJECT_ID=obj.ID and
+						(#{filter.roleId} is not null and rp.ROLE_ID = #{filter.roleId})
+				    <include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />) as canCreate,
+				    (SELECT id 
+				     FROM [PBK_CORE].[PERMISSIONS]  
+				     WHERE [OBJECT_ID] = obj.ID and CAN_CREATE = 1) as createPermId,
+				     (SELECT id 
+				     FROM [PBK_CORE].[PERMISSIONS]  
+				     WHERE [OBJECT_ID] = obj.ID and CAN_UPDATE = 1) as updatePermId,
+				     (SELECT id 
+				     FROM [PBK_CORE].[PERMISSIONS]  
+				     WHERE [OBJECT_ID] = obj.ID and CAN_DELETE = 1) as deletePermId,
+				     (SELECT id 
+				     FROM [PBK_CORE].[PERMISSIONS]  
+				     WHERE [OBJECT_ID] = obj.ID and CAN_READ = 1) as readPermId
+			FROM [PBK_CORE].[OBJECTS] obj
+			INNER JOIN [PBK_CORE].[PERMISSIONS] perm ON obj.ID = perm.OBJECT_ID
+			WHERE #{filter.moduleId} is not null and perm.[MODULE_ID] = #{filter.moduleId}
+		<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+         SELECT role_perm.[ID] as id          
+            ,perm.[NAME] as name           
+         FROM [PBK_CORE].[PERMISSIONS] perm inner join [PBK_CORE].[ROLE_PERMISSIONS] role_perm on perm.ID = role_perm.PERMISSION_ID
+         WHERE (#{filter.roleId} is null or role_perm.ROLE_ID = #{filter.roleId}) 
+    </select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.core.RolePermission" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_CORE].[ROLE_PERMISSIONS] (
+              [CREATE_DATE]
+              ,[CREATE_USER_ID]
+              ,[ROLE_ID]
+              ,[PERMISSION_ID]
+            ) VALUES (
+              #{createDate},
+              #{createUserId},
+              #{roleId},
+              #{permId}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_CORE.ROLE_PERMISSIONS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+
+    <delete id="delete">
+        DELETE FROM [PBK_CORE].[ROLE_PERMISSIONS]  WHERE ID in
+        <include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+
+	<select id="getDomain" resultType="ru.armd.pbk.domain.core.RolePermission">
+        <![CDATA[
+			SELECT
+               d.[ID] as id              
+			FROM [PBK_CORE].[ROLE_PERMISSIONS] d 
+			WHERE
+               (#{roleId} is not null and d.[ROLE_ID] = #{roleId}) 
+               and (#{permissionId} is not null and d.[PERMISSION_ID] = #{permissionId})			  
+        ]]>
+    </select>
+
+</mapper>

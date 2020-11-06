@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.GkuopReportMapper">
+
+	 <select id="getReportViews" resultType="ru.armd.pbk.views.nsi.GkuopReportView">
+        <![CDATA[
+          SELECT
+               ROW_NUMBER() OVER (]]><include refid="ru.armd.pbk.mappers.CommonSql.orderBySql" /><![CDATA[) AS id,
+               t.*
+            FROM (
+				SELECT
+					d.[ID] as id,
+					dh.NAME as name,
+					dh.PATRONUMIC as patronumic,
+					dh.SURNAME as surname,
+				    dh.GKUOP_DEPT_NAME as gkuopDeptName,
+				    dh.POSITION_NAME as positionName,
+		           	dh.PERSONNEL_NUMBER as personalNumber,
+		           	dh.GKUOP_EMPLOYEE_ID as visGkuopId,
+		           	dh.DESCRIPTION as description,
+				    d.IS_DELETE as isDelete
+				  FROM
+				    PBK_NSI.GKUOP_EMPLOYEES d LEFT JOIN PBK_NSI.GKUOP_EMPLOYEE_HISTS dh ON (d.ID = dh.HEAD_ID)
+				  WHERE
+		          	dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate() AND
+		          	(#{filter.name} is null or UPPER(dh.NAME) like UPPER('%${filter.name}%')  or UPPER(dh.SURNAME) like UPPER('%${filter.name}%')  or UPPER(dh.PATRONUMIC) like UPPER('%${filter.name}%')) AND
+		          	(#{filter.gkuopDeptName} is null or UPPER(dh.GKUOP_DEPT_NAME) like UPPER('%${filter.gkuopDeptName}%')) AND
+		          	(#{filter.personalNumber} is null or UPPER(dh.PERSONNEL_NUMBER) like UPPER('%${filter.personalNumber}%'))
+		          	and (d.IS_DELETE = 0)
+		          	]]><if test="filter.ids != null">
+						AND d.ID IN (${filter.ids})
+					</if>
+        	) t
+        	<include refid="ru.armd.pbk.mappers.CommonSql.orderBySql_t" />
+    </select>
+    
+</mapper>

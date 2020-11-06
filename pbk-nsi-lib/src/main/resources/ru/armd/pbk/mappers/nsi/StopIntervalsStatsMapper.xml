@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.StopIntervalsStatsMapper">
+		
+	<insert id="insertStatsByWorkDate">
+		 <![CDATA[
+		 	INSERT INTO [PBK_VIS].[STOP_INTERVALS_STATS]
+           	([WORK_DATE]
+           	 , [ASDU_ROUTE_ID]
+             , [GRAFIC]
+             , [ASDU_ROUTE_NAME]
+             , [DEPOT_ID]
+             , [DEPOT_NAME]
+             , [DEPOT_NUMBER]
+             , [ASDU_ROUTE_TYPE]
+             , [HAS_INTERVALS]
+			 , [TRIP_ID])
+			 SELECT distinct #{workDate, jdbcType=DATE}, gr.ROUTE_ID, vt.GRAFIC, gr.ROUTE_SHORT_NAME, gd.DEPOT_ID, gd.DEPOT_NAME, gv.DEPOT_NUMBER, gr.ROUTE_TYPE, 0, t.TRIP_ID
+                FROM ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_VEHICLE_TASK vt
+                JOIN ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_TRIPS t ON
+                    vt.ROUTE_ID = t.ROUTE_ID
+                JOIN PBK_VIS.ASDU_GTFS_ROUTES gr on
+                    vt.ROUTE_ID = gr.ROUTE_ID
+                    and gr.WORK_DATE = #{workDate, jdbcType=DATE}
+                JOIN ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_VEHICLE gv on
+                    vt.VEHICLE_ID = gv.VEHICLE_ID
+                JOIN ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_DEPOTS gd on
+                    gd.DEPOT_ID = gv.DEPOT_ID
+                JOIN ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_STOP_TIMES st ON
+                    st.TRIP_ID = t.TRIP_ID
+                    AND st.GRAFIC = vt.GRAFIC
+                    AND st.SHIFT_NUM = vt.SHIFT_NUM
+                JOIN ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_CALENDAR cl ON
+                    cl.START_DATE <= #{workDate, jdbcType=DATE}
+                    AND (cl.END_DATE IS NULL OR cl.END_DATE >= #{workDate, jdbcType=DATE})
+                    AND (
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 1 AND cl.[MONDAY] = 1 OR
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 2 AND cl.[TUESDAY] = 1 OR
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 3 AND cl.[WEDNESDAY] = 1 OR
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 4 AND cl.[THURSDAY] = 1 OR
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 5 AND cl.[FRIDAY] = 1 OR
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 6 AND cl.[SATURDAY] = 1 OR
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 7 AND cl.[SUNDAY] = 1
+                    )
+                    AND vt.ROUTE_ID = cl.ROUTE_ID
+                    AND st.SERVICE_ID = cl.SERVICE_ID
+		 ]]>
+	</insert>
+
+	<select id="getDomains" resultType="ru.armd.pbk.domain.nsi.StopIntervalStat">
+        <![CDATA[
+            SELECT  armt.[ID] as id
+		      , armt.[DEPOT_NUMBER] as depotNumber
+		      , armt.[GRAFIC] as grafic
+		      , armt.[ASDU_ROUTE_ID] as mrCode
+		      , armt.[WORK_DATE] as date
+  			FROM [PBK_VIS].[STOP_INTERVALS_STATS] armt
+  			JOIN PBK_NSI.ROUTE_HISTS rh on rh.ASDU_ROUTE_ID = armt.[ASDU_ROUTE_ID] and rh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+            WHERE 1 = 1
+            	AND #{route} = rh.HEAD_ID
+            	AND #{moveCode} = armt.GRAFIC
+            	AND #{date, jdbcType=DATE} = armt.WORK_DATE 
+        ]]>
+    </select>
+    
+	<update id="updateHasIntervalByWorkDate">
+		<![CDATA[
+			UPDATE sis
+			SET [HAS_INTERVALS] = 1
+			FROM [PBK_VIS].[STOP_INTERVALS_STATS] sis
+			JOIN [PBK_VIS].[STOP_INTERVALS] si on sis.ASDU_ROUTE_ID = si.ASDU_ROUTE_ID and sis.GRAFIC = si.GRAFIC and sis.WORK_DATE = si.WORK_DATE
+			WHERE sis.WORK_DATE = #{workDate, jdbcType=DATE}
+		]]>
+	</update>
+	
+	<delete id="deleteByWorkDate">
+		<![CDATA[
+			DELETE FROM [PBK_VIS].[STOP_INTERVALS_STATS]
+			WHERE [WORK_DATE] = #{workDate, jdbcType=DATE}			
+		]]>
+	</delete>
+	
+	<select id="getParkSelectList" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+	    	SELECT distinct DEPOT_ID as id, DEPOT_NAME as name
+			FROM [PBK_VIS].[STOP_INTERVALS_STATS] sis
+			JOIN [PBK_NSI].[WORK_DAYS] wd on wd.WORK_DATE = sis.WORK_DATE 		
+            WHERE 1 = 1
+	        ]]><if test="isWorkDate != null"><![CDATA[
+	        	AND (#{isWorkDate} = 1 AND wd.WORK_DAY_TYPE_ID = 1) or (#{isWorkDate} = 0 AND wd.WORK_DAY_TYPE_ID in (2, 3))   
+	        ]]></if>
+	        <![CDATA[
+		        AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= sis.WORK_DATE)
+	            AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= sis.WORK_DATE)
+	        order by name
+    	]]>
+    </select>
+	
+	<select id="getRouteMoveSelectList" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+    		SELECT distinct sis.GRAFIC as id, sis.GRAFIC as name
+			FROM [PBK_VIS].[STOP_INTERVALS_STATS] sis
+			JOIN PBK_NSI.ROUTE_HISTS rh on sis.ASDU_ROUTE_ID = rh.ASDU_ROUTE_ID and rh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+			WHERE ((#{routeId} is not null and rh.HEAD_ID = #{routeId})				
+					AND (#{date, jdbcType=DATE} is not null and sis.WORK_DATE = #{date, jdbcType=DATE}))
+					OR (				
+				(#{asduRouteId} is not null and sis.ASDU_ROUTE_ID = #{asduRouteId})
+				AND (#{dateFrom, jdbcType=DATE} IS not NULL AND #{dateFrom, jdbcType=DATE} <= sis.WORK_DATE)
+		        AND (#{dateTo, jdbcType=DATE} IS not NULL AND #{dateTo, jdbcType=DATE} >= sis.WORK_DATE)) 
+		    order by name
+    	]]>
+    </select>
+	
+	<select id="getRouteSelectList" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+	    	SELECT distinct ASDU_ROUTE_ID as id, ASDU_ROUTE_NAME + ' (' + gm.NAME + ')' as name
+			FROM [PBK_VIS].[STOP_INTERVALS_STATS] sis
+			JOIN [PBK_NSI].[WORK_DAYS] wd on wd.WORK_DATE = sis.WORK_DATE 
+			JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gm on sis.ASDU_ROUTE_TYPE = gm.SHORT_NAME
+			JOIN PBK_NSI.ROUTE_TS_KINDS rtk on rtk.GM_ROUTE_TS_KIND_ID = gm.ID
+            WHERE 1 = 1
+	        ]]><if test="isWorkDate != null"><![CDATA[
+	        	AND (#{isWorkDate} = 1 AND wd.WORK_DAY_TYPE_ID = 1) or (#{isWorkDate} = 0 AND wd.WORK_DAY_TYPE_ID in (2, 3))   
+	        ]]></if>
+	        <![CDATA[
+		        AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= sis.WORK_DATE)
+	            AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= sis.WORK_DATE)
+            ]]>
+            <if test="tsType != null and tsType != '-1'">
+				AND rtk.ID IN (${tsType}) AND
+        	</if>
+        	<![CDATA[
+        		AND (#{routeName} IS NOT NULL AND UPPER(sis.ASDU_ROUTE_NAME) like UPPER('${routeName}%'))
+        		AND (#{parkId} is null or sis.DEPOT_ID = #{parkId})
+        		order by name
+        	]]>
+    </select>
+    
+    <select id="getRouteTripSelectList" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+	    	SELECT distinct sis.TRIP_ID as id, sis.TRIP_ID as name
+			FROM PBK_VIS.STOP_INTERVALS_STATS sis
+            WHERE 1 = 1
+		        AND (#{dateFrom, jdbcType=DATE} IS NOT NULL AND #{dateFrom, jdbcType=DATE} <= sis.WORK_DATE)
+	            AND (#{dateTo, jdbcType=DATE} IS NOT NULL AND #{dateTo, jdbcType=DATE} >= sis.WORK_DATE)
+            ]]>
+        	<![CDATA[
+        		AND (#{routeId} is not null AND sis.ASDU_ROUTE_ID = #{routeId})
+        		AND (#{grafic} is null or #{grafic} = -1 or sis.GRAFIC = #{grafic})
+        		order by name
+        	]]>        	
+    </select>
+    
+    <select id="getStopSelectList" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+			    SELECT distinct si.[STOP_ID] as id, si.STOP_NAME + ' ('+ cast(si.[STOP_ID] as nvarchar) + ')' as name  
+				FROM [PBK_VIS].[STOP_INTERVALS] si
+				WHERE  1 = 1
+			        AND (#{dateFrom, jdbcType=DATE} IS NOT NULL AND #{dateFrom, jdbcType=DATE} <= si.WORK_DATE)
+		            AND (#{dateTo, jdbcType=DATE} IS NOT NULL AND #{dateTo, jdbcType=DATE} >= si.WORK_DATE) 
+		            AND (#{stopName} is not null AND UPPER(si.STOP_NAME) like UPPER('${stopName}%'))                  
+        		order by name
+        	]]>        	
+    </select>
+	
+</mapper>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So17Mapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.report.So17View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[
+            SELECT 
+                ROW_NUMBER() OVER(ORDER BY t.date) AS id
+                , t.*
+            FROM (
+                SELECT
+                    distinct si.*
+                    , CASE tt.[COD] WHEN '1' THEN 'А-' WHEN '2' THEN 'Тб-' WHEN '3' THEN 'Тр-' WHEN '4' THEN 'СТр-' END + rh.ROUTE_NUMBER as routeNumber
+                FROM
+                    (SELECT
+                        si.DATE as date
+                        , si.ASKP_ROUTE_CODE as routeCode
+                        --, si.START as routeWorkStartTime
+                        --, si.[END] as routeWorkEndTime
+                        , ISNULL(si.ASKP_CHECKS_COUNT, 0) as askpPassengerCount
+                        , ISNULL(si.ASMPP_AVG_COUNT, 0) as asmppPassengerCount
+                        , ABS(ISNULL(si.ASKP_CHECKS_COUNT, 0) - ISNULL(si.ASMPP_AVG_COUNT, 0)) AS diffs
+                       
+                    FROM PBK_VIS.PASSENGERS si
+                    WHERE 1=1
+                        ]]><if test="filter.dateFrom != null"><![CDATA[
+                          AND #{filter.dateFrom, jdbcType=DATE} <= si.DATE
+                        ]]></if>
+                        <if test="filter.dateTo != null"><![CDATA[
+                          AND #{filter.dateTo, jdbcType=DATE} >= si.DATE
+                        ]]></if><![CDATA[
+                    ) si
+                LEFT JOIN PBK_NSI.ROUTE_HISTS rh ON (si.routeCode = rh.ASKP_ROUTE_CODE AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+                LEFT JOIN PBK_NSI.ROUTE_TS_KINDS rtk on (rh.[ROUTE_TS_KIND_ID] = rtk.ID)
+                LEFT JOIN PBK_NSI.TS_TYPES tt on (rtk.COD = tt.COD)
+                LEFT JOIN PBK_NSI.CITY_DISTRICT_ROUTES cdr ON (rh.HEAD_ID = cdr.ROUTE_ID AND cdr.V_END_DATE >= PBK_CORE.getVersionEndDate())
+                LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON (cdh.HEAD_ID = cdr.CITY_DISTRICT_ID AND cdh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+                LEFT JOIN PBK_NSI.CITY_COUNTY_HISTS cch ON (cdh.CITY_COUNTY_ID = cch.HEAD_ID AND cch.V_END_DATE >= PBK_CORE.getVersionEndDate())
+                WHERE 1 = 1
+        ]]><if test="filter.departmentId != null"><![CDATA[
+                    AND cch.DEPT_ID IN (${filter.departmentId})
+        ]]></if>
+            <if test="filter.tsType != null"><![CDATA[
+                    AND tt.ID IN (${filter.tsType})
+        ]]></if>
+            <if test="filter.routes != null"><![CDATA[
+                    AND rh.HEAD_ID IN (${filter.routes})
+        ]]></if><if test="filter.deptAuthId != null"><![CDATA[
+                    and cch.DEPT_ID = #{filter.deptAuthId}
+        ]]></if><![CDATA[
+                    ) t
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+</mapper>

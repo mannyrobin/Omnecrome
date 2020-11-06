@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.CommonSql">
+
+    <sql id="mssqlTurboMode">
+        <![CDATA[
+            OPTION(RECOMPILE)
+        ]]>
+    </sql>
+    
+    <sql id="pbkCalc">
+    	<![CDATA[
+    		[PBK_CALC_${@ru.armd.pbk.utils.date.DateUtils@getFusedDate(workDate)}]
+    	]]>    	
+    </sql>
+        
+    <!-- PAGE BY ORDER BY -->
+    <sql id="pageSupportBegin">
+        <![CDATA[
+            with y as (
+        ]]>
+    </sql>
+    <sql id="pageSupportEnd">
+        <![CDATA[
+            )
+            select
+                (select count(*) from y) as cnt
+                , * from y
+                order by
+        ]]>
+        <if test="orderBy != null">
+            <if test="orderByAsc == true"><![CDATA[
+                    ${orderBy} asc
+            ]]></if>
+            <if test="orderByAsc == false"><![CDATA[
+                    ${orderBy} desc
+             ]]></if>
+        </if>
+        <if test="orderBy == null"><![CDATA[
+                    2 asc
+        ]]></if>
+        <![CDATA[
+                    offset (#{page} - 1) * #{count} rows fetch first #{count} rows only
+        ]]>
+    </sql>
+    
+    <!-- PAGE BY RNUM -->
+    <sql id="pageSupportBeginDeprecated">
+        <![CDATA[
+            select #{page}, #{count}, *
+            from ( select ROW_NUMBER() over (
+                order by ${orderBy}
+        ]]>
+        <if test="orderBy != null">
+            <if test="orderByAsc == true"><![CDATA[
+                asc
+            ]]></if>
+            <if test="orderByAsc == false"><![CDATA[
+                desc
+             ]]></if>
+        </if>
+        <if test="orderBy == null"><![CDATA[
+                id asc
+        ]]></if>
+        <![CDATA[
+            ) as rnum, count(*) over() as cnt, *
+            from (
+        ]]>
+    </sql>
+    <sql id="pageSupportEndDeprecated">
+        <![CDATA[
+            ) y ) x
+            where (#{page} is null or #{count} is null or #{page} < 0 or #{count} < 1 or
+                (#{page} = 0 and rnum <= #{count}) or
+                rnum between ((#{page} - 1) * #{count} + 1) and (#{page} * #{count}))
+        ]]>
+    </sql>
+    
+    <!-- ORDER BY CLAUSE -->
+    <sql id="orderBySql">
+        <if test="orderBy != null"><![CDATA[
+            order by ${orderBy}
+            ]]><if test="orderByAsc == false"><![CDATA[
+                desc
+            ]]></if>
+        </if>
+        <if test="orderBy == null"><![CDATA[
+            order by id desc
+        ]]></if>
+    </sql>
+    <sql id="orderBySql_t">
+        <if test="orderBy != null"><![CDATA[
+            order by ${orderBy}
+            ]]><if test="orderByAsc == false"><![CDATA[
+                desc
+            ]]></if>
+        </if>
+        <if test="orderBy == null"><![CDATA[
+            
+        ]]></if>
+    </sql>
+
+    <!-- 'IN' CLAUSE SUPPORT -->
+    <sql id="inList">
+        <foreach item="item" index="index" collection="list" open="(" separator="," close=")">
+        <![CDATA[
+            #{item}
+        ]]>
+        </foreach>
+    </sql>
+    
+     <sql id="inStringList">
+        <foreach item="item" index="index" collection="list" open="(" separator="," close=")">
+        <![CDATA[
+            UPPER(#{item})
+        ]]>
+        </foreach>
+    </sql>
+    
+    <!-- OTHER TEMPLATES -->
+    <sql id="tplSelectAuditFields">
+        <![CDATA[
+            select CONVERT(varchar(20), t.CREATE_DATE, 120) as createDate
+            , 'User ID = ' + cast(t.CREATE_USER_ID as nvarchar) as createUserName
+            , CONVERT(varchar(20), t.UPDATE_DATE, 120) as updateDate
+            , 'User ID = ' + cast(t.UPDATE_USER_ID as nvarchar) as updateUserName
+        ]]>
+    </sql>
+    
+    <sql id="tplInsertIdAndAuditFields">
+        <![CDATA[
+            ID
+            , CREATE_DATE
+            , CREATE_USER_ID
+            , UPDATE_DATE
+            , UPDATE_USER_ID
+        ]]>
+    </sql>
+    
+    <sql id="tplInsertIdAndAuditValues">
+        <![CDATA[
+            #{id}
+            , #{createDate}
+            , #{createUserId}
+            , #{updateDate}
+            , #{updateUserId}
+        ]]>
+    </sql>
+    
+    <sql id="tplInsertAuditFields">
+        <![CDATA[
+            CREATE_DATE
+            , CREATE_USER_ID
+            , UPDATE_DATE
+            , UPDATE_USER_ID
+        ]]>
+    </sql>
+    
+    <sql id="tplInsertAuditValues">
+        <![CDATA[
+            #{createDate}
+            , #{createUserId}
+            , #{updateDate}
+            , #{updateUserId}
+        ]]>
+    </sql>
+    
+    <sql id="tplUpdateAuditValues">
+        <![CDATA[
+            UPDATE_DATE = #{updateDate}
+            , UPDATE_USER_ID = #{updateUserId}
+        ]]>
+    </sql>
+
+    <sql id="tplSelectAuditValues">
+        <![CDATA[
+                , CREATE_DATE     as createDate
+                , CREATE_USER_ID  as createUserId
+                , UPDATE_DATE     as updateDate
+                , UPDATE_USER_ID  as updateUserId
+        ]]>
+    </sql>
+
+    <sql id="tplSelectCreateAuditValues">
+        <![CDATA[
+                , CREATE_DATE     as createDate
+                , CREATE_USER_ID  as createUserId
+        ]]>
+    </sql>
+
+
+
+    <sql id="tplInsertVersionFields">
+        <![CDATA[
+            , V_START_DATE
+            , V_END_DATE
+        ]]>
+    </sql>
+
+    <sql id="tplInsertVersionValues">
+        <![CDATA[
+            , #{versionStartDate}
+            , #{versionEndDate}
+        ]]>
+    </sql>
+
+    <sql id="tplUpdateVersionValues">
+        <![CDATA[
+            , V_END_DATE = #{versionEndDate}
+        ]]>
+    </sql>
+
+    <sql id="tplSelectVersionValues">
+        <![CDATA[
+            , V_START_DATE as #{versionStartDate}
+            , V_END_DATE as #{versionEndDate}
+        ]]>
+    </sql>
+
+
+
+    <sql id="tplSelectDictionaryValues">
+        <![CDATA[
+                , [NAME]        as name
+                , [COD]         as cod
+                , [DESCRIPTION] as description
+        ]]>
+    </sql>
+
+	<sql id="tplSelectDictionaryValuesWithId">
+        <![CDATA[
+        		  [ID] 			as id
+                , [NAME]        as name
+                , [COD]         as cod
+                , [DESCRIPTION] as description
+        ]]>
+    </sql>
+	
+    <sql id="tplInsertDictionaryFields">
+        <![CDATA[
+                , [NAME]
+                , [COD]
+                , [DESCRIPTION]
+        ]]>
+    </sql>
+
+    <sql id="tplInsertDictionaryValues">
+        <![CDATA[
+                , #{name}
+                , #{cod}
+                , #{description}
+        ]]>
+    </sql>
+
+    <sql id="tplUpdateDictionaryValues">
+        <![CDATA[
+                , [NAME]        = #{name}
+                , [COD]         = #{cod}
+                , [DESCRIPTION] = #{description}
+        ]]>
+    </sql>
+
+
+    <sql id="filterDate">
+        <![CDATA[
+            (#{dateFrom, jdbcType=DATE} is null or #{dateFrom, jdbcType=DATE} <= cast(${field} as DATE)) and
+            (#{dateTo, jdbcType=DATE} is null or #{dateTo, jdbcType=DATE} >= cast(${field} as DATE))
+        ]]>
+    </sql>
+    
+    <sql id="historyViewValues">
+        <![CDATA[
+			dh.ID as id,
+			dh.V_START_DATE as versionStartDate,
+			dh.V_END_DATE as versionEndDate,
+			ISNULL(cu.LOGIN, '') as createUser,
+			dh.CREATE_DATE as createDate,
+			ISNULL(uu.LOGIN, '') as updateUser,
+			dh.UPDATE_DATE as updateDate,
+        ]]>
+    </sql>
+    
+    <sql id="gmFields">
+        <![CDATA[
+            ID as id
+            , MUID as muid
+            , IS_DELETE as isDelete
+            , VERSION as version
+            , GIS_MGT_VERSION as gmVersion
+        ]]>
+    </sql>
+    
+    <sql id="insertGmFields">
+        <![CDATA[
+        [MUID]
+        , [IS_DELETE]
+        , [VERSION]
+        , [GIS_MGT_VERSION]
+        ]]>
+    </sql>
+            
+    <sql id="insertGmValues">
+        <![CDATA[
+            #{muid}
+            , #{isDelete}
+            , #{version}
+            , #{gmVersion}
+        ]]>
+    </sql>
+           
+    <sql id="updateGmFields">
+        <![CDATA[
+            MUID = #{muid}
+            , IS_DELETE = #{isDelete}
+            , VERSION = #{version}
+            , GIS_MGT_VERSION = #{gmVersion}
+        ]]>
+    </sql>
+    
+    <sql id="isExistStart">
+        SELECT
+    		CAST(CASE WHEN EXISTS(
+    </sql>
+    
+    <sql id="isExistEnd">
+        ) THEN 1 ELSE 0 END AS BIT)
+    </sql>
+
+    <sql id="fileStreamFields">
+        <![CDATA[
+                [stream_id] as id
+                ,[file_stream] as stream
+                ,[name] as name
+                --,[path_locator]
+                --,[parent_path_locator]
+                ,[file_type] as type
+                ,[cached_file_size] as size
+                ,[creation_time] as creationTime
+                ,[last_write_time] as lastWriteTime
+                ,[last_access_time] as lastAccessTime
+                ,[is_directory] as isDirectory
+                ,[is_offline] as isOffline
+                ,[is_hidden] as isHidden
+                ,[is_readonly] as isReadonly
+                ,[is_archive] as isArchive
+                ,[is_system] as isSystem
+                ,[is_temporary] as isTemporary
+        ]]>
+    </sql>
+</mapper>

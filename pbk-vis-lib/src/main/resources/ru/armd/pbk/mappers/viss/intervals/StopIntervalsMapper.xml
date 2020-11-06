@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.intervals.StopIntervalsMapper">
+    <select id="getPlanRoutes" resultType="String">
+        <![CDATA[
+            SELECT p.ROUTE_ID
+            FROM ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_VEHICLE_TASK p          
+            GROUP BY p.ROUTE_ID
+       ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.mssqlTurboMode" />
+    </select>
+    
+    <select id="getTasksAndStops" resultType="ru.armd.pbk.domain.viss.intervals.TasksAndStops">
+        <![CDATA[
+            SELECT DISTINCT
+                ROUTE_ID as routeId
+                , VEHICLE_ID as vehicleId
+                , EQUIPMENT_ID as equipmentId
+                , GRAFIC as grafic
+                , SERVICE_ID as serviceId
+                , SHIFT_NUM as shiftNum
+                , START_TIME as startTime
+                , END_TIME as endTime
+                , TRIP_NUM as tripNum
+                , TRIP_ID as tripId
+                , STOP_SEQUENCE as stopNum
+                , t.STOP_ID as stopId
+                , s.STOP_LAT as latitude
+                , s.STOP_LON as longitude
+            FROM (
+                SELECT vt.ROUTE_ID
+                    , vt.VEHICLE_ID
+                    , eh.IDENTIFICATOR as EQUIPMENT_ID 
+                    , vt.GRAFIC
+                    , t.TRIP_ID
+                    , st.SERVICE_ID
+                    , vt.SHIFT_NUM
+                    , FIRST_VALUE(st.ARRIVAL_TIME) OVER (
+                        PARTITION BY vt.ROUTE_ID, vt.GRAFIC, st.SERVICE_ID
+                        ORDER BY vt.ROUTE_ID, vt.GRAFIC, st.SERVICE_ID, st.ARRIVAL_TIME) as START_TIME
+                    , FIRST_VALUE(st.ARRIVAL_TIME) OVER (
+                        PARTITION BY vt.ROUTE_ID, vt.GRAFIC, st.SERVICE_ID
+                        ORDER BY vt.ROUTE_ID, vt.GRAFIC, st.SERVICE_ID, st.ARRIVAL_TIME desc) as END_TIME
+                    , st.STOP_ID
+                    , st.STOP_SEQUENCE
+                    , st.TRIP_NUM
+                FROM ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_VEHICLE_TASK vt
+                JOIN ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_TRIPS t ON
+                    vt.ROUTE_ID = t.ROUTE_ID
+                JOIN ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_STOP_TIMES st ON
+                    st.TRIP_ID = t.TRIP_ID
+                    AND st.GRAFIC = vt.GRAFIC
+                    AND st.SHIFT_NUM = vt.SHIFT_NUM
+                JOIN ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_CALENDAR cl ON
+               		cl.START_DATE <= #{workDate, jdbcType=DATE}
+                    AND (cl.END_DATE IS NULL OR cl.END_DATE >= #{workDate, jdbcType=DATE})
+                    AND (
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 1 AND cl.[MONDAY] = 1 OR
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 2 AND cl.[TUESDAY] = 1 OR
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 3 AND cl.[WEDNESDAY] = 1 OR
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 4 AND cl.[THURSDAY] = 1 OR
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 5 AND cl.[FRIDAY] = 1 OR
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 6 AND cl.[SATURDAY] = 1 OR
+                        DATEPART(WEEKDAY, #{workDate, jdbcType=DATE}) = 7 AND cl.[SUNDAY] = 1
+                    )
+                    AND vt.ROUTE_ID = cl.ROUTE_ID
+                    AND st.SERVICE_ID = cl.SERVICE_ID
+                JOIN ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_EQUIPMENT eh ON
+                    eh.VEHICLE_ID = vt.VEHICLE_ID
+                    AND eh.IS_DELETED != 1
+                WHERE vt.ROUTE_ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" /><![CDATA[
+            ) t
+            JOIN ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_STOPS s ON
+                s.STOP_ID = t.STOP_ID
+            ORDER BY EQUIPMENT_ID, ROUTE_ID, GRAFIC, SERVICE_ID, SHIFT_NUM, TRIP_NUM, TRIP_ID, STOP_SEQUENCE
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.mssqlTurboMode" />
+    </select>
+
+    <select id="getTelematics" resultType="ru.armd.pbk.domain.viss.intervals.Telematic">
+        <![CDATA[
+            select
+                t.[POINT_TIME] as time
+                , t.[POINT_LATITUDE] as latitude
+                , t.[POINT_LONGITUDE] as longitude
+            from [PBK_NSI].[TS_EQUIPMENTS] e
+                join [PBK_NSI].[TS_EQUIPMENT_HISTS] eh on e.ID = eh.HEAD_ID
+                inner join [PBK_VIS].[ASDU_FT_TELEMATICS] t on eh.[HEAD_ID] = t.[EQUIPMENT_ID]
+            where eh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+                and eh.[ASDU_VENICLE_ID] = #{depotNumber}
+                and #{dateFrom, jdbcType=DATE} <= t.[POINT_TIME]
+                and #{dateTo, jdbcType=DATE} > t.[POINT_TIME]
+            order by time
+       ]]>
+    </select>
+    <select id="getAllTelematics" resultType="ru.armd.pbk.domain.viss.intervals.Telematic">
+        <![CDATA[
+            select
+                t.[EQUIPMENT_ID] as equipmentId
+                , t.[POINT_TIME] as time
+                , t.[POINT_LATITUDE] as latitude
+                , t.[POINT_LONGITUDE] as longitude
+            from ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.[ASDU_FT_TELEMATICS] t
+            order by equipmentId, time
+       ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.mssqlTurboMode" />
+    </select>
+    <insert id="insertBulk" parameterType="java.util.List">
+        <![CDATA[
+            INSERT INTO [PBK_VIS].[STOP_INTERVALS] (
+                 [WORK_DATE]
+                ,[ASDU_ROUTE_ID]
+                ,[GRAFIC]
+                ,[TRIP_ID]
+                ,[TRIP_NUM]
+                ,[TRIP_VARIANT]
+                ,[ORDER_NUM]
+                ,[STOP_ID]
+                ,[STOP_ARRIVAL_TIME]
+                ,[SERVICE_ID]
+                ,[SHIFT_NUM]
+                ,[VEHICLE_ID]
+            ) VALUES
+        ]]><foreach collection="list" item="element" index="index" separator=","><![CDATA[
+                (
+                #{element.workDate}
+                , #{element.asduRouteId}
+                , #{element.grafic}
+                , #{element.tripId}
+                , #{element.tripNum}
+                , #{element.tripVariant}
+                , #{element.orderNum}
+                , #{element.stopId}
+                , #{element.stopArrivalTime}
+                , #{element.serviceId}
+                , #{element.shiftNum}
+                , #{element.vehicleId}
+                )
+        ]]></foreach>
+    </insert>
+    
+    <update id="updateStopNames">
+        <![CDATA[
+            UPDATE si
+            SET
+                si.STOP_NAME = v.STOP_NAME
+            FROM PBK_VIS.STOP_INTERVALS as si
+            JOIN ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_STOPS v ON
+                si.STOP_ID = v.STOP_ID
+            WHERE si.WORK_DATE = #{workDate, jdbcType=DATE}
+        ]]>
+    </update>
+    
+    <update id="updateDepots">
+        <![CDATA[
+            UPDATE si
+            SET
+                si.DEPOT_ID = d.DEPOT_ID
+                , si.DEPOT_NAME = d.DEPOT_NAME
+            FROM PBK_VIS.STOP_INTERVALS as si
+            JOIN ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_VEHICLE v ON
+                v.VEHICLE_ID = si.VEHICLE_ID
+            JOIN ]]><include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/><![CDATA[.ASDU_GTFS_DEPOTS d ON
+                d.DEPOT_ID = v.DEPOT_ID
+            WHERE si.WORK_DATE = #{workDate, jdbcType=DATE}
+        ]]>
+    </update>
+    
+    <select id="getStopIntervals" resultType="ru.armd.pbk.domain.viss.intervals.StopInterval">
+        <![CDATA[
+            SELECT
+                 [ID] id
+                ,[DATE] date
+                ,[ASDU_ROUTE_CODE] routeCode
+                ,[MOVE_CODE] moveCode
+                ,[ASDU_STOP_ID] asduStopId
+                ,[ERM_STOP_ID] ermStopId
+                ,[STOP_ARRIVAL_TIME] stopArrivalTime
+                ,[ASMPP_IN_COUNT] asmppInCount
+                ,[ASMPP_OUT_COUNT] asmppOutCount
+                ,[SHIFT_NUM] shiftNum
+                ,[ROUTE_NUM] routeNum
+            FROM [PBK_VIS].[STOP_INTERVALS]
+            WHERE [ID] in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </select>    
+
+    <update id="updateAsmppCounts">
+        <![CDATA[
+            UPDATE PBK_VIS.STOP_INTERVALS
+            SET
+                ASMPP_IN_COUNT = #{asmppInCount}
+                , ASMPP_OUT_COUNT = #{asmppOutCount}
+            WHERE ID = #{id}
+        ]]>
+    </update>
+    
+    <insert id="insertStartIntervals">
+    	<![CDATA[
+    		INSERT INTO [PBK_VIS].[STOP_INTERVALS]
+           	(	[DATE]
+           		, [MOVE_CODE]           
+           		, [ASDU_ROUTE_CODE]
+           		, [STOP_ARRIVAL_TIME])     
+           		(
+           		SELECT distinct [DATE]
+				, [MOVE_CODE]     
+				, [ASDU_ROUTE_CODE] 
+				, [DATE] 
+				FROM [PBK_DB].[PBK_VIS].[STOP_INTERVALS]
+				WHERE [DATE] = #{date, jdbcType=DATE})
+		]]>
+    </insert>
+
+	<insert id="insertEndIntervals">
+		<![CDATA[
+			INSERT INTO [PBK_VIS].[STOP_INTERVALS]
+           	(	[DATE]
+           		, [MOVE_CODE]           
+           		, [ASDU_ROUTE_CODE]
+           		, [STOP_ARRIVAL_TIME])     
+           		(
+           		SELECT distinct [DATE]
+				, [MOVE_CODE]     
+				, [ASDU_ROUTE_CODE] 
+				, DATEADD(mi, 1439, cast([DATE] as datetime)) 
+				FROM [PBK_DB].[PBK_VIS].[STOP_INTERVALS]
+				WHERE [DATE] = #{date, jdbcType=DATE})
+		]]>	
+	</insert>
+
+    <update id="updateEndIntervals">
+        <![CDATA[
+            UPDATE t
+            SET t.ASDU_STOP_ID = t1.ASDU_STOP_ID
+                , t.SHIFT_NUM = t1.SHIFT_NUM
+                , t.ROUTE_NUM = t1.ROUTE_NUM
+                , t.ERM_STOP_ID = t1.ERM_STOP_ID
+                , t.ORDER_NUM = t1.ORDER_NUM
+                , t.TRIP_ID = t1.TRIP_ID
+            FROM PBK_VIS.STOP_INTERVALS t
+            JOIN (
+                SELECT t1.*, t2.ID AS ID_NEXT
+                FROM PBK_VIS.STOP_INTERVALS t1
+                JOIN (
+                    SELECT t1.ID, t2.ID_PREV
+                    FROM PBK_VIS.STOP_INTERVALS t1
+                    JOIN (
+                        SELECT
+                            ID
+                            , ASDU_ROUTE_CODE
+                            , MOVE_CODE
+                            , LAG(ID, 1, NULL) OVER
+                                (PARTITION BY ASDU_ROUTE_CODE, MOVE_CODE ORDER BY STOP_ARRIVAL_TIME) as ID_PREV
+                            , STOP_ARRIVAL_TIME
+                        FROM PBK_VIS.STOP_INTERVALS
+                        WHERE DATE = #{date, jdbcType=DATE}
+                    ) t2
+                    ON t1.id = t2.id
+                    WHERE t1.TRIP_ID IS NULL  --AND (t1.ASKP_CHECKS_COUNT IS NOT NULL OR t1.ASKP_CHECKS_COUNT_PAID IS NOT NULL)
+                ) t2
+                ON t1.id = t2.ID_PREV
+            ) t1
+            ON t1.ID_NEXT = t.id
+        ]]> 
+    </update>
+    
+    <delete id="deleteIntervals">
+        <![CDATA[
+            DELETE FROM PBK_VIS.STOP_INTERVALS WHERE WORK_DATE = #{date, jdbcType=DATE}
+        ]]> 
+    </delete>
+
+</mapper>

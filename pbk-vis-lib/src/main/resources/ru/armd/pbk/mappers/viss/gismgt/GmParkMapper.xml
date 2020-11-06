@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gismgt.GmParkMapper">
+	
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.gismgt.GmPark" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into [PBK_GISMGT].[GM_PARKS] (
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmFields" /><![CDATA[	
+    			, [PHONE]
+    			, [TS_KIND_MUID]
+    			, [NAME]
+    			, [WKT_GEOM]
+    			, [PARK_NUMBER]
+    			, [ADDRESS]
+    			, [GRAPH_SECTION_MUID]
+    			, [SHORT_NAME]
+    			, [GRAPH_SECTION_OFFSET]
+    			, [BUILDING_MUID]
+            ) values (
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmValues" /><![CDATA[
+    			, #{phone}
+    			, #{transportKindMuid}
+    			, #{name}
+    			, #{wktGeom}
+    			, #{number}
+    			, #{addressString}
+    			, #{graphSectionMuid}
+    			, #{shortName}
+    			, #{graphSectionOffset}
+    			, #{buildingMuid}
+            )
+        ]]> 
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( '[PBK_GISMGT].[GM_PARKS]' ) as id
+            ]]>
+        </selectKey>      
+    </insert>
+    
+    <select id="getByMuid" resultType="ru.armd.pbk.domain.viss.gismgt.GmPark">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, PHONE as phone
+	    		, TS_KIND_MUID as transportKindId
+	    		, NAME as name
+	    		, WKT_GEOM as wktGeom
+	    		, PARK_NUMBER as number
+	    		, ADDRESS as addressString
+	    		, GRAPH_SECTION_MUID as graphSectionId
+	    		, SHORT_NAME as shortName
+	    		, GRAPH_SECTION_OFFSET as graphSectionOffset
+	    		, BUILDING_MUID as buildingMuid
+			from [PBK_GISMGT].[GM_PARKS] a
+            where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_PARKS WHERE MUID = #{muid})			
+        ]]>
+    </select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.gismgt.GmPark">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, PHONE as phone
+	    		, TS_KIND_MUID as transportKindId
+	    		, NAME as name
+	    		, WKT_GEOM as wktGeom
+	    		, PARK_NUMBER as number
+	    		, ADDRESS as addressString
+	    		, GRAPH_SECTION_MUID as graphSectionId
+	    		, SHORT_NAME as shortName
+	    		, GRAPH_SECTION_OFFSET as graphSectionOffset
+	    		, BUILDING_MUID as buildingMuid
+			from [PBK_GISMGT].[GM_PARKS] a
+            where ID = #{id}			
+        ]]>
+    </select>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+	    	SELECT
+	        	gm.ID as id, gm.NAME as name
+	        FROM
+	        	PBK_GISMGT.GM_PARKS gm
+	        WHERE
+	        	gm.IS_DELETE = 0 AND
+	        	gm.ID NOT IN (SELECT ph.GM_PARK_ID FROM PBK_NSI.PARK_HISTS ph 
+							  JOIN PBK_NSI.PARKS p on p.ID = ph.HEAD_ID  WHERE p.ID = 0 AND ph.GM_PARK_ID IS NOT NULL) OR (#{currentId} IS NOT NULL AND gm.ID = #{currentId}) 
+    	]]> 
+    </select> 
+       
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.gismgt.GmPark">
+        <![CDATA[
+        	update [PBK_GISMGT].[GM_PARKS]
+            set
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.updateGmFields" /><![CDATA[
+	    		, PHONE = #{phone}
+	    		, TS_KIND_MUID = #{transportKindMuid}
+	    		, NAME = #{name}
+	    		, WKT_GEOM = #{wktGeom}
+	    		, PARK_NUMBER = #{number}
+	    		, ADDRESS = #{addressString}
+	    		, GRAPH_SECTION_MUID = #{graphSectionMuid}
+	    		, SHORT_NAME = #{shortName}
+	    		, GRAPH_SECTION_OFFSET = #{graphSectionOffset}
+	    		, BUILDING_MUID = #{buildingMuid}
+			where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_PARKS WHERE MUID = #{muid})
+        ]]>
+    </update>    
+</mapper>

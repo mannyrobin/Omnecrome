@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.plan.PlansReportMapper">
+
+	<select id="getBrigadeGraphVenues" resultType="ru.armd.pbk.views.plan.BrigadeGraphVenuesView">
+        <![CDATA[
+	        SELECT
+	          (SELECT cch.SHORT_NAME + ', ' AS 'data()' 
+	          	FROM PBK_NSI.CITY_COUNTY_HISTS cch 
+				WHERE dh.HEAD_ID = cch.DEPT_ID AND cch.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+				FOR XML PATH('')
+			  ) AS countyName
+	          , venueShifts.deptId AS deptId
+	          , dh.NAME AS deptName
+	          , venueShifts.venueId AS venueId
+	          , cvh.NAME AS venueName
+	          , venueShifts.shiftId AS shiftId
+	          , FORMAT(s.WORK_START_TIME, 'HH:mm') + ' - ' + FORMAT(s.WORK_END_TIME, 'HH:mm') AS shiftHours
+	        FROM
+	          ( SELECT
+	              pv.CITY_VENUE_ID AS venueId
+	              ,pv.SHIFT_ID AS shiftId
+				  ,pv.DEPT_ID as deptId 
+	            FROM
+	              PBK_PLAN.PLAN_VENUES AS pv
+	            WHERE
+		           	    #{dateFrom} <= cast(pv.WORK_DATE as DATE)
+			        AND #{dateTo} >= cast(pv.WORK_DATE as DATE)
+	            GROUP BY pv.CITY_VENUE_ID, pv.SHIFT_ID, pv.DEPT_ID
+	          ) AS venueShifts
+	          JOIN PBK_NSI.SHIFTS s ON venueShifts.shiftId = s.ID
+	          JOIN PBK_NSI.CITY_VENUE_HISTS cvh ON venueShifts.venueId = cvh.HEAD_ID
+						AND cvh.V_END_DATE = (
+								SELECT MAX(cvh2.V_END_DATE)
+								FROM PBK_NSI.CITY_VENUE_HISTS cvh2 
+								WHERE cvh2.HEAD_ID = cvh.HEAD_ID 
+									AND cast(cvh2.V_END_DATE as DATE) >= cast(#{dateFrom} as DATE) AND cast(cvh2.V_START_DATE as DATE) <= cast(#{dateTo} as DATE)
+							)
+	          JOIN PBK_NSI.DEPARTMENT_HISTS dh ON venueShifts.deptId = dh.HEAD_ID AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+	        WHERE dh.FOR_PLAN_USE = 1
+        ]]><if test="deptId != null">
+				AND dh.HEAD_ID = ${deptId}
+		</if>
+			ORDER BY deptName, countyName, venueName, shiftHours
+	</select>
+
+	<select id="getBrigadeGraphPlanVenues" resultType="ru.armd.pbk.views.plan.BrigadeGraphPlanVenuesView">
+		<![CDATA[
+			SELECT
+				pv.ID as id,
+				pv.DEPT_ID as deptId,
+				pv.CITY_VENUE_ID as cityVenueId,
+				pv.WORK_DATE as planDate,
+				pv.GKUOP_COUNT as gkuopCount,
+				pv.MGT_COUNT as mgtCount,
+				pv.SHIFT_ID as shiftId,
+				pv.IS_AGREE as isAgree
+			FROM
+	           	PBK_PLAN.PLAN_VENUES pv
+	          	JOIN PBK_NSI.CITY_VENUE_HISTS cvh ON pv.CITY_VENUE_ID = cvh.HEAD_ID
+						AND cvh.V_END_DATE = (
+								SELECT MAX(cvh2.V_END_DATE)
+								FROM PBK_NSI.CITY_VENUE_HISTS cvh2 
+								WHERE cvh2.HEAD_ID = cvh.HEAD_ID 
+									AND cast(cvh2.V_END_DATE as DATE) >= cast(pv.WORK_DATE as DATE) AND cast(cvh2.V_START_DATE as DATE) <= cast(pv.WORK_DATE as DATE)
+							)
+	          JOIN PBK_NSI.DEPARTMENT_HISTS dh ON pv.DEPT_ID = dh.HEAD_ID AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+			WHERE
+	           	(#{deptId} IS NULL OR pv.DEPT_ID = #{deptId})
+	           	AND #{dateFrom} <= cast(pv.WORK_DATE as DATE)
+		        AND #{dateTo} >= cast(pv.WORK_DATE as DATE)
+				AND dh.FOR_PLAN_USE = 1
+		    ORDER BY pv.WORK_DATE
+       	]]>
+    </select>
+    
+    <select id="getBrigadeTaskCount" resultType="int">
+        <![CDATA[
+            SELECT
+				ISNULL(count(t.ID), 0) as count
+			FROM
+				PBK_TASK.TASKS t LEFT JOIN PBK_PLAN.PLAN_VENUES pv ON (t.PLAN_VENUE_ID = pv.ID)
+	            	JOIN PBK_TASK.TASK_STATES ts on t.TASK_STATE_ID = ts.ID
+			WHERE ts.COD NOT IN ('IN_RESERVE', 'CANCELED') AND t.PLAN_VENUE_ID IS NOT NULL AND t.PLAN_VENUE_ID = #{brigadeId}
+		]]>
+    </select>
+    
+    <select id="getDifferenceForBrigadeState" resultType="int">
+		SELECT
+			ISNULL((SELECT
+				COUNT(ps.ID)
+			FROM
+				PBK_PLAN.PLAN_SCHEDULES ps LEFT JOIN PBK_NSI.EMPLOYEES e ON (ps.EMPLOYEE_ID = e.ID AND e.IS_DELETE = 0) RIGHT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (e.ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			WHERE
+				eh.FOR_PLAN_USE = 1 AND (eh.FIRE_DATE IS NULL OR eh.FIRE_DATE >= #{workDate, jdbcType=DATE}) AND ps.DEPT_ID = #{deptId} AND ps.SHIFT_ID = #{shiftId} AND ps.WORK_DATE = #{workDate, jdbcType=DATE}) -
+			
+			(SELECT
+				SUM(pv.MGT_COUNT)
+			FROM
+				PBK_PLAN.PLAN_VENUES pv LEFT JOIN PBK_NSI.CITY_VENUES cv ON (pv.CITY_VENUE_ID = cv.ID AND cv.IS_DELETE = 0) LEFT JOIN PBK_NSI.CITY_VENUE_HISTS cvh ON (cv.ID = cvh.HEAD_ID AND cvh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+							LEFT JOIN PBK_NSI.CITY_DISTRICTS cd ON (cvh.CITY_DISTRICT_ID = cd.ID) LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON (cd.ID = cdh.HEAD_ID AND cdh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+							LEFT JOIN PBK_NSI.CITY_COUNTIES cc ON (cdh.CITY_COUNTY_ID = cc.ID) LEFT JOIN PBK_NSI.CITY_COUNTY_HISTS cch ON (cc.ID = cch.HEAD_ID AND cch.V_END_DATE >= PBK_CORE.getVersionEndDate())
+							RIGHT JOIN PBK_NSI.SHIFTS s ON (s.COD = 'DAY' AND cvh.SHIFT_DAY = 1 OR s.COD = 'I' AND cvh.SHIFT_I = 1 OR s.COD = 'II' AND cvh.SHIFT_II = 1)
+			WHERE
+				pv.DEPT_ID = #{deptId} AND pv.WORK_DATE = #{workDate, jdbcType=DATE} AND pv.SHIFT_ID = #{shiftId} AND s.ID = #{shiftId}), 0)
+	</select>
+	
+	<select id="getPlanDeptId" resultType="long">
+		<![CDATA[
+			SELECT distinct [HEAD_ID]     
+  			FROM [PBK_DB].[PBK_NSI].[DEPARTMENT_HISTS]
+  			WHERE FOR_PLAN_USE = 1 
+  				AND (#{dateFrom} BETWEEN V_START_DATE AND V_END_DATE 
+  				  OR #{dateTo} BETWEEN V_START_DATE AND V_END_DATE)
+		]]>
+	</select>
+	
+</mapper>

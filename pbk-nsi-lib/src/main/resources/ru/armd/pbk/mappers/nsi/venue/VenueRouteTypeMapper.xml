@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.venue.VenueRouteTypeMapper">
+
+	<select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT 
+				[ID] as id
+      			, [NAME] as name
+  			FROM [PBK_DB].[PBK_NSI].[CITY_VENUE_ROUTE_TYPES]
+		]]>
+	</select>
+	
+</mapper>

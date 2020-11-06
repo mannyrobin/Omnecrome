@@ -1,0 +1,100 @@
+<div ar-grid-filter parameters="gridScope.filterParams"></div>
+<div ar-grid-title parameters="gridScope.titleParams"></div>
+<div class="row" style="padding-top: 20px;">
+    <div class="col-sm-2"><i ng-style="{color: scheduleColors.HOLIDAY}" class="glyphicon glyphicon-stop btn-md"></i> - выходной</div>
+    <div class="col-sm-2"><i ng-style="{color: scheduleColors.VACATION}" class="glyphicon glyphicon-stop btn-md"></i> - отпуск</div>
+    <div class="col-sm-2"><i ng-style="{color: scheduleColors.RESERVE}" class="glyphicon glyphicon-stop btn-md"></i> - резерв</div>
+</div>
+<div id="timesheets-table" class="col-sm-12 row" style="font-family: 'Times New Roman', sans-serif;"S>
+<table st-table="gridScope.grid.rows" st-pipe="gridScope.grid.loadAction" st-safe-src="gridScope.grid.rows"
+       class='table table-hover {{getRowClass == null ? "table-striped" : ""}}'>
+    <!--<colgroup>-->
+        <!--<col ng-style="{'width': '9%'}">-->
+        <!--<col ng-style="{'width': '5%'}">-->
+        <!--<col ng-style="{'width': '2%'}">-->
+        <!--<col ng-repeat="day in days">-->
+    <!--</colgroup>-->
+    <thead ng-show="!gridScope.grid.isLoading" style="display: block">
+        <tr>
+            <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle; min-width: 125px;" ar-st-sort="surname" rowspan="2">
+               <small>Ф.И.О.</small>
+            </th>
+            <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle; min-width: 75px;" ar-st-sort="personalNumber" rowspan="2">
+                <small>таб. №</small>
+            </th>
+            <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle; min-width: 50px;" rowspan="2">
+            </th>
+			<th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle; min-width: 50px;" rowspan="2">
+                <small>Итого Часы</small>
+            </th>
+			<th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle; min-width: 50px;" rowspan="2">
+                <small>Итого Дни</small>
+            </th>
+            <th ng-repeat="day in days" ng-style="{'min-width': dayWidth}" style="text-align: center; vertical-align: middle;" class="grid-header plan-table-border">
+                <small>{{getDayOfMonth(day)}}</small>
+            </th>
+            <th class="grid-header plan-table-border" style="text-align: center; vertical-align: middle; min-width: 15px;" rowspan="2"></th>
+        </tr>
+        <tr>
+            <th ng-repeat="day in days" ng-style="{'min-width': dayWidth}" style="text-align: center; vertical-align: middle;" class="grid-header plan-table-border">
+                <small>{{getDayOfWeek(day)}}</small>
+            </th>
+        </tr>
+    </thead>
+    <tbody ng-if="gridScope.grid.isLoading">
+    <tr>
+        <td colspan="{{days.length + 3}}" class="text-center plan-table-border"><img ng-src="{{'images/spinner.gif'}}"></td>
+    </tr>
+    </tbody>
+    <tbody ng-if="!gridScope.grid.isLoading && gridScope.grid.rows.length > 0 && gridScope.grid.rows[0].cnt > 0" style="display: block; height: auto; max-height: 400px; overflow-y: scroll; overflow-x: auto;">
+    <tr ng-repeat="row in gridScope.grid.rows">
+        <td class="plan-table-border" style="min-width: 125px;">
+            <small><span>{{getFio(row)}}</span></small>
+        </td>
+        <td class="plan-table-border" style="min-width: 75px">
+            <small><span>{{row.personalNumber}}</span></small>
+        </td>
+        <td class="plan-table-border" style="text-align: center; vertical-align: middle; min-width: 50px">
+            <small><div class="fraction-slash">Факт</div></small>
+            <small><div>План</div></small>
+        </td>
+        <td class="plan-table-border" style="text-align: center; vertical-align: middle; min-width: 50px">
+			<table style="width: 100%">
+				<tr><td><small><span class="fraction-slash">{{row.sumFactHours}}</span></small></td></tr>
+				<tr><td><small><span>{{row.sumPlanHours}}</span></small></td></tr>
+			</table>
+        </td>
+		<td class="plan-table-border" style="text-align: center; vertical-align: middle; min-width: 50px">
+			<table style="width: 100%">
+				<tr><td><small><span class="fraction-slash">{{row.sumFactDays}}</span></small></td></tr>
+				<tr><td><small><span>{{row.sumPlanDays}}</span></small></td></tr>
+			</table>
+        </td>
+        <td ng-repeat="day in days" class="hover-table-color plan-table-border" style="text-align: center; vertical-align: middle;" ng-style="{'background-color':'{{getCurrentDateColor(row.timesheets[day])}}', 'min-width': dayWidth}" title="{{getTooltip(row.timesheets[day])}}" ng-click="editTimesheet(row, day)">
+            <div ng-if="isWorkShift(row.timesheets[day])">
+            	<small><span>{{getCurrentDateText(row.timesheets[day])}}</span></small>
+            </div>
+            <div ng-if="!isWorkShift(row.timesheets[day]) && row.timesheets[day]">
+			    <table style="width: 100%">
+					<tr><td><small><span class="fraction-slash">{{row.timesheets[day].factHours}}</span></small></td></tr>
+					<tr><td><small><span>{{row.timesheets[day].planHours}}</span></small></td></tr>
+				</table>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+    <tbody ng-if="!gridScope.grid.isLoading && (gridScope.grid.rows.length == 0 || gridScope.grid.rows[0].cnt == 0)">
+    <tr style="background-color: transparent;">
+        <td class="text-center plan-table-border" colspan="{{days.length + 3}}">
+            <p class="lead">Элементы не найдены</p>
+        </td>
+    </tr>
+    </tbody>
+    <tfoot ng-show="!gridScope.grid.isLoading" style="display: block">
+    <tr>
+        <td class="text-center plan-table-border" ng-style="{'min-width' : footerWidth}">
+            <div ar-grid-pagination rows-on-page="gridScope.colRowsOnPage" grid-scope="gridScope"></div>
+        </td>
+    </tr>
+    </tfoot>
+</table></div>

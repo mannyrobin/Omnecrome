@@ -1,0 +1,43 @@
+<div class="modal-header" draggable-modal>
+	<button type="button" class="close" data-dimdiss="modal"
+		aria-label="Close" ng-click="close()">
+		<span aria-hidden="true">&times;</span>
+	</button>
+	<h4 class="modal-title">{{title}}</h4>
+</div>
+
+<div class="modal-body">
+	<div ar-validation-errors></div>
+
+	<!-- FORM -->
+	<form name="taskFileForm">
+		<p class="help-block h3">
+			Файл: <span class='' id="upload-file-info"></span>
+		</p>
+		<div
+			style="position: relative; display: inline-block;">
+			<a class='btn btn-primary btn-sm' href='javascript:;'> Выбрать
+				файл <input type="file" class="form-control file-btn-input"
+				name="file_source" size="20" file-model="task.attachedFile"
+				onchange='$("#upload-file-info").html($(this).val().replace("C:\\fakepath\\",""));'>
+			</a> &nbsp;
+		</div>
+
+		<button ng-show="isFileAttached()" type="button"
+			ng-click="backToCreateFile()" class="btn btn-sm btn-warning">
+			<i class="glyphicon glyphicon-remove"></i>
+		</button>
+
+		<!-- div class="row form-group">
+			<div ar-form-field col-class="'col-md-12'" field="fields[0]"></div>
+		</div -->
+
+	</form>
+	<!-- END FORM -->
+
+</div>
+
+<div class="modal-footer">
+	<button type="button" class="btn btn-primary" ng-click="saveFile()" ng-disabled="taskFileForm.$invalid || !isFileAttached()">Сохранить</button>
+	<button type="button" class="btn btn-default" ng-click="close()">Закрыть</button>
+</div>

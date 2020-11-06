@@ -1,0 +1,630 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.bso.BsoMapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.bso.BsoView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          SELECT bsos.ID AS id,
+            d.ID AS departmentId,
+            dh.NAME AS departmentName,
+            bt.NAME AS bsoTypeName,
+            bsos.BSO_NUMBER AS bsoNumber,
+            eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC AS employeeName,
+            bsos.IS_PRINT AS isPrinted,
+            bsos.IS_TRASH AS isTrashed,
+            bsos.IS_BOUND AS isBound,
+            bsos.IS_USE AS isUsed
+          FROM [PBK_DB].[PBK_NSI].[BSOS] bsos
+          LEFT JOIN [PBK_DB].[PBK_NSI].[BSO_NUMBER_RULES] bnr ON bsos.BSO_NUMBER_RULE_ID = bnr.ID
+          LEFT JOIN [PBK_DB].[PBK_NSI].[DEPARTMENTS] d ON bnr.DEPT_ID = d.ID
+          LEFT JOIN [PBK_DB].[PBK_NSI].[DEPARTMENT_HISTS] dh ON d.ID = dh.HEAD_ID
+          LEFT JOIN [PBK_DB].[PBK_NSI].[BSO_TYPES] bt ON bnr.BSO_TYPE_ID = bt.ID
+          LEFT JOIN [PBK_DB].[PBK_NSI].[BSO_EMPLOYEES] be ON bsos.ID = be.BSO_ID
+          LEFT JOIN [PBK_DB].[PBK_NSI].[EMPLOYEES] e ON be.EMPLOYEE_ID = e.ID
+          LEFT JOIN [PBK_DB].[PBK_NSI].[EMPLOYEE_HISTS] eh ON e.ID = eh.HEAD_ID
+          where
+          	d.IS_DELETE = 0 AND
+            (eh.V_END_DATE IS NULL OR eh.V_END_DATE >= [PBK_CORE].getVersionEndDate()) AND
+            (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()) AND
+            (#{filter.bsoTypeId} IS NULL OR #{filter.bsoTypeId} = bnr.BSO_TYPE_ID) AND
+            (#{filter.departmentId} IS NULL OR #{filter.departmentId} = bnr.DEPT_ID) AND
+            (#{filter.bsoNumber} IS NULL OR UPPER(bsos.BSO_NUMBER) LIKE UPPER('%${filter.bsoNumber}%')) AND
+            (#{filter.employeeId} IS NULL OR #{filter.employeeId} = e.ID) AND
+            (#{filter.bsoStateId} IS NULL OR
+            #{filter.bsoStateId} = 1 AND bsos.IS_PRINT != 0 OR
+            #{filter.bsoStateId} = 2 AND bsos.IS_PRINT = 0 OR
+            #{filter.bsoStateId} = 3 AND bsos.IS_TRASH != 0 OR
+            #{filter.bsoStateId} = 4 AND bsos.IS_TRASH = 0 OR
+            #{filter.bsoStateId} = 5 AND bsos.IS_BOUND != 0 OR
+            #{filter.bsoStateId} = 6 AND bsos.IS_BOUND = 0 OR
+            #{filter.bsoStateId} = 7 AND bsos.IS_USE != 0 OR
+            #{filter.bsoStateId} = 8 AND bsos.IS_USE = 0) AND
+            (#{filter.deptAuthId} IS NULL OR bnr.DEPT_ID = #{filter.deptAuthId})
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.bso.Bso">
+        <![CDATA[
+            SELECT
+                 [ID] as id
+                ,[BSO_NUMBER_RULE_ID] as bsoNumberRuleId
+                ,[BSO_NUMBER] as bsoNumber
+                ,[IS_PRINT] as isPrinted
+                ,[IS_TRASH] as isTrashed
+                ,[IS_BOUND] as isBound
+                ,[IS_USE] as isUsed
+            FROM [PBK_DB].[PBK_NSI].[BSOS]
+            WHERE [ID] = #{id}
+       ]]>
+    </select>
+
+    <select id="getNonUsedBso" resultType="ru.armd.pbk.domain.nsi.bso.Bso">
+        <![CDATA[
+			WITH OrderedOrders AS
+			(
+	            SELECT 
+				    ROW_NUMBER() OVER (ORDER BY bso.[ID]) AS 'RowNumber',
+	                 bso.[ID] as id
+	                ,bso.[BSO_NUMBER_RULE_ID] as bsoNumberRuleId
+	                ,bso.[BSO_NUMBER] as bsoNumber
+	                ,bso.[IS_PRINT] as isPrinted
+	                ,bso.[IS_TRASH] as isTrashed
+	                ,bso.[IS_BOUND] as isBound
+	                ,bso.[IS_USE] as isUsed
+	            FROM [PBK_NSI].[BSOS] bso
+	            	JOIN [PBK_NSI].[BSO_NUMBER_RULES] bnr ON bnr.ID = bso.BSO_NUMBER_RULE_ID
+	            WHERE
+	            	bso.[IS_USE] = 0 AND bso.[IS_TRASH] = 0 AND bso.[IS_BOUND] = 0 
+	            	AND bnr.DEPT_ID = #{deptId}
+	            	AND bnr.BSO_TYPE_ID = #{bsoTypeId}
+	            	AND NOT EXISTS (SELECT 1 FROM [PBK_NSI].[BSO_EMPLOYEES] be WHERE be.BSO_ID = bso.ID)
+	            	AND NOT EXISTS (SELECT 1 FROM [PBK_TASK].[TASK_BSOS] tb WHERE tb.BSO_ID = bso.ID)
+			) 
+			SELECT * 
+			FROM OrderedOrders 
+			WHERE RowNumber BETWEEN 0 AND #{count};
+       ]]>
+    </select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.nsi.bso.Bso">
+        <![CDATA[
+            INSERT INTO [PBK_DB].[PBK_NSI].[BSOS](
+                [CREATE_DATE]
+                ,[CREATE_USER_ID]
+                ,[BSO_NUMBER_RULE_ID]
+                ,[BSO_NUMBER]
+                ,[IS_PRINT]
+                ,[IS_TRASH]
+                ,[IS_BOUND]
+                ,[IS_USE]
+            ) VALUES(
+                #{createDate}
+                ,#{createUserId}
+                ,#{bsoNumberRuleId}
+                ,#{bsoNumber}
+                ,#{isPrinted}
+                ,#{isTrashed}
+                ,#{isBound}
+                ,#{isUsed}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.BSOS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <select id="isBoundToAnother" resultType="boolean">
+        <![CDATA[
+            SELECT CASE WHEN
+                    COUNT(*) != 0
+                THEN 'TRUE' ELSE 'FALSE' END AS bound
+            FROM [PBK_DB].[PBK_NSI].[BSO_EMPLOYEES]
+            WHERE 1 = 1
+                AND [BSO_ID] = #{id}
+                AND [EMPLOYEE_ID] != #{employeeId}
+       ]]>
+    </select>
+    
+    <select id="isBoundToTheSame" resultType="boolean">
+        <![CDATA[
+            SELECT CASE WHEN
+                    COUNT(*) != 0
+                THEN 'TRUE' ELSE 'FALSE' END AS bound
+            FROM [PBK_DB].[PBK_NSI].[BSO_EMPLOYEES]
+            WHERE 1 = 1
+                AND [BSO_ID] = #{id}
+                AND [EMPLOYEE_ID] = #{employeeId}
+       ]]>
+    </select>
+
+    <insert id="bind">
+        <![CDATA[
+            INSERT INTO [PBK_DB].[PBK_NSI].[BSO_EMPLOYEES](
+                [CREATE_DATE]
+                ,[CREATE_USER_ID]
+                ,[BSO_ID]
+                ,[EMPLOYEE_ID]
+            ) VALUES(
+                getdate()
+                ,1
+                ,#{bsoId}
+                ,#{employeeId}
+            )
+        ]]>
+    </insert>
+
+    <insert id="binds">
+		INSERT INTO [PBK_DB].[PBK_NSI].[BSO_EMPLOYEES](
+			[CREATE_DATE]
+           	,[CREATE_USER_ID]
+           	,[BSO_ID]
+           	,[EMPLOYEE_ID]
+       	) VALUES
+			<foreach collection="tasks" item="t" index="index" separator=",">
+				(
+					getdate()
+	                ,1
+	                ,#{t.name}
+	                ,#{t.id}
+	            )
+			</foreach>
+    </insert>
+
+    <delete id="unbind">
+        <![CDATA[
+            DELETE FROM [PBK_DB].[PBK_NSI].[BSO_EMPLOYEES]
+            WHERE [BSO_ID] = #{id}
+        ]]>
+    </delete>
+    
+    <delete id="unbinds">
+        <![CDATA[
+            DELETE FROM [PBK_DB].[PBK_NSI].[BSO_EMPLOYEES]
+            WHERE [BSO_ID] IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+
+    <update id="updateBindState">
+        <![CDATA[
+            UPDATE [PBK_NSI].[BSOS]
+            SET
+                 IS_BOUND = #{bound}
+            WHERE ID = #{id}
+        ]]>
+    </update>
+    
+    <update id="updateUsesState">
+    	 <![CDATA[
+            UPDATE [PBK_NSI].[BSOS]
+            SET
+                 IS_USE = #{used}
+            WHERE ID IN ]]>
+            <foreach item="item" index="index" collection="ids" open="(" separator="," close=")">
+   				#{item}
+			</foreach>
+    </update>
+    
+    <update id="updateBindsState">
+        <![CDATA[
+            UPDATE [PBK_NSI].[BSOS]
+            SET
+                 IS_BOUND = #{bound}
+            WHERE ID IN ]]>
+            <foreach item="item" index="index" collection="ids" open="(" separator="," close=")">
+   				#{item}
+			</foreach>
+    </update>
+
+    <update id="setIsTrash">
+    <![CDATA[
+    UPDATE [PBK_NSI].[BSOS]
+    SET
+    IS_TRASH = 1
+    WHERE ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+    
+    <!--<update id="fixBsos">-->
+        <!--<![CDATA[-->
+            <!--UPDATE [PBK_NSI].[BSOS]-->
+            <!--SET-->
+                 <!--IS_TRASH = 0-->
+            <!--WHERE ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />-->
+    <!--</update>-->
+
+    <update id="printBsos">
+        <![CDATA[
+            UPDATE [PBK_DB].[PBK_NSI].[BSOS]
+            SET
+                 IS_PRINT = 1
+            WHERE ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+
+    <select id="isUsed" resultType="boolean">
+        <![CDATA[
+            SELECT CASE WHEN
+                    IS_USE != 0
+                THEN 'TRUE' ELSE 'FALSE' END AS used
+            FROM [PBK_DB].[PBK_NSI].[BSOS]
+            WHERE [ID] = #{id}
+       ]]>
+    </select>
+    
+    <select id="isTrashed" resultType="boolean">
+        <![CDATA[
+            SELECT CASE WHEN
+                    IS_TRASH != 0
+                THEN 'TRUE' ELSE 'FALSE' END AS used
+            FROM [PBK_DB].[PBK_NSI].[BSOS]
+            WHERE [ID] = #{id}
+       ]]>
+    </select>
+
+    <insert id="use">
+        <![CDATA[
+            INSERT INTO [PBK_DB].[PBK_TASK].[TASK_BSOS](
+                [CREATE_DATE]
+                ,[CREATE_USER_ID]
+                ,[BSO_ID]
+                ,[TASK_ID]
+            ) VALUES(
+                getdate()
+                ,1
+                ,#{bsoId}
+                ,#{taskId}
+            )
+        ]]>
+    </insert>
+
+    <insert id="uses">
+            INSERT INTO [PBK_DB].[PBK_TASK].[TASK_BSOS] (
+                [CREATE_DATE]
+                ,[CREATE_USER_ID]
+                ,[BSO_ID]
+                ,[TASK_ID]
+            )
+            SELECT 
+                getdate()
+                ,1
+                ,t.BSO_ID
+                ,t.ID
+            FROM PBK_TASK.TASKS t 
+            WHERE NOT EXISTS (
+            	SELECT 1 FROM PBK_TASK.TASK_BSOS tb WHERE t.BSO_ID = tb.BSO_ID AND t.ID = tb.TASK_ID)
+            	AND t.BSO_ID IN (
+					<foreach collection="bsoIds" item="bsoId" separator=",">
+		                #{bsoId}
+					</foreach>
+				)
+    </insert>
+
+    <delete id="disuse">
+        <![CDATA[
+            DELETE FROM [PBK_DB].[PBK_TASK].[TASK_BSOS]
+            WHERE 1 = 1
+              AND [BSO_ID] = #{bsoId}
+              AND [TASK_ID] = #{taskId}
+        ]]>
+    </delete>
+
+    <update id="updateUseState">
+        <![CDATA[
+            UPDATE [PBK_DB].[PBK_NSI].[BSOS]
+            SET
+                 IS_USE = #{used}
+            WHERE ID = #{id}
+        ]]>
+    </update>
+
+    <select id="getSelectItemsForSchedule" resultType="ru.armd.pbk.core.views.SelectItem">
+        <![CDATA[
+		SELECT DISTINCT
+			S.id,
+			S.name
+			from (
+            SELECT DISTINCT
+                b.ID AS id
+                , b.BSO_NUMBER AS name
+            FROM
+                PBK_PLAN.PLAN_SCHEDULES ps LEFT JOIN PBK_NSI.BSO_EMPLOYEES be ON (ps.EMPLOYEE_ID = be.EMPLOYEE_ID) 
+                LEFT JOIN PBK_NSI.BSOS b ON (b.ID = be.BSO_ID)
+                LEFT JOIN PBK_NSI.BSO_NUMBER_RULES bnr ON (b.BSO_NUMBER_RULE_ID = bnr.ID)
+            WHERE
+            	(NOT EXISTS(SELECT 1 FROM [PBK_TASK].[TASK_BSOS] WHERE BSO_ID = b.ID)
+                AND (b.IS_USE = 0)
+                AND ps.ID = #{employeeScheduleId}
+                AND (b.IS_BOUND = 1)
+                AND (bnr.BSO_TYPE_ID = 1) 
+                AND (bnr.DEPT_ID = ps.DEPT_ID))
+                ]]><if test="currentId != null">
+		        	<![CDATA[
+					UNION ALL
+		        		SELECT DISTINCT
+                b.ID AS id
+                , b.BSO_NUMBER AS name
+            FROM
+                PBK_PLAN.PLAN_SCHEDULES ps LEFT JOIN PBK_NSI.BSO_EMPLOYEES be ON (ps.EMPLOYEE_ID = be.EMPLOYEE_ID) 
+                LEFT JOIN PBK_NSI.BSOS b ON (b.ID = be.BSO_ID)
+                LEFT JOIN PBK_NSI.BSO_NUMBER_RULES bnr ON (b.BSO_NUMBER_RULE_ID = bnr.ID)
+            WHERE (#{currentId} = b.ID)
+		        	]]>
+        		</if>   
+					<![CDATA[
+		        		) S
+		        	]]>
+    </select>
+    
+    <select id="getSelectItemsForTask" resultType="ru.armd.pbk.core.views.SelectItem">
+        <![CDATA[
+            SELECT DISTINCT
+                b.[ID] AS id
+                , b.[BSO_NUMBER] AS name
+            FROM
+                [PBK_DB].[PBK_NSI].[BSOS] b
+                JOIN [PBK_DB].[PBK_NSI].[BSO_EMPLOYEES] be ON b.[ID] = be.[BSO_ID]
+                LEFT JOIN [PBK_DB].[PBK_TASK].[TASK_BSOS] bt ON b.[ID] = bt.[BSO_ID]
+                JOIN [PBK_NSI].[BSO_NUMBER_RULES] bnr ON bnr.ID = b.BSO_NUMBER_RULE_ID
+            WHERE 1 = 1
+                AND (#{employeeId} is null or #{employeeId} = 0 or be.[EMPLOYEE_ID] = #{employeeId})
+                AND (bt.[TASK_ID] = #{taskId})
+                AND (#{bsoTypeId} is null or #{bsoTypeId}  = 0 or bnr.BSO_TYPE_ID = #{bsoTypeId})
+                AND b.Id not in (	SELECT distinct [BSO_ID]
+									FROM [PBK_TASK].[TASK_WITHDRAWN_CARDS]
+									WHERE [BSO_ID] is not null AND (#{currentId} is null or [BSO_ID] != #{currentId}))
+				AND b.IS_TRASH = 0 or (#{currentId} is not null and b.ID = #{currentId})
+                /* второе условие в OR - доб. сейчас используемое в задании БСО (действует только при изменении задания), чтобы список не ломался при развор. */
+        ]]>
+    </select>
+
+    <select id="getSelectItemsForTaskCard" resultType="ru.armd.pbk.core.views.SelectItem">
+        <![CDATA[
+            SELECT DISTINCT
+                b.[ID] AS id
+            , b.[BSO_NUMBER] AS name
+            FROM
+            PBK_NSI.BSO_EMPLOYEES be
+            JOIN PBK_PLAN.PLAN_SCHEDULES ps ON ps.EMPLOYEE_ID = be.EMPLOYEE_ID
+            JOIN PBK_TASK.TASKS t ON ps.ID = t.PLAN_SCHEDULE_ID AND t.ID = #{taskId}
+            JOIN PBK_NSI.BSOS b ON be.BSO_ID = b.ID
+            LEFT JOIN PBK_NSI.BSO_NUMBER_RULES bnr ON b.BSO_NUMBER_RULE_ID = bnr.ID
+            LEFT JOIN PBK_NSI.BSO_TYPES bt ON bnr.BSO_TYPE_ID = bt.ID
+            JOIN PBK_NSI.EMPLOYEE_HISTS eh ON be.EMPLOYEE_ID = eh.HEAD_ID
+            JOIN PBK_NSI.DEPARTMENT_HISTS dh ON bnr.DEPT_ID = dh.HEAD_ID
+            WHERE b.IS_USE = 1
+            AND b.IS_BOUND != 0
+            AND b.IS_TRASH = 0
+            AND (eh.V_END_DATE IS NULL OR eh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND bt.ID = 2
+            AND b.Id not in (	SELECT distinct [BSO_ID]
+            FROM [PBK_TASK].[TASK_WITHDRAWN_CARDS]
+            WHERE [BSO_ID] is not null AND (#{currentId} is null or [BSO_ID] != #{currentId}))
+            UNION
+            SELECT DISTINCT
+                b.[ID] AS id
+            , b.[BSO_NUMBER] AS name
+            FROM
+            PBK_NSI.BSOS b
+            JOIN PBK_TASK.TASK_BSOS tb ON b.ID = tb.BSO_ID AND tb.TASK_ID = #{taskId}
+            LEFT JOIN PBK_NSI.BSO_NUMBER_RULES bnr ON b.BSO_NUMBER_RULE_ID = bnr.ID
+            LEFT JOIN PBK_NSI.DEPARTMENT_HISTS dh ON bnr.DEPT_ID = dh.HEAD_ID
+            LEFT JOIN PBK_NSI.BSO_TYPES bt ON bnr.BSO_TYPE_ID = bt.ID
+            LEFT JOIN PBK_NSI.BSO_EMPLOYEES be ON b.ID = be.BSO_ID
+            LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON be.EMPLOYEE_ID = eh.HEAD_ID
+            WHERE b.IS_USE = 0
+            AND b.IS_BOUND != 0
+            AND b.IS_TRASH = 0
+            AND (eh.V_END_DATE IS NULL OR eh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND bt.ID = 2
+            AND b.Id not in (	SELECT distinct [BSO_ID]
+            FROM [PBK_TASK].[TASK_WITHDRAWN_CARDS]
+            WHERE [BSO_ID] is not null AND (#{currentId} is null or [BSO_ID] != #{currentId}))
+        ]]>
+    </select>
+    
+    <select id="getNonUsedBsoForEmployee" resultType="ru.armd.pbk.core.views.SelectItem">
+        <![CDATA[
+            SELECT DISTINCT
+                b.[ID] AS id
+                , b.[BSO_NUMBER] AS name
+            FROM
+                [PBK_NSI].[BSOS] b
+                JOIN [PBK_NSI].[BSO_EMPLOYEES] be ON b.[ID] = be.[BSO_ID]
+				JOIN PBK_NSI.EMPLOYEE_HISTS eh on eh.HEAD_ID = be.EMPLOYEE_ID and eh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+                LEFT JOIN [PBK_TASK].[TASK_BSOS] bt ON b.[ID] = bt.[BSO_ID]
+            	JOIN [PBK_NSI].[BSO_NUMBER_RULES] bnr ON bnr.ID = b.BSO_NUMBER_RULE_ID and bnr.DEPT_ID = eh.DEPT_ID
+            WHERE be.[EMPLOYEE_ID] = #{employeeId}
+            	AND (#{bsoTypeId} is null or bnr.BSO_TYPE_ID = #{bsoTypeId})
+            	AND b.[IS_USE] = 0 AND b.[IS_TRASH] = 0 AND b.[IS_BOUND] = 1
+            	AND NOT EXISTS (SELECT 1 FROM [PBK_TASK].[TASK_BSOS] tb WHERE tb.BSO_ID = b.ID)
+        ]]>
+    </select>
+    
+    <select id="getNonUsedBsoForEmployees" resultType="ru.armd.pbk.core.views.SelectItem">
+           SELECT DISTINCT
+               b.[ID] AS id
+               , be.[EMPLOYEE_ID] AS name
+           FROM
+               [PBK_NSI].[BSOS] b
+               JOIN [PBK_NSI].[BSO_EMPLOYEES] be ON b.[ID] = be.[BSO_ID]
+			   JOIN PBK_NSI.EMPLOYEE_HISTS eh on eh.HEAD_ID = be.EMPLOYEE_ID and eh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+               LEFT JOIN [PBK_TASK].[TASK_BSOS] bt ON b.[ID] = bt.[BSO_ID]
+               JOIN [PBK_NSI].[BSO_NUMBER_RULES] bnr ON bnr.ID = b.BSO_NUMBER_RULE_ID and bnr.DEPT_ID = eh.DEPT_ID
+           WHERE be.[EMPLOYEE_ID] in
+	            <foreach collection="employeeIds" item="emp" open="(" close=")"  separator=",">
+	                #{emp}            
+				</foreach>
+           	AND bnr.BSO_TYPE_ID = #{bsoTypeId}
+           	AND b.[IS_USE] = 0 AND b.[IS_TRASH] = 0 AND b.[IS_BOUND] = 1
+           	AND NOT EXISTS (SELECT 1 FROM [PBK_TASK].[TASK_BSOS] tb WHERE tb.BSO_ID = b.ID)
+           	AND NOT EXISTS (SELECT 1 FROM [PBK_TASK].[TASKS] tb WHERE tb.BSO_ID = b.ID)
+    </select>
+
+    <select id="getBsosUsedForTask" resultType="ru.armd.pbk.views.nsi.bso.BsoView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          SELECT
+            b.ID AS id
+            , dh.NAME AS departmentName
+            , bt.NAME AS bsoTypeName
+            , b.BSO_NUMBER AS bsoNumber
+            , eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC AS employeeName
+            , b.IS_PRINT AS isPrinted
+            , b.IS_TRASH AS isTrashed
+            , b.IS_BOUND AS isBound
+            , b.IS_USE AS isUsed
+          FROM
+			PBK_NSI.BSO_EMPLOYEES be 
+			JOIN PBK_PLAN.PLAN_SCHEDULES ps ON ps.EMPLOYEE_ID = be.EMPLOYEE_ID
+			JOIN PBK_TASK.TASKS t ON ps.ID = t.PLAN_SCHEDULE_ID AND t.ID = #{filter.taskId}
+			JOIN PBK_NSI.BSOS b ON be.BSO_ID = b.ID
+            LEFT JOIN PBK_NSI.BSO_NUMBER_RULES bnr ON b.BSO_NUMBER_RULE_ID = bnr.ID
+			LEFT JOIN PBK_NSI.BSO_TYPES bt ON bnr.BSO_TYPE_ID = bt.ID  
+			JOIN PBK_NSI.EMPLOYEE_HISTS eh ON be.EMPLOYEE_ID = eh.HEAD_ID
+            JOIN PBK_NSI.DEPARTMENT_HISTS dh ON bnr.DEPT_ID = dh.HEAD_ID
+          WHERE 1=1
+            AND b.IS_USE = 0
+            AND (eh.V_END_DATE IS NULL OR eh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (#{filter.bsoNumber} IS NULL OR UPPER(b.BSO_NUMBER) LIKE UPPER('%${filter.bsoNumber}%'))
+            AND (
+              #{filter.bsoStateId} IS NULL OR
+              #{filter.bsoStateId} = 1 AND b.IS_PRINT != 0 OR
+              #{filter.bsoStateId} = 2 AND b.IS_PRINT = 0 OR
+              #{filter.bsoStateId} = 3 AND b.IS_TRASH != 0 OR
+              #{filter.bsoStateId} = 4 AND b.IS_TRASH = 0 OR
+              #{filter.bsoStateId} = 5 AND b.IS_BOUND != 0 OR
+              #{filter.bsoStateId} = 6 AND b.IS_BOUND = 0 OR
+              #{filter.bsoStateId} = 7 AND b.IS_USE != 0 OR
+              #{filter.bsoStateId} = 8 AND b.IS_USE = 0)
+            AND bt.ID = 2
+            
+            UNION
+            
+          SELECT
+            b.ID AS id
+            , dh.NAME AS departmentName
+            , bt.NAME AS bsoTypeName
+            , b.BSO_NUMBER AS bsoNumber
+            , eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC AS employeeName
+            , b.IS_PRINT AS isPrinted
+            , b.IS_TRASH AS isTrashed
+            , b.IS_BOUND AS isBound
+            , b.IS_USE AS isUsed
+          FROM
+            PBK_NSI.BSOS b
+            JOIN PBK_TASK.TASK_BSOS tb ON b.ID = tb.BSO_ID AND tb.TASK_ID = #{filter.taskId}
+            LEFT JOIN PBK_NSI.BSO_NUMBER_RULES bnr ON b.BSO_NUMBER_RULE_ID = bnr.ID
+            LEFT JOIN PBK_NSI.DEPARTMENT_HISTS dh ON bnr.DEPT_ID = dh.HEAD_ID
+            LEFT JOIN PBK_NSI.BSO_TYPES bt ON bnr.BSO_TYPE_ID = bt.ID
+            LEFT JOIN PBK_NSI.BSO_EMPLOYEES be ON b.ID = be.BSO_ID
+            LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON be.EMPLOYEE_ID = eh.HEAD_ID
+          WHERE 1=1
+            AND (eh.V_END_DATE IS NULL OR eh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (dh.V_END_DATE IS NULL OR dh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+            AND (#{filter.bsoNumber} IS NULL OR UPPER(b.BSO_NUMBER) LIKE UPPER('%${filter.bsoNumber}%'))
+            AND (
+              #{filter.bsoStateId} IS NULL OR
+              #{filter.bsoStateId} = 1 AND b.IS_PRINT != 0 OR
+              #{filter.bsoStateId} = 2 AND b.IS_PRINT = 0 OR
+              #{filter.bsoStateId} = 3 AND b.IS_TRASH != 0 OR
+              #{filter.bsoStateId} = 4 AND b.IS_TRASH = 0 OR
+              #{filter.bsoStateId} = 5 AND b.IS_BOUND != 0 OR
+              #{filter.bsoStateId} = 6 AND b.IS_BOUND = 0 OR
+              #{filter.bsoStateId} = 7 AND b.IS_USE != 0 OR
+              #{filter.bsoStateId} = 8 AND b.IS_USE = 0)
+            AND bt.ID = 2
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getBindDateById" resultType="java.util.Date">
+        <![CDATA[
+          select cast(CREATE_DATE as date) from PBK_NSI.BSO_EMPLOYEES where BSO_ID = #{bsoId}
+        ]]>
+    </select>
+
+    <insert id="trashBso" parameterType="ru.armd.pbk.domain.nsi.bso.TrashBso">
+        <![CDATA[
+            INSERT INTO [PBK_DB].[PBK_NSI].[BSO_TRASHS](
+                [CREATE_DATE]
+                ,[CREATE_USER_ID]
+                ,[BSO_ID]
+                ,[ISSUE_DATE]
+                ,[END_DATE]
+                ,[REASON]
+                ,[EMPLOYEE_OFF_ID]
+                ,[ACT_NUMBER]
+            ) VALUES(
+                #{trashBso.createDate}
+                ,#{trashBso.createUserId}
+                ,#{trashBso.bsoId}
+                ,#{trashBso.issueDate}
+                ,#{trashBso.endDate}
+                ,#{trashBso.reason}
+                ,#{trashBso.employeeOffId}
+                ,#{trashBso.actNumber}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.BSO_TRASHS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <select id="getTaskIdByBsoId" resultType="java.lang.Long">
+        <![CDATA[
+            SELECT
+				[ID] as taskId
+            FROM [PBK_TASK].[TASKS]
+            WHERE [BSO_ID] = #{bsoId}
+       ]]>
+    </select>
+
+    <update id="updateTaskBsoId">
+        <![CDATA[
+            UPDATE [PBK_TASK].[TASKS]
+            SET
+                 [BSO_ID] = #{bsoId}
+            WHERE ID = #{taskId}
+        ]]>
+    </update>
+
+    <select id="getTrashBsoByBsoId" resultType="ru.armd.pbk.domain.nsi.bso.TrashInfoBso">
+        <![CDATA[
+          select
+              bt.ISSUE_DATE as issueDate,
+              bt.REASON as reason,
+              bt.END_DATE as endDate,
+              u.LOGIN as createUserLogin,
+              eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as employeeOffName,
+              bt.ACT_NUMBER as actNumber
+          from PBK_NSI.BSO_TRASHS bt
+              left join PBK_CORE.USERS u on bt.CREATE_USER_ID = u.ID
+              left join PBK_NSI.EMPLOYEE_HISTS eh on bt.EMPLOYEE_OFF_ID = eh.HEAD_ID and eh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+              left join PBK_NSI.BSOS b on bt.BSO_ID = b.ID
+          where bt.BSO_ID = #{bsoId}
+       ]]>
+    </select>
+
+    <select id="getBsoInfoForPusk" resultType="ru.armd.pbk.domain.nsi.bso.BsoInfo">
+        <![CDATA[
+          select
+                eh.PERSONNEL_NUMBER personId,
+                b.BSO_NUMBER actNumber
+            from
+                PBK_NSI.BSOS b
+                    join PBK_NSI.BSO_EMPLOYEES be on b.ID = be.BSO_ID
+                    join PBK_NSI.EMPLOYEE_HISTS eh on be.EMPLOYEE_ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate()
+            where
+                    b.IS_BOUND = 1
+                          and b.IS_USE = 0
+                          and b.IS_TRASH = 0
+        ]]>
+    </select>
+
+</mapper>

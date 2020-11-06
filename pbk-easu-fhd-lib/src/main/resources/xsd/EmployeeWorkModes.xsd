@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:com="http://mgt.ru/pbk/xsd/1/Common"
+            xmlns:ewm="http://mgt.ru/pbk/xsd/fhd/1/EmployeeWorkModes" targetNamespace="http://mgt.ru/pbk/xsd/fhd/1/EmployeeWorkModes"
+            elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+  <xsd:import namespace="http://mgt.ru/pbk/xsd/1/Common" schemaLocation="Common.xsd"/>
+
+  <xsd:complexType name="ExportEmployeeWorkModeResponseType">
+    <xsd:sequence>
+      <xsd:element name="employeeWorkModes">
+        <xsd:annotation>
+          <xsd:documentation>ПЕречень балансов рабочего времени сотрудников</xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+          <xsd:sequence minOccurs="0">
+            <xsd:element name="employeeWorkMode" maxOccurs="unbounded">
+              <xsd:annotation>
+                <xsd:documentation>Данные по балансу рабочего времени сотрудника</xsd:documentation>
+              </xsd:annotation>
+              <xsd:complexType>
+                <xsd:sequence>
+                  <xsd:element name="ident" type="com:TIdent" nillable="true" minOccurs="0">
+                    <xsd:annotation>
+                      <xsd:documentation>Уникальный идентификатор</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="personelNumber" type="com:TVarchar32" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Табельный номер</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="workDate" type="com:TDate" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Календарная дата</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="workModeCod" type="com:TVarchar64" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Шифр затрат рабочего времени. Из набора значений: в-выходной, д-день, н-ночь, x-не работает</xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                  <xsd:element name="workHours" type="com:TFloat" nillable="false" minOccurs="1">
+                    <xsd:annotation>
+                      <xsd:documentation>Плановое количество часов рабочего времени на указанную дату	Числовой	С точностью до 2 знаков после запятой. </xsd:documentation>
+                    </xsd:annotation>
+                  </xsd:element>
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:schema>

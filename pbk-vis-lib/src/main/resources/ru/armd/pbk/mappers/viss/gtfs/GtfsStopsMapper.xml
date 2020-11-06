@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gtfs.GtfsStopsMapper">
+
+	<insert id="insertChunckOnDate">
+		INSERT
+		INTO <include refid="ru.armd.pbk.mappers.CommonSql.pbkCalc"/>.[ASDU_GTFS_STOPS]
+		(
+		[STOP_ID]
+		,[STOP_NAME]
+		,[STOP_LAT]
+		,[STOP_LON]
+		,[IS_DELETED]
+		) VALUES
+		<foreach collection="domains" item="element" index="index"
+			separator=",">
+			(#{element.stopId}
+			,#{element.stopName}
+			,#{element.stopLat}
+			,#{element.stopLon}
+			,#{element.isDeleted} )
+		</foreach>
+	</insert>
+
+</mapper>

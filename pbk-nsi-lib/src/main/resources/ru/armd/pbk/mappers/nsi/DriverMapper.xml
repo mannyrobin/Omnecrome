@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.DriverMapper">
+
+    <sql id="fieldDomain">
+        <![CDATA[
+              ,d.[IS_DELETE] as isDelete
+              ,dh.[CREATE_DATE] as createDate
+              ,dh.[CREATE_USER_ID] as createUserId
+              ,dh.[UPDATE_DATE] as updateDate
+              ,dh.[UPDATE_USER_ID] as updateUserId
+              ,dh.[V_START_DATE] as versionStartDate
+              ,dh.[V_END_DATE] as versionEndDate
+              ,dh.[HEAD_ID] as headId
+              ,dh.[ASDU_DRIVER_ID] as asduDriverId
+              ,dh.[ASDU_DEPOT_ID] as asduDepotId
+              ,dh.[SURNAME] as surname
+              ,dh.[NAME] as name
+              ,dh.[PATRONUMIC] as patronumic
+              ,dh.[PERSONNEL_NUMBER] as personalNumber
+        ]]>
+    </sql>
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.driver.DriverView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+    	<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+            SELECT
+                d.[ID] as id
+                ]]><include refid="fieldDomain" /><![CDATA[
+                , (SELECT p.NAME
+  						FROM [PBK_NSI].[PARK_DRIVERS] pd
+  						join PBK_NSI.PARK_HISTS p on pd.PARK_ID = p.HEAD_ID
+  						where pd.V_END_DATE  >= [PBK_CORE].getVersionEndDate() 
+  						and p.V_END_DATE >= [PBK_CORE].getVersionEndDate() and pd.TS_DRIVER_ID = d.id) as parkName
+            FROM [PBK_NSI].[TS_DRIVERS] d JOIN [PBK_NSI].[TS_DRIVER_HISTS] dh on (d.ID = dh.HEAD_ID)
+            WHERE 1 = 1
+              and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+              and ((#{filter.fio} is null or UPPER(dh.NAME) like UPPER('%${filter.fio}%')) or (UPPER(dh.SURNAME) like UPPER('%${filter.fio}%')) or (UPPER(dh.PATRONUMIC) like UPPER('%${filter.fio}%')))
+              and (#{filter.personalNumber} is null or UPPER(dh.PERSONNEL_NUMBER) like UPPER('%${filter.personalNumber}%'))
+              and ((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR d.IS_DELETE = 0)
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+	<select id="getHistoryViews" resultType="ru.armd.pbk.views.nsi.driver.DriverHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+				dh.SURNAME as surname,
+              	dh.NAME as name,
+              	dh.PATRONUMIC as patronumic,
+              	dh.ASDU_DRIVER_ID as asduDriverId,
+                dh.ASDU_DEPOT_ID as asduDepotId,
+                dh.PERSONNEL_NUMBER as personalNumber,
+                (SELECT p.HEAD_ID
+  						FROM [PBK_NSI].[PARK_DRIVERS] pd
+  						join PBK_NSI.PARK_HISTS p on pd.PARK_ID = p.HEAD_ID
+  						where pd.V_END_DATE  >= [PBK_CORE].getVersionEndDate() 
+  						and p.V_END_DATE >= [PBK_CORE].getVersionEndDate() and pd.TS_DRIVER_ID = dh.HEAD_ID) as parkId               
+			FROM
+				PBK_NSI.TS_DRIVER_HISTS dh LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+			WHERE
+          		dh.HEAD_ID = #{filter.driverHeadId}
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <insert id="insertHead" parameterType="ru.armd.pbk.domain.HeadVersionDomain" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into PBK_NSI.TS_DRIVERS (
+                [IS_DELETE]
+            ) VALUES (
+                #{isDelete}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.TS_DRIVERS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.nsi.Driver" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.TS_DRIVER_HISTS(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+        	, [HEAD_ID]
+        	, [ASDU_DRIVER_ID]
+			, [ASDU_DEPOT_ID]
+			, [SURNAME]
+			, [NAME]
+			, [PATRONUMIC]
+			, [PERSONNEL_NUMBER]
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+        	, #{headId}
+            , #{asduDriverId}
+            , #{asduDepotId}
+            , #{surname}
+            , #{name}
+            , #{patronumic}
+            , #{personalNumber}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.TS_DRIVER_HISTS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.nsi.Driver">
+        <![CDATA[
+			UPDATE PBK_NSI.TS_DRIVER_HISTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+				,ASDU_DRIVER_ID = #{asduDriverId}
+                ,ASDU_DEPOT_ID = #{asduDepotId}
+                ,SURNAME = #{surname}
+                ,NAME = #{name}
+                ,PATRONUMIC = #{patronumic}
+                ,PERSONNEL_NUMBER = #{personalNumber}
+			WHERE
+			  ID = #{id}
+        ]]>
+    </update>
+
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_NSI.TS_DRIVERS
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.TS_DRIVERS
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+
+    <select id="getByAsduDriverId" resultType="ru.armd.pbk.domain.nsi.Driver">
+        <![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[TS_DRIVERS] d JOIN [PBK_NSI].[TS_DRIVER_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE dh.ASDU_DRIVER_ID = #{asduDriverId}
+               and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.Driver">
+        <![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[TS_DRIVERS] d JOIN [PBK_NSI].[TS_DRIVER_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE 1 = 1
+               and dh.[ID] = #{id}
+        ]]>
+    </select>
+
+    <select id="getActual" resultType="ru.armd.pbk.domain.nsi.Driver">
+        <![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[TS_DRIVERS] d JOIN [PBK_NSI].[TS_DRIVER_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE 1 = 1
+  			   and d.[IS_DELETE] = 0
+               and dh.[HEAD_ID] = #{domainId}
+			   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        SELECT
+        	d.ID as id
+			, CONCAT(dh.SURNAME, ' ', dh.NAME, ' ', dh.PATRONUMIC) as name
+        FROM
+        	PBK_NSI.TS_DRIVERS d JOIN PBK_NSI.TS_DRIVER_HISTS dh on (d.ID = dh.HEAD_ID)
+        WHERE (d.IS_DELETE = 0 OR (#{currentId} IS NOT NULL AND d.ID = #{currentId}))
+            AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+            and #{fio} is not null and ((UPPER(dh.NAME) like UPPER('%${fio}%')) or (UPPER(dh.SURNAME) like UPPER('%${fio}%')) or (UPPER(dh.PATRONUMIC) like UPPER('%${fio}%')))
+            and (#{parkId} is null or d.ID not in ( SELECT pd.[TS_DRIVER_ID]
+													FROM [PBK_DB].[PBK_NSI].[PARK_DRIVERS] pd WHERE pd.PARK_ID = #{parkId} ))
+    </select>
+    
+    <select id="isExist" resultType="boolean">
+	    <include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+   			SELECT
+   				1
+   			FROM
+   				PBK_NSI.TS_DRIVER_HISTS
+   			WHERE
+   				(#{headId} is null OR HEAD_ID != #{headId})
+   				AND (#{asduDriverId} is null OR ASDU_DRIVER_ID = #{asduDriverId})
+   				AND V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    	<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+    </select>
+</mapper>

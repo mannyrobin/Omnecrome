@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.bonus.BonusMapper">
+
+	<sql id="fieldDomain">
+		<![CDATA[	
+			dh.[ID] as id	
+			,dh.[CREATE_DATE] as createDate
+			,dh.[CREATE_USER_ID] as createUserId
+			,dh.[UPDATE_DATE] as updateDate
+			,dh.[UPDATE_USER_ID] as updateUserId
+			,dh.[NAME] as name		
+			,dh.[COUNT] as count		     
+			,dh.[PERIOD_START_DATE] as periodStartDate	
+			,dh.[PERIOD_END_DATE] as periodEndDate
+		]]>
+	</sql>   
+    
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.bonus.BonusView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+       <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+       <![CDATA[
+		SELECT
+              b.ID as id,
+              b.PERIOD_START_DATE as periodStartDate,
+              b.PERIOD_END_DATE as periodEndDate,
+              b.NAME as name
+		FROM [PBK_NSI].[BONUSES] b
+		WHERE 
+		  	(#{filter.name} is null or UPPER(b.NAME) like UPPER('%${filter.name}%'))
+		  	AND ((#{filter.dateFrom, jdbcType=DATE} is null OR #{filter.dateFrom, jdbcType=DATE} <= cast(b.PERIOD_START_DATE as DATE))
+           	AND (#{filter.dateTo, jdbcType=DATE} is null OR #{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_START_DATE as DATE))
+           	OR (#{filter.dateFrom, jdbcType=DATE} is null OR #{filter.dateFrom, jdbcType=DATE} <= cast(b.PERIOD_END_DATE as DATE))
+           	AND (#{filter.dateTo, jdbcType=DATE} is null OR #{filter.dateTo, jdbcType=DATE} >= cast(b.PERIOD_END_DATE as DATE)))
+       ]]>
+       <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+   </select>
+     
+	<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.bonus.Bonus" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        insert into PBK_NSI.BONUSES (
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+            , [NAME]        	
+        	, [COUNT]        	
+          	, [PERIOD_START_DATE]  
+          	, [PERIOD_END_DATE]	
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+            , #{name}  	
+        	, #{count}
+			, #{periodStartDate}	
+			, #{periodEndDate}      	
+        )
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.BONUSES' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+	
+	<update id="update" parameterType="ru.armd.pbk.domain.nsi.bonus.Bonus">
+		<![CDATA[
+			UPDATE PBK_NSI.BONUSES SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				,NAME = #{name}
+				,COUNT = #{count}
+           		,PERIOD_START_DATE = #{periodStartDate}
+           		,PERIOD_END_DATE = #{periodEndDate}      		
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+	
+	<select id="getById" resultType="ru.armd.pbk.domain.nsi.bonus.Bonus">
+		<![CDATA[
+			SELECT	               
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[BONUSES] dh
+			WHERE
+               dh.[ID] = #{id}
+        ]]>
+    </select>
+    
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	[PBK_NSI].[BONUSES]
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <select id="isExist" resultType="boolean">
+	    <include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+	    <![CDATA[
+   			SELECT
+   				1
+   			FROM
+   				[PBK_NSI].[BONUSES]
+   			WHERE
+   				(#{id} IS NULL OR ID != #{id})
+   				AND ((#{dateFrom, jdbcType=DATE} is null OR #{dateFrom, jdbcType=DATE} <= cast(PERIOD_START_DATE as DATE))
+	           	AND (#{dateTo, jdbcType=DATE} is null OR #{dateTo, jdbcType=DATE} >= cast(PERIOD_START_DATE as DATE))
+	           	OR (#{dateFrom, jdbcType=DATE} is null OR #{dateFrom, jdbcType=DATE} <= cast(PERIOD_END_DATE as DATE))
+	           	AND (#{dateTo, jdbcType=DATE} is null OR #{dateTo, jdbcType=DATE} >= cast(PERIOD_END_DATE as DATE))
+	           	OR (#{dateFrom, jdbcType=DATE} is null OR #{dateFrom, jdbcType=DATE} >= cast(PERIOD_START_DATE as DATE))
+	           	AND (#{dateTo, jdbcType=DATE} is null OR #{dateTo, jdbcType=DATE} <= cast(PERIOD_END_DATE as DATE)))
+	    ]]>
+    	<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+    </select>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+	   		<![CDATA[
+	   			SELECT ID as id
+	   			, NAME as name     
+  				FROM [PBK_NSI].[TICKET_BONUSES_TYPE]
+		    ]]>		        
+	</select>
+</mapper>

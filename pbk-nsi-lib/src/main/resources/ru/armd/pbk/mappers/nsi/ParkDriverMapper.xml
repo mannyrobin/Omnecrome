@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.ParkDriverMapper">
+
+	<sql id="fieldDomain">
+		<![CDATA[
+			,pd.[CREATE_DATE] as createDate
+			,pd.[CREATE_USER_ID] as createUserId
+			,pd.[UPDATE_DATE] as updateDate
+			,pd.[UPDATE_USER_ID] as updateUserId
+			,pd.[V_START_DATE] as versionStartDate
+			,pd.[V_END_DATE] as versionEndDate
+			,pd.[PARK_ID] as parkId
+			,pd.[TS_DRIVER_ID] as tsDriverId
+		]]>
+	 </sql>
+	 
+	<select id="getGridViews" resultType="ru.armd.pbk.views.nsi.ParkDriverView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+		<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+		<![CDATA[
+			SELECT
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+				  dhh.SURNAME as surname
+				, dhh.NAME as name
+				, dhh.PATRONUMIC as patronumic
+				, dhh.PERSONNEL_NUMBER as personalNumber
+				, dhh.HEAD_ID as tsDriverId
+			FROM
+				PBK_NSI.PARK_DRIVERS dh 
+				INNER JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) 
+				INNER JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+				INNER JOIN PBK_NSI.TS_DRIVERS d ON (dh.TS_DRIVER_ID = d.id)
+				INNER JOIN PBK_NSI.TS_DRIVER_HISTS dhh ON (d.ID = dhh.HEAD_ID)
+			WHERE
+				dh.PARK_ID = #{filter.parkId}   
+				and dhh.V_END_DATE >= [PBK_CORE].getVersionEndDate()	   												
+		]]>
+		<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+	</select>
+	
+	<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.ParkDriver" keyProperty="id" keyColumn="id">
+		<![CDATA[
+			insert into PBK_NSI.PARK_DRIVERS(
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+				, [PARK_ID]
+				, [TS_DRIVER_ID]
+			) VALUES (
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+				, #{parkId}
+				, #{tsDriverId}
+			)
+		]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+				SELECT IDENT_CURRENT( 'PBK_NSI.PARK_DRIVERS' ) as id
+			]]>
+		</selectKey>
+	</insert>
+	
+	<update id="update" parameterType="ru.armd.pbk.domain.nsi.ParkDriver">
+		<![CDATA[
+			UPDATE
+				PBK_NSI.PARK_DRIVERS
+			SET
+				CREATE_DATE = #{createDate},
+				CREATE_USER_ID = #{createUserId},
+				UPDATE_DATE = #{updateDate},
+				UPDATE_USER_ID = #{updateUserId},
+				V_START_DATE = #{versionStartDate},
+				V_END_DATE = #{versionEndDate},
+				PARK_ID = #{parkId},
+				TS_DRIVER_ID = #{tsDriverId}
+			WHERE
+				ID = #{id}
+		]]>
+	</update>
+	
+	<select id="getById" resultType="ru.armd.pbk.domain.nsi.ParkDriver">
+		<![CDATA[
+			SELECT
+				pd.[ID] as id
+				]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[PARK_DRIVERS] pd
+			WHERE 1 = 1
+				and pd.[ID] = #{id}
+		]]>
+	</select>
+
+	<select id="getActual" resultType="ru.armd.pbk.domain.nsi.ParkDriver">
+		<![CDATA[
+			SELECT
+				pd.[ID] as id
+				]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[PARK_DRIVERS] pd
+			WHERE
+				pd.[ID] = #{domainId}
+				and pd.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+		]]>
+	</select>
+	
+	<select id="getDomain" resultType="ru.armd.pbk.domain.nsi.ParkDriver">
+		<![CDATA[
+			SELECT
+				pd.[ID] as id
+				]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[PARK_DRIVERS] pd
+			WHERE
+				(#{tsDriverId} is not null and pd.[TS_DRIVER_ID] = #{tsDriverId})
+				and pd.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+		]]>
+	</select>
+    
+    <select id="getDomains" resultType="ru.armd.pbk.domain.nsi.ParkDriver">
+        <![CDATA[
+            SELECT
+                pd.[ID] as id
+                ]]><include refid="fieldDomain" /><![CDATA[
+            FROM [PBK_NSI].[PARK_DRIVERS] pd
+            WHERE
+                (#{tsDriverId} is not null and pd.[TS_DRIVER_ID] = #{tsDriverId})
+                and pd.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>
+</mapper>

@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So9Mapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.report.So9View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+		<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+		<![CDATA[
+			SELECT distinct s.employee as employee
+               , s.employeeId as employeeId
+			   , s.personalNumber as personalNumber
+			   , s.DEPT_ID as DEPT_ID
+			  , isnull(sum(exemptSkmCount), 0) AS exemptSkmCount
+			  , isnull(sum(exemptSkmoCount), 0) AS exemptSkmoCount
+			  , isnull(sum(exemptVesbCount), 0) AS exemptVesbCount
+			  , isnull(sum(lpkCount), 0) AS lpkCount
+			  , isnull(sum(tsCheckCount), 0) AS tsCheckCount
+			  , isnull(sum(exemptValidlessCount), 0) AS exemptValidlessCount
+			  , isnull(sum(plantStowawayCount), 0) AS plantStowawayCount
+			  , isnull(sum(deliveryOvdCount), 0) AS deliveryOvdCount
+			  , isnull(sum(ordinance1000Count), 0) AS ordinance1000Count
+			  , isnull(sum(ordinance2500Count), 0) AS ordinance2500Count
+			  , isnull(sum(protocol1000Count), 0) AS protocol1000Count
+			  , isnull(sum(protocol2500Count), 0) AS protocol2500Count
+			  , isnull(sum(ticketSoldCount), 0) AS ticketSoldCount from (
+			SELECT
+				eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as employee
+			  , eh.HEAD_ID AS employeeId
+			  , eh.PERSONNEL_NUMBER AS personalNumber
+			  , eh.DEPT_ID
+			  , isnull(tr.EXEMPT_SKM_COUNT, 0) AS exemptSkmCount
+			  , isnull(tr.EXEMPT_SKMO_COUNT, 0) AS exemptSkmoCount
+			  , isnull(tr.EXEMPT_VESB_COUNT, 0) AS exemptVesbCount
+			  , isnull(tr.EXEMPT_OTHER_LPK_COUNT, 0) AS lpkCount
+			  , isnull(tr.TS_CHECK_COUNT, 0) AS tsCheckCount
+			  , isnull(tr.EXEMPT_VALIDLESS_COUNT, 0) AS exemptValidlessCount
+			  , isnull(tr.PLANT_STOWAWAY_COUNT, 0) AS plantStowawayCount
+			  , isnull(tr.DELIVERY_OVD_COUNT, 0) AS deliveryOvdCount
+			  , isnull(tr.ORDINANCE_1000_COUNT, 0) AS ordinance1000Count
+			  , isnull(tr.ORDINANCE_2500_COUNT, 0) AS ordinance2500Count
+			  , isnull(tr.PROTOCOL_1000_COUNT, 0) AS protocol1000Count
+			  , isnull(tr.PROTOCOL_2500_COUNT, 0) AS protocol2500Count
+			  , isnull(tr.TICKET_SOLD_COUNT, 0) AS ticketSoldCount
+			FROM PBK_NSI.EMPLOYEE_HISTS eh
+                    JOIN PBK_NSI.EMPLOYEES e ON (e.id = eh.head_id AND e.IS_DELETE = 0)
+                    LEFT JOIN PBK_NSI.EMP_DEPT_MOVES edm ON (e.ID = edm.EMPLOYEE_ID) 
+                    JOIN PBK_PLAN.PLAN_SCHEDULES ps ON (e.ID = ps.EMPLOYEE_ID 
+                     AND cast(eh.V_START_DATE as date) <= ps.WORK_DATE AND dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)) >= ps.WORK_DATE
+                      AND ps.WORK_DATE between cast(edm.PERIOD_START_DATE as date) AND cast(edm.PERIOD_END_DATE as date))
+                    LEFT JOIN PBK_TASK.TASKS t ON (ps.ID = t.PLAN_SCHEDULE_ID)
+                    LEFT JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+			WHERE 1=1
+				  AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+				  AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+				    AND ((#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+					   AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+					   OR (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= cast(eh.V_START_DATE AS DATE))
+						  AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+						  AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+						  AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} <= cast(eh.V_START_DATE AS DATE))
+						  AND eh.V_END_DATE is null) and eh.POSITION_NAME like upper('%онтрол%') /*AND eh.FOR_PLAN_USE = 1*/
+            ]]><if test="filter.departmentId != null">
+				AND eh.DEPT_ID IN (${filter.departmentId})
+			</if>
+			<if test="filter.employeeId != null">
+				AND eh.HEAD_ID IN (${filter.employeeId})
+			</if><![CDATA[
+              and (#{filter.deptAuthId} is null or eh.DEPT_ID = #{filter.deptAuthId})
+              union all
+SELECT
+			distinct eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as employee
+			  , eh.HEAD_ID AS employeeId
+			  , eh.PERSONNEL_NUMBER AS personalNumber
+			  , eh.DEPT_ID
+			  , isnull(tr.EXEMPT_SKM_COUNT, 0) AS exemptSkmCount
+			  , isnull(tr.EXEMPT_SKMO_COUNT, 0) AS exemptSkmoCount
+			  , isnull(tr.EXEMPT_VESB_COUNT, 0) AS exemptVesbCount
+			  , isnull(tr.EXEMPT_OTHER_LPK_COUNT, 0) AS lpkCount
+			  , isnull(tr.TS_CHECK_COUNT, 0) AS tsCheckCount
+			  , isnull(tr.EXEMPT_VALIDLESS_COUNT, 0) AS exemptValidlessCount
+			  , isnull(tr.PLANT_STOWAWAY_COUNT, 0) AS plantStowawayCount
+			  , isnull(tr.DELIVERY_OVD_COUNT, 0) AS deliveryOvdCount
+			  , isnull(tr.ORDINANCE_1000_COUNT, 0) AS ordinance1000Count
+			  , isnull(tr.ORDINANCE_2500_COUNT, 0) AS ordinance2500Count
+			  , isnull(tr.PROTOCOL_1000_COUNT, 0) AS protocol1000Count
+			  , isnull(tr.PROTOCOL_2500_COUNT, 0) AS protocol2500Count
+			  , isnull(tr.TICKET_SOLD_COUNT, 0) AS ticketSoldCount
+			FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_NSI.EMPLOYEES e ON ps.EMPLOYEE_ID = e.ID AND e.IS_DELETE = 0
+				LEFT JOIN PBK_NSI.EMP_DEPT_MOVES edm on (e.ID = edm.EMPLOYEE_ID) AND ps.WORK_DATE between cast(edm.PERIOD_START_DATE as date) and cast(edm.PERIOD_END_DATE as date)
+				JOIN PBK_NSI.EMPLOYEE_HISTS eh on (eh.head_id = e.ID)
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID AND 
+				 ps.work_date < cast(tr.create_date as date)
+			WHERE 1=1
+				  AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+				  AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+				    AND ((#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+					   AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+					   OR (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= cast(eh.V_START_DATE AS DATE))
+						  AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+						  AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+						  AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} <= cast(eh.V_START_DATE AS DATE))
+							  AND eh.V_END_DATE is null) and eh.POSITION_NAME like upper('%онтрол%')  /*AND eh.FOR_PLAN_USE = 1*/
+							  and (select min(pss.work_date) from PBK_PLAN.PLAN_SCHEDULES pss where pss.EMPLOYEE_ID = eh.HEAD_ID
+				  AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= cast(pss.WORK_DATE AS DATE))
+				  AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(pss.WORK_DATE AS DATE))) <
+							  (select cast(min(ehh.CREATE_DATE) AS DATE) from PBK_NSI.EMPLOYEE_HISTS ehh 
+								  where eh.HEAD_ID = ehh.HEAD_ID) AND ps.WORK_DATE != cast(eh.CREATE_DATE as date)
+    			 ]]><if test="filter.departmentId != null">
+				AND eh.DEPT_ID IN (${filter.departmentId})
+			</if>
+			<if test="filter.employeeId != null">
+				AND eh.HEAD_ID IN (${filter.employeeId})
+			</if><![CDATA[
+			and (#{filter.deptAuthId} is null or eh.DEPT_ID = #{filter.deptAuthId})
+			and t.PLAN_SCHEDULE_ID not in
+				(SELECT
+				t.PLAN_SCHEDULE_ID
+			FROM PBK_NSI.EMPLOYEE_HISTS eh
+                    JOIN PBK_NSI.EMPLOYEES e ON (e.id = eh.head_id AND e.IS_DELETE = 0)
+                    LEFT JOIN PBK_NSI.EMP_DEPT_MOVES edm ON (e.ID = edm.EMPLOYEE_ID) 
+                    JOIN PBK_PLAN.PLAN_SCHEDULES ps ON (e.ID = ps.EMPLOYEE_ID 
+                     AND cast(eh.V_START_DATE as date) <= ps.WORK_DATE AND dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)) >= ps.WORK_DATE
+                      AND ps.WORK_DATE between cast(edm.PERIOD_START_DATE as date) AND cast(edm.PERIOD_END_DATE as date))
+                    LEFT JOIN PBK_TASK.TASKS t ON (ps.ID = t.PLAN_SCHEDULE_ID)
+                    LEFT JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+			WHERE 1=1
+				  AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+				  AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+				    AND ((#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+					   AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+					   OR (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= cast(eh.V_START_DATE AS DATE))
+						  AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+						  AND (#{filter.dateFrom, jdbcType=DATE} IS NULL OR #{filter.dateFrom, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+						  AND (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{filter.dateTo, jdbcType=DATE} IS NULL OR #{filter.dateTo, jdbcType=DATE} <= cast(eh.V_START_DATE AS DATE))
+						  AND eh.V_END_DATE is null) and eh.POSITION_NAME like upper('%онтрол%') and t.PLAN_SCHEDULE_ID is not null /*AND eh.FOR_PLAN_USE = 1*/
+            ]]><if test="filter.departmentId != null">
+				AND eh.DEPT_ID IN (${filter.departmentId})
+			</if>
+			<if test="filter.employeeId != null">
+				AND eh.HEAD_ID IN (${filter.employeeId})
+			</if><![CDATA[
+              and (#{filter.deptAuthId} is null or eh.DEPT_ID = #{filter.deptAuthId}))
+				union all
+				SELECT
+				eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as employee
+			  , eh.HEAD_ID AS employeeId
+			  , eh.PERSONNEL_NUMBER AS personalNumber
+			  , eh.DEPT_ID as DEPT_ID
+			  , 0 AS exemptSkmCount
+			  , 0 AS exemptSkmoCount
+			  , 0 AS exemptVesbCount
+			  , 0 AS lpkCount
+			  , 0 AS tsCheckCount
+			  , 0 AS exemptValidlessCount
+			  , 0 AS plantStowawayCount
+			  , 0 AS deliveryOvdCount
+			  , 0 AS ordinance1000Count
+			  , 0 AS ordinance2500Count
+			  , 0 AS protocol1000Count
+			  , 0 AS protocol2500Count
+			  , 0 AS ticketSoldCount
+			FROM PBK_NSI.EMPLOYEE_HISTS eh
+                    JOIN PBK_NSI.EMPLOYEES e ON (e.id = eh.head_id AND e.IS_DELETE = 0)
+                    			WHERE 1=1
+								and eh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate() 
+			  AND eh.POSITION_NAME like upper('%онтрол%') AND eh.FOR_PLAN_USE = 0 and (eh.FIRE_DATE IS NULL)
+    			 ]]><if test="filter.departmentId != null">
+				AND eh.DEPT_ID IN (${filter.departmentId})
+			</if>
+			<if test="filter.employeeId != null">
+				AND eh.HEAD_ID IN (${filter.employeeId})
+			</if><![CDATA[
+			and (#{filter.deptAuthId} is null or eh.DEPT_ID = #{filter.deptAuthId})
+				) s
+		    GROUP BY s.employee, s.employeeId, s.personalNumber, s.DEPT_ID
+        ]]><include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+	</select>
+
+	<select id="getGridViewTotal" resultType="ru.armd.pbk.views.report.So9View">
+		<![CDATA[
+        	select  sum(sub.exemptSkmCount) as exemptSkmCount
+					, sum(sub.exemptSkmoCount) as exemptSkmoCount
+					, sum(sub.exemptVesbCount) as exemptVesbCount
+					, sum(sub.lpkCount) as lpkCount
+					, sum(sub.tsCheckCount) as tsCheckCount
+					, sum(sub.exemptValidlessCount) as  exemptValidlessCount
+					, sum(sub.plantStowawayCount) as plantStowawayCount 
+					, sum(sub.deliveryOvdCount) as deliveryOvdCount
+					, sum(sub.ordinance1000Count) AS ordinance1000Count
+				  	, sum(sub.ordinance2500Count) AS ordinance2500Count
+					, sum(sub.protocol1000Count) AS protocol1000Count
+				  	, sum(sub.protocol2500Count) AS protocol2500Count
+				  	, sum(sub.ticketSoldCount) AS ticketSoldCount
+			from (
+			SELECT distinct s.employee as employee
+               , s.employeeId as employeeId
+			   , s.personalNumber as personalNumber
+			   , s.DEPT_ID as DEPT_ID
+			  , isnull(sum(exemptSkmCount), 0) AS exemptSkmCount
+			  , isnull(sum(exemptSkmoCount), 0) AS exemptSkmoCount
+			  , isnull(sum(exemptVesbCount), 0) AS exemptVesbCount
+			  , isnull(sum(lpkCount), 0) AS lpkCount
+			  , isnull(sum(tsCheckCount), 0) AS tsCheckCount
+			  , isnull(sum(exemptValidlessCount), 0) AS exemptValidlessCount
+			  , isnull(sum(plantStowawayCount), 0) AS plantStowawayCount
+			  , isnull(sum(deliveryOvdCount), 0) AS deliveryOvdCount
+			  , isnull(sum(ordinance1000Count), 0) AS ordinance1000Count
+			  , isnull(sum(ordinance2500Count), 0) AS ordinance2500Count
+			  , isnull(sum(protocol1000Count), 0) AS protocol1000Count
+			  , isnull(sum(protocol2500Count), 0) AS protocol2500Count
+			  , isnull(sum(ticketSoldCount), 0) AS ticketSoldCount from (
+			SELECT
+				eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as employee
+			  , eh.HEAD_ID AS employeeId
+			  , eh.PERSONNEL_NUMBER AS personalNumber
+			  , eh.DEPT_ID
+			  , isnull(tr.EXEMPT_SKM_COUNT, 0) AS exemptSkmCount
+			  , isnull(tr.EXEMPT_SKMO_COUNT, 0) AS exemptSkmoCount
+			  , isnull(tr.EXEMPT_VESB_COUNT, 0) AS exemptVesbCount
+			  , isnull(tr.EXEMPT_OTHER_LPK_COUNT, 0) AS lpkCount
+			  , isnull(tr.TS_CHECK_COUNT, 0) AS tsCheckCount
+			  , isnull(tr.EXEMPT_VALIDLESS_COUNT, 0) AS exemptValidlessCount
+			  , isnull(tr.PLANT_STOWAWAY_COUNT, 0) AS plantStowawayCount
+			  , isnull(tr.DELIVERY_OVD_COUNT, 0) AS deliveryOvdCount
+			  , isnull(tr.ORDINANCE_1000_COUNT, 0) AS ordinance1000Count
+			  , isnull(tr.ORDINANCE_2500_COUNT, 0) AS ordinance2500Count
+			  , isnull(tr.PROTOCOL_1000_COUNT, 0) AS protocol1000Count
+			  , isnull(tr.PROTOCOL_2500_COUNT, 0) AS protocol2500Count
+			  , isnull(tr.TICKET_SOLD_COUNT, 0) AS ticketSoldCount
+			FROM PBK_NSI.EMPLOYEE_HISTS eh
+                    JOIN PBK_NSI.EMPLOYEES e ON (e.id = eh.head_id AND e.IS_DELETE = 0)
+                    LEFT JOIN PBK_NSI.EMP_DEPT_MOVES edm ON (e.ID = edm.EMPLOYEE_ID) 
+                    JOIN PBK_PLAN.PLAN_SCHEDULES ps ON (e.ID = ps.EMPLOYEE_ID 
+                     AND cast(eh.V_START_DATE as date) <= ps.WORK_DATE AND dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)) >= ps.WORK_DATE
+                      AND ps.WORK_DATE between cast(edm.PERIOD_START_DATE as date) AND cast(edm.PERIOD_END_DATE as date))
+                    LEFT JOIN PBK_TASK.TASKS t ON (ps.ID = t.PLAN_SCHEDULE_ID)
+                    LEFT JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+			WHERE 1=1
+				  AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+				  AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+				    AND ((#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+					   AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+					   OR (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= cast(eh.V_START_DATE AS DATE))
+						  AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+						  AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+						  AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} <= cast(eh.V_START_DATE AS DATE))
+						  AND eh.V_END_DATE is null) and eh.POSITION_NAME like upper('%онтрол%') /*AND eh.FOR_PLAN_USE = 1*/
+             ]]><if test="departmentId != null">
+				AND eh.DEPT_ID IN (${departmentId})
+			</if>
+			<if test="employeeId != null">
+				AND eh.HEAD_ID IN (${employeeId})
+			</if><![CDATA[
+              and (#{deptAuthId} is null or eh.DEPT_ID = #{deptAuthId})
+              union all
+SELECT
+			distinct eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as employee
+			  , eh.HEAD_ID AS employeeId
+			  , eh.PERSONNEL_NUMBER AS personalNumber
+			  , eh.DEPT_ID
+			  , isnull(tr.EXEMPT_SKM_COUNT, 0) AS exemptSkmCount
+			  , isnull(tr.EXEMPT_SKMO_COUNT, 0) AS exemptSkmoCount
+			  , isnull(tr.EXEMPT_VESB_COUNT, 0) AS exemptVesbCount
+			  , isnull(tr.EXEMPT_OTHER_LPK_COUNT, 0) AS lpkCount
+			  , isnull(tr.TS_CHECK_COUNT, 0) AS tsCheckCount
+			  , isnull(tr.EXEMPT_VALIDLESS_COUNT, 0) AS exemptValidlessCount
+			  , isnull(tr.PLANT_STOWAWAY_COUNT, 0) AS plantStowawayCount
+			  , isnull(tr.DELIVERY_OVD_COUNT, 0) AS deliveryOvdCount
+			  , isnull(tr.ORDINANCE_1000_COUNT, 0) AS ordinance1000Count
+			  , isnull(tr.ORDINANCE_2500_COUNT, 0) AS ordinance2500Count
+			  , isnull(tr.PROTOCOL_1000_COUNT, 0) AS protocol1000Count
+			  , isnull(tr.PROTOCOL_2500_COUNT, 0) AS protocol2500Count
+			  , isnull(tr.TICKET_SOLD_COUNT, 0) AS ticketSoldCount
+			FROM PBK_TASK.TASKS t
+				JOIN PBK_PLAN.PLAN_SCHEDULES ps ON t.PLAN_SCHEDULE_ID = ps.ID
+				JOIN PBK_NSI.EMPLOYEES e ON ps.EMPLOYEE_ID = e.ID AND e.IS_DELETE = 0
+				LEFT JOIN PBK_NSI.EMP_DEPT_MOVES edm on (e.ID = edm.EMPLOYEE_ID) AND ps.WORK_DATE between cast(edm.PERIOD_START_DATE as date) and cast(edm.PERIOD_END_DATE as date)
+				JOIN PBK_NSI.EMPLOYEE_HISTS eh on (eh.head_id = e.ID)
+				JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID AND 
+				 ps.work_date < cast(tr.create_date as date)
+			WHERE 1=1
+				  AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+				  AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+				    AND ((#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+					   AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+					   OR (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= cast(eh.V_START_DATE AS DATE))
+						  AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+						  AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+						  AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} <= cast(eh.V_START_DATE AS DATE))
+							  AND eh.V_END_DATE is null) and eh.POSITION_NAME like upper('%онтрол%') /*AND eh.FOR_PLAN_USE = 1*/
+							  and (select min(pss.work_date) from PBK_PLAN.PLAN_SCHEDULES pss where pss.EMPLOYEE_ID = eh.HEAD_ID
+				  AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= cast(pss.WORK_DATE AS DATE))
+				  AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(pss.WORK_DATE AS DATE))) <
+							  (select cast(min(ehh.CREATE_DATE) AS DATE) from PBK_NSI.EMPLOYEE_HISTS ehh 
+								  where eh.HEAD_ID = ehh.HEAD_ID) AND ps.WORK_DATE != cast(eh.CREATE_DATE as date)
+    			  ]]><if test="departmentId != null">
+				AND eh.DEPT_ID IN (${departmentId})
+			</if>
+			<if test="employeeId != null">
+				AND eh.HEAD_ID IN (${employeeId})
+			</if><![CDATA[
+			and (#{deptAuthId} is null or eh.DEPT_ID = #{deptAuthId})
+			and t.PLAN_SCHEDULE_ID not in
+				(SELECT
+				t.PLAN_SCHEDULE_ID
+			FROM PBK_NSI.EMPLOYEE_HISTS eh
+                    JOIN PBK_NSI.EMPLOYEES e ON (e.id = eh.head_id AND e.IS_DELETE = 0)
+                    LEFT JOIN PBK_NSI.EMP_DEPT_MOVES edm ON (e.ID = edm.EMPLOYEE_ID) 
+                    JOIN PBK_PLAN.PLAN_SCHEDULES ps ON (e.ID = ps.EMPLOYEE_ID 
+                     AND cast(eh.V_START_DATE as date) <= ps.WORK_DATE AND dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)) >= ps.WORK_DATE
+                      AND ps.WORK_DATE between cast(edm.PERIOD_START_DATE as date) AND cast(edm.PERIOD_END_DATE as date))
+                    LEFT JOIN PBK_TASK.TASKS t ON (ps.ID = t.PLAN_SCHEDULE_ID)
+                    LEFT JOIN PBK_TASK.TASK_REPORTS tr ON t.ID = tr.TASK_ID
+			WHERE 1=1
+				  AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= cast(ps.WORK_DATE AS DATE))
+				  AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(ps.WORK_DATE AS DATE))
+				    AND ((#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+					   AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+					   OR (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= cast(eh.V_START_DATE AS DATE))
+						  AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+						  AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} <= dateadd(dd,-1,cast(eh.V_END_DATE AS DATE)))
+						  AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= cast(eh.V_START_DATE AS DATE))
+					   OR (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} <= cast(eh.V_START_DATE AS DATE))
+						  AND eh.V_END_DATE is null) and eh.POSITION_NAME like upper('%онтрол%') and t.PLAN_SCHEDULE_ID is not null /*AND eh.FOR_PLAN_USE = 1*/
+            ]]><if test="departmentId != null">
+				AND eh.DEPT_ID IN (${departmentId})
+			</if>
+			<if test="employeeId != null">
+				AND eh.HEAD_ID IN (${employeeId})
+			</if><![CDATA[
+              and (#{deptAuthId} is null or eh.DEPT_ID = #{deptAuthId}))
+				union all
+				SELECT
+				eh.SURNAME + ' ' + eh.NAME + ' ' + eh.PATRONUMIC as employee
+			  , eh.HEAD_ID AS employeeId
+			  , eh.PERSONNEL_NUMBER AS personalNumber
+			  , eh.DEPT_ID as DEPT_ID
+			  , 0 AS exemptSkmCount
+			  , 0 AS exemptSkmoCount
+			  , 0 AS exemptVesbCount
+			  , 0 AS lpkCount
+			  , 0 AS tsCheckCount
+			  , 0 AS exemptValidlessCount
+			  , 0 AS plantStowawayCount
+			  , 0 AS deliveryOvdCount
+			  , 0 AS ordinance1000Count
+			  , 0 AS ordinance2500Count
+			  , 0 AS protocol1000Count
+			  , 0 AS protocol2500Count
+			  , 0 AS ticketSoldCount
+			FROM PBK_NSI.EMPLOYEE_HISTS eh
+                    JOIN PBK_NSI.EMPLOYEES e ON (e.id = eh.head_id AND e.IS_DELETE = 0)
+                    			WHERE 1=1
+								and eh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate() 
+			  AND eh.POSITION_NAME like upper('%онтрол%') AND eh.FOR_PLAN_USE = 0 and (eh.FIRE_DATE IS NULL)
+    			 ]]><if test="departmentId != null">
+				AND eh.DEPT_ID IN (${departmentId})
+			</if>
+			<if test="employeeId != null">
+				AND eh.HEAD_ID IN (${employeeId})
+			</if><![CDATA[
+			and (#{deptAuthId} is null or eh.DEPT_ID = #{deptAuthId})
+				) s
+		    GROUP BY s.employee, s.employeeId, s.personalNumber, s.DEPT_ID
+				]]>
+		) as sub
+	</select>
+
+</mapper>

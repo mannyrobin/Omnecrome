@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.report.standard.So25Mapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.report.So25View" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin"/>
+        <![CDATA[
+        SELECT
+            asmpp.WORK_DATE workDate,
+            agr.ROUTE_SHORT_NAME routeName,
+            grtk.NAME typeTs,
+            count(asmpp.ID) stops
+        FROM PBK_VIS.ASMPP_STOPS asmpp
+             JOIN PBK_VIS.ASDU_GTFS_ROUTES agr on asmpp.ROUTE_ID = agr.ROUTE_ID
+             JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS grtk on agr.ROUTE_TYPE = grtk.SHORT_NAME
+        WHERE
+            #{filter.dateFrom, jdbcType=DATE} <= cast(asmpp.WORK_DATE as datetime) + cast(cast(asmpp.time as time) as datetime) - CAST('03:00:00' as datetime)
+            AND DATEADD(day, 1, #{filter.dateTo, jdbcType=DATE}) >= cast(asmpp.WORK_DATE as datetime) + cast(cast(asmpp.time as time) as datetime) - CAST('03:00:00' as datetime)
+            AND (#{filter.routeId} IS NULL or #{filter.routeId} = asmpp.[ROUTE_ID])
+        GROUP BY asmpp.WORK_DATE, agr.ROUTE_SHORT_NAME, grtk.NAME
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+</mapper>

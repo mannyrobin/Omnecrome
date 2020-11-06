@@ -1,0 +1,806 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.RouteMapper">
+
+	 <sql id="fieldDomain">
+        <![CDATA[
+			,d.[IS_DELETE] as isDelete
+		  	,dh.[CREATE_DATE] as createDate
+		  	,dh.[CREATE_USER_ID] as createUserId
+		  	,dh.[UPDATE_DATE] as updateDate
+		  	,dh.[UPDATE_USER_ID] as updateUserId
+		  	,dh.[V_START_DATE] as versionStartDate
+		  	,dh.[V_END_DATE] as versionEndDate
+		  	,dh.[HEAD_ID] as headId
+		  	,dh.[ROUTE_NUMBER] as routeNumber        	
+          	,dh.[ROUTE_NUMBER_INT] as routeNumberInt
+          	,dh.[ASDU_ROUTE_ID] as asduRouteId
+          	,dh.[ASMPP_ROUTE_CODE] as asmppRouteCode
+           	,dh.[ASKP_ROUTE_CODE] as askpRouteCode 
+           	,dh.[GM_ROUTE_ID] as routeId
+        	,dh.[ROUTE_TS_KIND_ID] as routeTsKindId
+        	,dh.[PROFIT_RATIO] as profitRatio
+        	,dh.[EASU_FHD_ROUTE_CODE] as easuFhdRouteCode
+        	,dh.[IS_NIGHT] as isNight
+        ]]>
+     </sql>
+    
+	 <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.route.RouteView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+         <![CDATA[
+			SELECT
+               d.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+               , rts.NAME as routeTsKind
+          	   , gm.ROUTE_NUMBER as route
+				, STUFF((SELECT distinct ',' + cch.NAME
+						FROM [PBK_DB].[PBK_NSI].[CITY_COUNTY_HISTS] cch 
+								join PBK_NSI.CITY_DISTRICT_HISTS cdh on (cch.HEAD_ID = cdh.CITY_COUNTY_ID AND cdh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+								join PBK_NSI.CITY_DISTRICT_ROUTES cdr on (cdh.HEAD_ID = cdr.CITY_DISTRICT_ID AND cdr.ROUTE_ID = dh.HEAD_ID)
+						WHERE cdr.ROUTE_ID = dh.HEAD_ID for xml path('')),1,1,'') as cities
+				, STUFF((SELECT distinct ',' + cdh.NAME
+						FROM [PBK_DB].[PBK_NSI].[CITY_DISTRICT_ROUTES] cdr 
+								join PBK_NSI.CITY_DISTRICT_HISTS cdh on (cdr.CITY_DISTRICT_ID = cdh.HEAD_ID AND cdh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+						WHERE cdr.ROUTE_ID = dh.HEAD_ID for xml path('')),1,1,'') as district
+			FROM [PBK_NSI].[ROUTES] d 
+			JOIN [PBK_NSI].[ROUTE_HISTS] dh on (d.ID = dh.HEAD_ID)
+			JOIN [PBK_GISMGT].[GM_ROUTES]  gm on dh.GM_ROUTE_ID = gm.ID
+          	JOIN [PBK_NSI].[ROUTE_TS_KINDS] rts on dh.ROUTE_TS_KIND_ID = rts.ID
+			WHERE 
+				dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+			  	and (#{filter.routeNumber} is null or UPPER(dh.ROUTE_NUMBER) like UPPER('%${filter.routeNumber}%')) 
+          		and (#{filter.routeTsKindId} is null or rts.id = #{filter.routeTsKindId})
+          		and ((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR d.IS_DELETE = 0)
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getHistoryViews" resultType="ru.armd.pbk.views.nsi.route.RouteHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+				dh.ROUTE_NUMBER as routeNumber,
+				dh.ROUTE_NUMBER_INT as routeNumberInt
+				,dh.ASDU_ROUTE_ID as asduRouteId
+          		,dh.ASMPP_ROUTE_CODE as askpRouteCode
+           		,dh.ASKP_ROUTE_CODE as asmppRouteCode
+           		,dh.GM_ROUTE_ID as routeId
+        		,dh.ROUTE_TS_KIND_ID as routeTsKindId
+        		,dh.PROFIT_RATIO as profitRatio
+        		,dh.EASU_FHD_ROUTE_CODE as easuFhdRouteCode
+        		,dh.IS_NIGHT as isNight
+			FROM
+				PBK_NSI.ROUTE_HISTS dh LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+			WHERE
+          		dh.HEAD_ID = #{filter.routeHeadId}
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT
+	        	d.ID as id, dh.ROUTE_NUMBER_INT as number, dh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name
+	        FROM
+	        	PBK_NSI.ROUTES d
+				JOIN PBK_NSI.ROUTE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				JOIN PBK_NSI.ROUTE_TS_KINDS gmts on dh.[ROUTE_TS_KIND_ID] = gmts.ID
+				JOIN PBK_GISMGT.GM_ROUTES gm on (dh.GM_ROUTE_ID = gm.ID)
+	        WHERE
+	        	1 = 1 
+	        	and (#{parkId} is null or #{parkId} = -1 or (dh.V_END_DATE >= PBK_CORE.getVersionEndDate() 
+	        		AND dh.ASDU_ROUTE_ID in (
+	        			SELECT distinct ASDU_ROUTE_ID
+	        			FROM [PBK_VIS].[STOP_INTERVALS_STATS]
+	        			WHERE depot_id = #{parkId} 
+	        		)))
+	        	and gm.CLOSE_DATE is null AND d.IS_DELETE = 0 AND
+	     ]]>
+			<if test="tsType != null and tsType != '-1'">
+				gmts.ID IN (${tsType}) AND
+        	</if>
+		<![CDATA[
+				((d.IS_DELETE = 0 AND (#{name} IS NOT NULL AND UPPER(dh.ROUTE_NUMBER) like UPPER('pbk-nsi-lib%'))) OR
+				((#{venueId} is null or d.ID NOT IN (SELECT ROUTE_ID FROM PBK_NSI.CITY_VENUE_ROUTES WHERE CITY_VENUE_ID = #{venueId} AND V_END_DATE >= [PBK_CORE].getVersionEndDate()))
+				or (#{districtId} is null or d.ID NOT IN (SELECT ROUTE_ID FROM PBK_NSI.CITY_DISTRICT_ROUTES WHERE CITY_DISTRICT_ID = #{districtId} AND V_END_DATE >= [PBK_CORE].getVersionEndDate())))
+				and 
+					(
+						]]><if test="districtInId != null or venueInId != null"><![CDATA[
+							1 = 0
+						]]></if>
+						<if test="districtInId == null and venueInId == null"><![CDATA[
+							1 = 1
+						]]></if>
+						<if test="districtInId != null"><![CDATA[
+							or d.ID IN (SELECT ROUTE_ID FROM PBK_NSI.CITY_DISTRICT_ROUTES WHERE CITY_DISTRICT_ID IN (${districtInId}) AND V_END_DATE >= [PBK_CORE].getVersionEndDate())
+						]]></if>
+						<if test="venueInId != null"><![CDATA[
+							or d.ID IN (SELECT ROUTE_ID FROM PBK_NSI.CITY_VENUE_ROUTES WHERE CITY_VENUE_ID = #{venueInId} AND V_END_DATE >= [PBK_CORE].getVersionEndDate())
+						]]></if>
+						<if test="deptInId != null"><![CDATA[
+							and d.ID IN (SELECT ROUTE_ID FROM PBK_NSI.CITY_DISTRICT_ROUTES WHERE CITY_DISTRICT_ID IN (
+								SELECT dh.HEAD_ID
+  								FROM [PBK_NSI].[CITY_COUNTY_HISTS] ch
+  								JOIN [PBK_NSI].[CITY_DISTRICT_HISTS] dh on ch.HEAD_ID = dh.CITY_COUNTY_ID and dh.V_END_DATE >= PBK_CORE.getVersionEndDate() 
+  								WHERE ch.V_END_DATE >= PBK_CORE.getVersionEndDate() AND ch.DEPT_ID in (${deptInId})
+							) AND V_END_DATE >= [PBK_CORE].getVersionEndDate())
+						]]></if>
+						<![CDATA[	
+					)) AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+					order by number, name
+				]]>
+	</select>
+	
+<select id="getSelectItemsForDistrictSSS" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT
+				d.ID as id, dh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name
+			FROM
+				PBK_NSI.ROUTES d
+				JOIN PBK_NSI.ROUTE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				JOIN PBK_GISMGT.GM_ROUTES gm on (dh.GM_ROUTE_ID = gm.ID)
+				JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+				JOIN [PBK_NSI].[CITY_DISTRICT_ROUTES] dr on dr.ROUTE_ID = d.ID
+			WHERE
+				gm.CLOSE_DATE is null AND dr.CITY_DISTRICT_ID = #{districtId}
+		]]>
+	</select>
+	
+		<select id="getSelectItemsForDistrict" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT distinct route.[ID] as id
+               ,routeHist.ROUTE_NUMBER +' ('+rtk.NAME+')' as name
+             FROM [PBK_NSI].[ROUTES] route join [PBK_NSI].[ROUTE_HISTS] routeHist on (route.ID=routeHist.HEAD_ID and routeHist.V_END_DATE >=  PBK_CORE.getVersionEndDate())
+              join [PBK_DB].[PBK_GISMGT].[GM_ROUTES] gmRoute on gmRoute.ID=routeHist.[GM_ROUTE_ID]
+		      join [PBK_GISMGT].[GM_ROUTE_VARIANTS] gmRouteVar on gmRouteVar.MUID = gmRoute.ROUTE_VARIANT_MUID 				
+			  	and gmRouteVar.[VERSION] = (select max(t.[version]) from [PBK_GISMGT].[GM_ROUTE_VARIANTS] t where t.MUID = gmRouteVar.MUID)
+		      join [PBK_GISMGT].[GM_ROUTE_ROUNDS] gmRouteRnds on (gmRouteRnds.ROUTE_VARIANT_MUID=gmRouteVar.MUID 
+				and gmRouteRnds.VERSION = (select max(t.version) from [PBK_GISMGT].[GM_ROUTE_ROUNDS] t where t.MUID = gmRouteRnds.MUID and t.RR_TYPE_MUID = 1))
+			  join [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] trajectories on trajectories.RR_MUID=gmRouteRnds.MUID 
+				and trajectories.VERSION = (select max(t.VERSION) from [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] t where t.MUID =  trajectories.MUID)
+		      join [PBK_DB].[PBK_GISMGT].[GM_ROUTE_TRAJECTORY_TYPES] trType on trajectories.TRAJECTORY_TYPE_MUID = trType.MUID
+              LEFT JOIN PBK_NSI.ROUTE_TS_KINDS rtk ON (routeHist.ROUTE_TS_KIND_ID = rtk.ID)
+			  JOIN [PBK_NSI].[CITY_DISTRICT_ROUTES] dr on dr.ROUTE_ID = route.ID
+			WHERE
+				gmRoute.CLOSE_DATE is null AND dr.CITY_DISTRICT_ID = #{districtId}
+				and route.[ID] in (
+			SELECT
+	        	d.ID as id
+	        FROM
+	        	PBK_NSI.ROUTES d
+				JOIN PBK_NSI.ROUTE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				JOIN PBK_NSI.ROUTE_TS_KINDS gmts on dh.[ROUTE_TS_KIND_ID] = gmts.ID
+				JOIN PBK_GISMGT.GM_ROUTES gm on (dh.GM_ROUTE_ID = gm.ID)
+	        WHERE
+	        	1 = 1 
+	        	and (#{parkId} is null or #{parkId} = -1 or (dh.V_END_DATE >= PBK_CORE.getVersionEndDate() 
+	        		AND dh.ASDU_ROUTE_ID in (
+	        			SELECT distinct ASDU_ROUTE_ID
+	        			FROM [PBK_VIS].[STOP_INTERVALS_STATS]
+	        			WHERE depot_id = #{parkId} 
+	        		)))
+	        	and gm.CLOSE_DATE is null AND d.IS_DELETE = 0 AND
+	     ]]>
+			<if test="tsType != null and tsType != '-1'">
+				gmts.ID IN (${tsType}) AND
+        	</if>
+		<![CDATA[
+				((d.IS_DELETE = 0 AND (#{name} IS NOT NULL AND UPPER(dh.ROUTE_NUMBER) like UPPER('pbk-nsi-lib%'))) OR
+				((#{venueId} is null or d.ID NOT IN (SELECT ROUTE_ID FROM PBK_NSI.CITY_VENUE_ROUTES WHERE CITY_VENUE_ID = #{venueId} AND V_END_DATE >= [PBK_CORE].getVersionEndDate()))
+				or (#{districtId} is null or d.ID NOT IN (SELECT ROUTE_ID FROM PBK_NSI.CITY_DISTRICT_ROUTES WHERE CITY_DISTRICT_ID = #{districtId} AND V_END_DATE >= [PBK_CORE].getVersionEndDate())))
+				and 
+					(
+						]]><if test="districtInId != null or venueInId != null"><![CDATA[
+							1 = 0
+						]]></if>
+						<if test="districtInId == null and venueInId == null"><![CDATA[
+							1 = 1
+						]]></if>
+						<if test="districtInId != null"><![CDATA[
+							or d.ID IN (SELECT ROUTE_ID FROM PBK_NSI.CITY_DISTRICT_ROUTES WHERE CITY_DISTRICT_ID IN (${districtInId}) AND V_END_DATE >= [PBK_CORE].getVersionEndDate())
+						]]></if>
+						<if test="venueInId != null"><![CDATA[
+							or d.ID IN (SELECT ROUTE_ID FROM PBK_NSI.CITY_VENUE_ROUTES WHERE CITY_VENUE_ID = #{venueInId} AND V_END_DATE >= [PBK_CORE].getVersionEndDate())
+						]]></if>
+						<if test="deptInId != null"><![CDATA[
+							and d.ID IN (SELECT ROUTE_ID FROM PBK_NSI.CITY_DISTRICT_ROUTES WHERE CITY_DISTRICT_ID IN (
+								SELECT dh.HEAD_ID
+  								FROM [PBK_NSI].[CITY_COUNTY_HISTS] ch
+  								JOIN [PBK_NSI].[CITY_DISTRICT_HISTS] dh on ch.HEAD_ID = dh.CITY_COUNTY_ID and dh.V_END_DATE >= PBK_CORE.getVersionEndDate() 
+  								WHERE ch.V_END_DATE >= PBK_CORE.getVersionEndDate() AND ch.DEPT_ID in (${deptInId})
+							) AND V_END_DATE >= [PBK_CORE].getVersionEndDate())
+						]]></if>
+						<![CDATA[	
+					)) AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+					)
+				
+		]]>
+	</select>
+	
+	<select id="getSelectItemsForVenue" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT
+				d.ID as id, dh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name
+			FROM
+				PBK_NSI.ROUTES d
+				JOIN PBK_NSI.ROUTE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				JOIN PBK_GISMGT.GM_ROUTES gm on (dh.GM_ROUTE_ID = gm.ID)
+				JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+			WHERE gm.CLOSE_DATE is null AND d.ID in (
+				SELECT distinct dr.ROUTE_ID
+						  FROM [PBK_NSI].[CITY_VENUE_HISTS] v
+						  JOIN [PBK_NSI].[CITY_COUNTY_HISTS] c on c.DEPT_ID = v.DEPT_ID and c.V_END_DATE >= PBK_CORE.getVersionEndDate()
+						  JOIN [PBK_NSI].[CITY_DISTRICT_HISTS] d on d.CITY_COUNTY_ID = c.HEAD_ID and d.V_END_DATE >= PBK_CORE.getVersionEndDate()
+						  JOIN [PBK_NSI].[CITY_DISTRICT_ROUTES] dr on dr.CITY_DISTRICT_ID = d.HEAD_ID						  
+						  WHERE v.HEAD_ID = #{id} AND v.V_END_DATE >= PBK_CORE.getVersionEndDate()) 
+		]]>
+	</select>
+        
+    <insert id="insertHead" parameterType="ru.armd.pbk.domain.HeadVersionDomain" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.ROUTES(
+	        [IS_DELETE]
+        ) VALUES (
+        	#{isDelete}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.ROUTES' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+	<insert id="insert" parameterType="ru.armd.pbk.domain.nsi.Route" keyProperty="id" keyColumn="id">
+		<![CDATA[
+        insert into PBK_NSI.ROUTE_HISTS (
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+        	, [HEAD_ID]
+        	, [ROUTE_NUMBER]        	
+          	, [ROUTE_NUMBER_INT]
+          	, [ASDU_ROUTE_ID]
+          	, [ASMPP_ROUTE_CODE]
+           	, [ASKP_ROUTE_CODE]
+           	, [GM_ROUTE_ID]
+        	, [ROUTE_TS_KIND_ID]      
+        	, [PROFIT_RATIO]
+        	, [EASU_FHD_ROUTE_CODE]
+        	, [IS_NIGHT]
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+        	, #{headId}
+        	, #{routeNumber}
+			, #{routeNumberInt}
+			, #{asduRouteId}
+			, #{asmppRouteCode}
+			, #{askpRouteCode}
+			, #{routeId}
+			, #{routeTsKindId}
+			, #{profitRatio}
+			, #{easuFhdRouteCode}
+			, #{isNight}
+        )
+        ]]>
+		<selectKey order="AFTER" resultType="long" keyProperty="id">
+			<![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.ROUTE_HISTS' ) as id
+            ]]>
+		</selectKey>
+	</insert>
+	
+	<update id="update" parameterType="ru.armd.pbk.domain.nsi.Route">
+		<![CDATA[
+			UPDATE PBK_NSI.ROUTE_HISTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+				,ROUTE_NUMBER = #{routeNumber}
+          		,ROUTE_NUMBER_INT = #{routeNumberInt}
+          		,ASDU_ROUTE_ID = #{asduRouteId}
+          		,ASMPP_ROUTE_CODE = #{asmppRouteCode}
+           		,ASKP_ROUTE_CODE = #{askpRouteCode} 
+           		,GM_ROUTE_ID = #{routeId}
+        		,ROUTE_TS_KIND_ID = #{routeTsKindId}
+        		,PROFIT_RATIO = #{profitRatio}
+        		,EASU_FHD_ROUTE_CODE = #{easuFhdRouteCode}
+        		,IS_NIGHT = #{isNight}
+			WHERE
+			  ID = #{id}
+        ]]>
+	</update>
+    
+    <update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.ROUTES
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+       
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_NSI.ROUTES
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.Route">
+		<![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[ROUTES] d JOIN [PBK_NSI].[ROUTE_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE 1 = 1
+               and dh.[ID] = #{id}
+        ]]>
+    </select>
+    
+    <select id="getActual" resultType="ru.armd.pbk.domain.nsi.Route">
+		<![CDATA[
+			SELECT 
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[ROUTES] d JOIN [PBK_NSI].[ROUTE_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+               dh.[HEAD_ID] = #{domainId}
+			   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+	</select>
+	
+	<select id="getDomain" resultType="ru.armd.pbk.domain.nsi.Route">
+		<![CDATA[
+			SELECT 
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[ROUTES] d JOIN [PBK_NSI].[ROUTE_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+               ((#{gmId} is not null and dh.[GM_ROUTE_ID] = #{gmId})
+               or (#{asduId} is not null and dh.[ASDU_ROUTE_ID] = #{asduId})
+               or (#{askpCod} is not null and dh.[ASKP_ROUTE_CODE] = #{askpCod}))
+			   and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+	</select>
+	
+	<select id="getDomains" resultType="ru.armd.pbk.domain.nsi.Route">
+		<![CDATA[
+			SELECT 
+               d.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[ROUTES] d JOIN [PBK_NSI].[ROUTE_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+               dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+	</select>
+	
+	<select id="isExist" resultType="boolean">
+	    	<include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+   			SELECT
+   				1
+   			FROM
+   				PBK_NSI.ROUTE_HISTS
+   			WHERE
+   				(#{headId} is null OR HEAD_ID != #{headId})
+   				AND (#{asduId} is null OR ASDU_ROUTE_ID = #{asduId})
+   				AND (#{askpCod} is null OR ASKP_ROUTE_CODE = #{askpCod})
+   				AND (#{asmppCod} is null OR ASMPP_ROUTE_CODE = #{asmppCod})
+   				AND V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    		<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+    	</select>
+
+
+	<select id="getRouteTrajectoryByRouteNum" resultType="ru.armd.pbk.views.nsi.route.RouteTrajectory">
+		<![CDATA[
+			SELECT route.[ID] as id
+              ,routeHist.[ROUTE_NUMBER] as routeNumber
+              ,trajectories.[TRAJECTORY_TYPE_MUID] as trajectoryTypeId
+              ,trajectories.[WKT_GEOM] as wktLineStr
+              ,trType.[NAME] as trajectoryTypeName
+            FROM [PBK_NSI].[ROUTES] route join [PBK_NSI].[ROUTE_HISTS] routeHist on (route.ID=routeHist.HEAD_ID and routeHist.V_END_DATE >=  PBK_CORE.getVersionEndDate())
+              join [PBK_GISMGT].[GM_ROUTES] gmRoute on gmRoute.ID=routeHist.[GM_ROUTE_ID]
+              join [PBK_GISMGT].[GM_ROUTE_VARIANTS] gmRouteVar on gmRouteVar.MUID = gmRoute.ROUTE_VARIANT_MUID
+              join [PBK_GISMGT].[GM_ROUTE_ROUNDS] gmRouteRnds on (gmRouteRnds.ROUTE_VARIANT_MUID=gmRouteVar.MUID 
+			  and gmRouteRnds.RR_TYPE_MUID = (SELECT MUID FROM [PBK_GISMGT].GM_RR_TYPES where cod = '00'))
+              join [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] trajectories on trajectories.RR_MUID=gmRouteRnds.MUID
+              join [PBK_DB].[PBK_GISMGT].[GM_ROUTE_TRAJECTORY_TYPES] trType on trajectories.TRAJECTORY_TYPE_MUID = trType.MUID
+            WHERE routeHist.[ROUTE_NUMBER] = #{routeNum}
+        ]]>
+	</select>
+
+    <select id="getRouteTrajectory" resultType="ru.armd.pbk.views.nsi.route.RouteTrajectory">
+        <![CDATA[
+			SELECT route.[ID] as id
+              ,routeHist.[ROUTE_NUMBER] as routeNumber
+              ,rtk.NAME as routeType
+              ,trajectories.[TRAJECTORY_TYPE_MUID] as trajectoryTypeId
+              ,trajectories.[WKT_GEOM] as wktLineStr
+              ,trType.[NAME] as trajectoryTypeName
+            FROM [PBK_NSI].[ROUTES] route
+                join [PBK_NSI].[ROUTE_HISTS] routeHist on (route.ID=routeHist.HEAD_ID and routeHist.V_END_DATE >= PBK_CORE.getVersionEndDate())
+
+              join [PBK_DB].[PBK_GISMGT].[GM_ROUTES] gmRoute on gmRoute.ID = routeHist.[GM_ROUTE_ID]
+
+		      join [PBK_GISMGT].[GM_ROUTE_VARIANTS] gmRouteVar on gmRouteVar.MUID = gmRoute.ROUTE_VARIANT_MUID 				
+			  	and gmRouteVar.[VERSION] = (select max(t.[version]) from [PBK_GISMGT].[GM_ROUTE_VARIANTS] t where t.MUID = gmRouteVar.MUID)
+
+		      join [PBK_GISMGT].[GM_ROUTE_ROUNDS] gmRouteRnds on (gmRouteRnds.ROUTE_VARIANT_MUID = gmRouteVar.MUID
+				and gmRouteRnds.VERSION = (select max(t.version) from [PBK_GISMGT].[GM_ROUTE_ROUNDS] t where t.MUID = gmRouteRnds.MUID))
+
+			  join [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] trajectories on trajectories.RR_MUID=gmRouteRnds.MUID 
+				and trajectories.VERSION = (select max(t.VERSION) from [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] t where t.MUID = trajectories.MUID)
+
+		      join [PBK_DB].[PBK_GISMGT].[GM_ROUTE_TRAJECTORY_TYPES] trType on trajectories.TRAJECTORY_TYPE_MUID = trType.MUID
+
+              LEFT JOIN PBK_NSI.ROUTE_TS_KINDS rtk ON (routeHist.ROUTE_TS_KIND_ID = rtk.ID)
+            WHERE route.[ID] = #{routeId}
+        ]]>
+    </select>
+
+    <select id="getRouteStops" resultType="ru.armd.pbk.views.nsi.route.RouteStop">
+        <![CDATA[
+          SELECT distinct
+				dh.[GM_STOP_ID] as id
+		    	, dh.[ROUTE_ID] as routeId
+		    	, dh.[STOP_NAME] as name
+		    	, dh.[NAME_WITHOUT_DISTRICT] as nameWithoutDistrict
+		    	, dh.[WKT_GEOM] as wktPointStr
+		    	, rn.routeNames as routeNames
+				, dh.[GM_TRAJECTORY_TYPE_ID] as trajectoryType
+		  	  FROM [PBK_NSI].[ROUTE_STOPS] dh
+			  left join (select 
+						distinct gs.id as id 
+						, (
+						SELECT 
+		        	STUFF((SELECT DISTINCT ', ' +(routeHist.ROUTE_NUMBER)
+		        FROM
+		        	[PBK_NSI].[ROUTE_HISTS] routeHist 
+		             left join [PBK_GISMGT].[GM_ROUTES] gmRoute on gmRoute.ID=routeHist.[GM_ROUTE_ID] 
+		             left join [PBK_GISMGT].[GM_ROUTE_VARIANTS] gmRouteVar on gmRouteVar.MUID = gmRoute.ROUTE_VARIANT_MUID
+					 left join [PBK_GISMGT].[GM_ROUTE_ROUNDS] gmRouteRnds on (gmRouteRnds.ROUTE_VARIANT_MUID=gmRouteVar.MUID
+		            and gmRouteRnds.RR_TYPE_MUID = (SELECT MUID FROM [PBK_GISMGT].GM_RR_TYPES where cod = '00'))
+		             left join [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] trajectories on trajectories.RR_MUID=gmRouteRnds.MUID
+		             left join [PBK_GISMGT].[GM_ROUTE_TRAJECTORY_STOP_PLACES] trajectoryStops on trajectoryStops.ROUTE_TRAJECTORY_MUID=trajectories.MUID
+		             left join [PBK_GISMGT].[GM_STOP_PLACES] gmStopPlaces on gmStopPlaces.MUID=trajectoryStops.STOP_PLACE_MUID
+		             left join [PBK_GISMGT].[GM_STOPS] s on gmStopPlaces.STOP_MUID=s.MUID JOIN PBK_NSI.STOP_HISTS stopsHist on (s.ID = stopsHist.GM_STOP_ID AND stopsHist.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				WHERE routeHist.V_END_DATE >= PBK_CORE.getVersionEndDate() and
+					s.ID = gs.id AND routeHist.ROUTE_NUMBER IS NOT NULL FOR XML PATH('')), 1, 1,'')) as routeNames
+					from [PBK_GISMGT].[GM_STOPS] gs
+					) rn on rn.id = dh.GM_STOP_ID
+					left join [PBK_NSI].[ROUTE_HISTS] rhs on rhs.HEAD_ID = dh.ROUTE_ID
+          	  WHERE 1 = 1 
+          	  		AND dh.IS_ACTIVE = 1
+					and rn.routeNames is not null and rn.routeNames like ('%'+rhs.ROUTE_NUMBER+'%')
+          	  		AND ROUTE_ID = #{routeId}
+          			AND (#{trajectType} is null or GM_TRAJECTORY_TYPE_ID = #{trajectType})
+        ]]>
+    </select>
+    
+    
+    <select id="getRoutesStops" resultType="ru.armd.pbk.views.nsi.route.RouteStop">
+        <![CDATA[
+              SELECT distinct
+				dh.[GM_STOP_ID] as id
+		    	, dh.[ROUTE_ID] as routeId
+		    	, dh.[STOP_NAME] as name
+		    	, dh.[NAME_WITHOUT_DISTRICT] as nameWithoutDistrict
+		    	, dh.[WKT_GEOM] as wktPointStr
+		    	, dh.[ROUTE_NAMES] as routeNames
+				, dh.[GM_TRAJECTORY_TYPE_ID] as trajectoryType
+		  	  FROM [PBK_NSI].[ROUTE_STOPS] dh
+					left join [PBK_NSI].[ROUTE_HISTS] rhs on rhs.HEAD_ID = dh.ROUTE_ID
+          	  WHERE 1 = 1 
+          	  		AND dh.IS_ACTIVE = 1
+				AND dh.ROUTE_ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+        <![CDATA[
+          	  order by dh.ROUTE_ID, dh.GM_TRAJECTORY_TYPE_ID
+        ]]>
+    </select>
+	   
+    <select id="getRoutesTrajectory" resultType="ru.armd.pbk.views.nsi.route.RouteTrajectory">
+    	<![CDATA[
+    		SELECT route.[ID] as id
+              ,routeHist.[ROUTE_NUMBER] as routeNumber
+              ,rtk.NAME as routeType
+              ,trajectories.[TRAJECTORY_TYPE_MUID] as trajectoryTypeId
+              ,trajectories.[WKT_GEOM] as wktLineStr
+              ,trType.[NAME] as trajectoryTypeName
+            FROM [PBK_NSI].[ROUTES] route join [PBK_NSI].[ROUTE_HISTS] routeHist on (route.ID=routeHist.HEAD_ID and routeHist.V_END_DATE >=  PBK_CORE.getVersionEndDate())
+              join [PBK_DB].[PBK_GISMGT].[GM_ROUTES] gmRoute on gmRoute.ID=routeHist.[GM_ROUTE_ID]
+		      join [PBK_GISMGT].[GM_ROUTE_VARIANTS] gmRouteVar on gmRouteVar.MUID = gmRoute.ROUTE_VARIANT_MUID 				
+			  	and gmRouteVar.[VERSION] = (select max(t.[version]) from [PBK_GISMGT].[GM_ROUTE_VARIANTS] t where t.MUID = gmRouteVar.MUID)
+		      join [PBK_GISMGT].[GM_ROUTE_ROUNDS] gmRouteRnds on (gmRouteRnds.ROUTE_VARIANT_MUID=gmRouteVar.MUID 
+				and gmRouteRnds.VERSION = (select max(t.version) from [PBK_GISMGT].[GM_ROUTE_ROUNDS] t where t.MUID = gmRouteRnds.MUID and t.RR_TYPE_MUID = 1))
+			  join [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] trajectories on trajectories.RR_MUID=gmRouteRnds.MUID 
+				and trajectories.VERSION = (select max(t.VERSION) from [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] t where t.MUID =  trajectories.MUID)
+		      join [PBK_DB].[PBK_GISMGT].[GM_ROUTE_TRAJECTORY_TYPES] trType on trajectories.TRAJECTORY_TYPE_MUID = trType.MUID
+              LEFT JOIN PBK_NSI.ROUTE_TS_KINDS rtk ON (routeHist.ROUTE_TS_KIND_ID = rtk.ID)
+            WHERE route.[ID] in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" /> 
+    </select>
+    
+    <select id="getNightRoutes"  resultType="ru.armd.pbk.views.nsi.route.RouteSelectItem">
+    	<![CDATA[
+    		SELECT
+				r.ID as id,
+				rh.ROUTE_NUMBER  +' ('+gmts.NAME+')' as name,		
+				rh.[ROUTE_MOVE_COUNT] as entranceCount
+			FROM
+				PBK_DB.PBK_NSI.ROUTES r 
+				JOIN PBK_DB.PBK_NSI.ROUTE_HISTS rh ON (r.ID = rh.HEAD_ID AND rh.V_END_DATE >= PBK_DB.PBK_CORE.getVersionEndDate())
+				JOIN PBK_DB.PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+		    	JOIN PBK_DB.PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+			WHERE gm.CLOSE_DATE is null AND IS_NIGHT = 1
+			]]>
+			<if test="currentIds !=null">
+			<![CDATA[
+				SELECT
+					r.ID as id,
+					rh.ROUTE_NUMBER  +' ('+gmts.NAME+')' as name,		
+					rh.[ROUTE_MOVE_COUNT] as entranceCount
+				FROM
+					PBK_DB.PBK_NSI.ROUTES r 
+					JOIN PBK_DB.PBK_NSI.ROUTE_HISTS rh ON (r.ID = rh.HEAD_ID AND rh.V_END_DATE >= PBK_DB.PBK_CORE.getVersionEndDate())
+					JOIN PBK_DB.PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+			    	JOIN PBK_DB.PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+				WHERE 
+					r.ID IN (${currentIds})
+			]]>
+			</if>    	
+    </select>
+    
+    <select id="getSelectItemsForTask" resultType="ru.armd.pbk.views.nsi.route.RouteSelectItem">
+		<![CDATA[
+		select * from (
+		SELECT
+			r.ID as id,
+			rh.ROUTE_NUMBER  +' ('+gmts.NAME+')' as name,
+			rh.ROUTE_NUMBER_INT as number,
+			cdh.HEAD_ID as countyId,
+			rh.[ROUTE_MOVE_COUNT] as entranceCount,
+			cdh.NAME as countyName
+		FROM
+			PBK_NSI.CITY_COUNTIES cc LEFT JOIN PBK_NSI.CITY_COUNTY_HISTS cch ON (cc.ID = cch.HEAD_ID AND cch.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON (cdh.PLAN_CITY_COUNTY_ID = cc.ID AND cdh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.CITY_DISTRICT_ROUTES cdr ON (cdh.HEAD_ID = cdr.CITY_DISTRICT_ID AND cdr.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.ROUTES r ON (r.ID = cdr.ROUTE_ID) LEFT JOIN PBK_NSI.ROUTE_HISTS rh ON (r.ID = rh.HEAD_ID AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			JOIN PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+		    JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+		WHERE
+			gm.CLOSE_DATE is null AND (cch.DEPT_ID = #{deptId} AND r.ID IS NOT NULL
+			AND (#{brigadeId} IS NULL OR (cdh.HEAD_ID IN 
+				(
+					SELECT cvd.CITY_DISTRICT_ID
+					FROM PBK_PLAN.PLAN_VENUES pv 
+						JOIN PBK_NSI.CITY_VENUE_HISTS cvh ON (pv.CITY_VENUE_ID = cvh.HEAD_ID AND cvh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+						JOIN PBK_NSI.CITY_VENUE_DISTRICTS cvd ON (cvh.HEAD_ID = cvd.CITY_VENUE_ID AND cvd.V_END_DATE >= PBK_CORE.getVersionEndDate())
+					WHERE pv.ID = #{brigadeId}
+				)
+			 OR (3 != (
+						SELECT pv.SHIFT_ID
+						FROM PBK_PLAN.PLAN_VENUES pv 
+						WHERE pv.ID = #{brigadeId}
+						) or rh.IS_NIGHT = 1))))
+			
+		
+		UNION
+		
+		SELECT
+			r.ID as id,
+			rh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name,
+			rh.ROUTE_NUMBER_INT as number,
+			cdh.PLAN_CITY_COUNTY_ID as countyId,
+			(SELECT
+			  count (t.ROUTE_CODE) as MOVE_COUNT
+			FROM
+				[PBK_NSI].[ROUTE_HISTS] rh
+				join (
+					SELECT 
+						  ROUTE_CODE as  ROUTE_CODE, MOVE_CODE as MOVE_CODE 
+					FROM
+						[PBK_DB].[PBK_VIS].[FHD_TRIP_SCHEDULE]
+					GROUP BY
+						ROUTE_CODE, MOVE_CODE
+				) as t on (rh.[ROUTE_NUMBER] = t.ROUTE_CODE)
+			WHERE
+				rh.HEAD_ID = r.ID) as entranceCount,
+			cdh.NAME as countyName
+		FROM
+			PBK_PLAN.PLAN_VENUES pv LEFT JOIN PBK_NSI.CITY_VENUE_HISTS cvh ON (pv.CITY_VENUE_ID = cvh.HEAD_ID AND cvh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.CITY_VENUE_ROUTES cvr ON (cvh.HEAD_ID = cvr.CITY_VENUE_ID AND cvr.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.ROUTES r ON (cvr.ROUTE_ID = r.ID) LEFT JOIN PBK_NSI.ROUTE_HISTS rh ON (r.ID = rh.HEAD_ID AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.CITY_DISTRICT_ROUTES cdr ON (r.ID = cdr.ROUTE_ID) LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON (cdr.CITY_DISTRICT_ID = cdh.HEAD_ID AND cdh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			JOIN PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+		    JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+		WHERE
+			gm.CLOSE_DATE is null AND (pv.ID = #{brigadeId}) AND r.ID IS NOT NULL AND (pv.SHIFT_ID != 3 or rh.IS_NIGHT = 1)
+		
+		]]><if test="currentIds !=null">
+		UNION
+
+		SELECT
+			r.ID as id,
+			rh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name,
+			rh.ROUTE_NUMBER_INT as number,
+			cdh.PLAN_CITY_COUNTY_ID as countyId,
+			(SELECT
+			  count (t.ROUTE_CODE) as MOVE_COUNT
+			FROM
+				[PBK_NSI].[ROUTE_HISTS] rh
+				join (
+					SELECT 
+						  ROUTE_CODE as  ROUTE_CODE, MOVE_CODE as MOVE_CODE 
+					FROM
+						[PBK_DB].[PBK_VIS].[FHD_TRIP_SCHEDULE]
+					GROUP BY
+						ROUTE_CODE, MOVE_CODE
+				) as t on (rh.[ROUTE_NUMBER] = t.ROUTE_CODE)
+			WHERE
+				rh.HEAD_ID = r.ID) as entranceCount,
+			cdh.NAME as countyName
+		FROM
+			PBK_PLAN.PLAN_VENUES pv LEFT JOIN PBK_NSI.CITY_VENUE_HISTS cvh ON (pv.CITY_VENUE_ID = cvh.HEAD_ID AND cvh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.CITY_VENUE_ROUTES cvr ON (cvh.HEAD_ID = cvr.CITY_VENUE_ID AND cvr.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.ROUTES r ON (cvr.ROUTE_ID = r.ID) LEFT JOIN PBK_NSI.ROUTE_HISTS rh ON (r.ID = rh.HEAD_ID AND rh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			LEFT JOIN PBK_NSI.CITY_DISTRICT_ROUTES cdr ON (r.ID = cdr.ROUTE_ID) LEFT JOIN PBK_NSI.CITY_DISTRICT_HISTS cdh ON (cdr.CITY_DISTRICT_ID = cdh.HEAD_ID AND cdh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			JOIN PBK_GISMGT.GM_ROUTES gm on (rh.GM_ROUTE_ID = gm.ID)
+		    JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+		WHERE
+			r.ID IN (${currentIds})
+		</if><![CDATA[
+			) as routes
+			order by routes.number, routes.name
+		]]>
+	</select>
+	
+	<update id="updateRouteMoveCount">
+		<![CDATA[
+			UPDATE rh
+			SET rh.ROUTE_MOVE_COUNT = p1.cnt
+			FROM PBK_DB.PBK_NSI.ROUTE_HISTS rh 
+			JOIN (	SELECT p.ROUTE_CODE as routeCode, count(ROUTE_CODE) as cnt
+					FROM (
+						SELECT 
+							ROUTE_CODE as  ROUTE_CODE, MOVE_CODE as MOVE_CODE 
+							FROM
+								[PBK_DB].[PBK_VIS].[FHD_TRIP_SCHEDULE]
+							GROUP BY
+								ROUTE_CODE, MOVE_CODE) as p
+					GROUP BY p.ROUTE_CODE ) as p1 
+			ON p1.routeCode = rh.ROUTE_NUMBER AND rh.V_END_DATE >= PBK_DB.PBK_CORE.getVersionEndDate()			
+		]]>
+	</update>
+	
+	<select id="getSelectItemsForVenueDistrict" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT
+				d.ID as id, dh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name
+			FROM
+				PBK_NSI.ROUTES d
+				JOIN PBK_NSI.ROUTE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				JOIN PBK_GISMGT.GM_ROUTES gm on (dh.GM_ROUTE_ID = gm.ID)
+				JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+				JOIN PBK_NSI.CITY_VENUE_ROUTES cvr on (cvr.ROUTE_ID = dh.HEAD_ID and cvr.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				JOIN PBK_NSI.CITY_VENUE_DISTRICTS cvd ON (cvr.CITY_VENUE_DISTRICT_ID = cvd.ID) 
+			WHERE
+				gm.CLOSE_DATE is null 
+				AND d.IS_DELETE = 0
+				AND (#{venueId} is null OR cvr.CITY_VENUE_ID = #{venueId})
+				AND (#{districtId} is null OR cvd.CITY_DISTRICT_ID = #{districtId}) 
+		]]>	
+	</select>
+	
+	<select id="getSelectItemsForDistrictAdd" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT DISTINCT
+				d.ID as id, dh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name
+			FROM
+				PBK_NSI.ROUTES d
+				JOIN PBK_NSI.ROUTE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				JOIN PBK_GISMGT.GM_ROUTES gm on (dh.GM_ROUTE_ID = gm.ID)
+				JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+				JOIN [PBK_NSI].[CITY_DISTRICT_ROUTES] dr on dr.ROUTE_ID = d.ID				
+				LEFT JOIN [PBK_NSI].[CITY_DISTRICT_HISTS] cdh ON (dr.CITY_DISTRICT_ID = cdh.HEAD_ID AND cdh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			WHERE
+				gm.CLOSE_DATE is null 
+				AND	cdh.CITY_COUNTY_ID = (SELECT cdh.CITY_COUNTY_ID FROM [PBK_NSI].[CITY_DISTRICT_HISTS] cdh WHERE cdh.V_END_DATE >= PBK_CORE.getVersionEndDate() AND cdh.HEAD_ID = #{districtId})
+				AND d.ID NOT IN (
+					SELECT DISTINCT
+			        	d.ID as id
+			        FROM
+			        	PBK_NSI.CITY_VENUE_ROUTES cvr
+			        	RIGHT JOIN PBK_NSI.ROUTES d ON (cvr.ROUTE_ID = d.id AND cvr.V_END_DATE >= PBK_CORE.getVersionEndDate())
+						JOIN PBK_NSI.ROUTE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+						LEFT JOIN PBK_NSI.CITY_VENUE_DISTRICTS cvd ON (cvr.CITY_VENUE_DISTRICT_ID = cvd.ID)
+			        WHERE
+			        	d.IS_DELETE = 0
+			        	AND cvr.V_END_DATE >= PBK_CORE.getVersionEndDate()
+						AND (#{venueId} is null OR cvr.CITY_VENUE_ID = #{venueId})
+						AND (#{districtId} is null OR cvd.CITY_DISTRICT_ID = #{districtId})
+						AND (#{venueRouteTypeId} is null OR #{venueRouteTypeId} = cvr.ROUTE_TYPE_ID) 
+						AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+				)
+		]]>
+	</select>
+	
+	<select id="getLazySelectItemsForVenues" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[
+			SELECT
+	        	d.ID as id, dh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name
+	        FROM
+	        	PBK_NSI.ROUTES d
+				JOIN PBK_NSI.ROUTE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				JOIN PBK_GISMGT.GM_ROUTES gm on (dh.GM_ROUTE_ID = gm.ID)
+				JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+	        WHERE
+				gm.CLOSE_DATE is null AND (#{name} IS NOT NULL)
+				AND (#{venueId} is null or d.ID IN (SELECT DISTINCT
+			        	d.ID as id
+			        FROM
+			        	PBK_NSI.CITY_VENUE_ROUTES cvr
+			        	RIGHT JOIN PBK_NSI.ROUTES d ON (cvr.ROUTE_ID = d.id AND cvr.V_END_DATE >= PBK_CORE.getVersionEndDate())
+						JOIN PBK_NSI.ROUTE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+						LEFT JOIN PBK_NSI.CITY_VENUE_DISTRICTS cvd ON (cvr.CITY_VENUE_DISTRICT_ID = cvd.ID AND cvd.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+			        WHERE
+			        	d.IS_DELETE = 0
+			        	AND cvr.V_END_DATE >= PBK_CORE.getVersionEndDate()
+						AND (cvr.CITY_VENUE_ID = #{venueId})
+						AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+						AND cvd.CITY_VENUE_ID = #{venueId}))
+					AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+				]]>
+	</select>
+	
+	<select id="getRoutesOfCounty" resultType="ru.armd.pbk.core.views.SelectItem">
+		SELECT DISTINCT
+				d.ID as id, dh.ROUTE_NUMBER +' ('+gmts.NAME+')' as name
+			FROM
+				PBK_NSI.ROUTES d
+				JOIN PBK_NSI.ROUTE_HISTS dh on (d.ID = dh.HEAD_ID AND dh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+				JOIN PBK_GISMGT.GM_ROUTES gm on (dh.GM_ROUTE_ID = gm.ID)
+				JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gmts on (gm.ROUTE_TS_KIND_MUID = gmts.MUID)
+				JOIN [PBK_NSI].[CITY_DISTRICT_ROUTES] dr on dr.ROUTE_ID = d.ID
+				LEFT JOIN [PBK_NSI].[CITY_DISTRICT_HISTS] cdh ON (dr.CITY_DISTRICT_ID = cdh.HEAD_ID AND cdh.V_END_DATE >= PBK_CORE.getVersionEndDate())
+			WHERE
+				gm.CLOSE_DATE is null 
+				AND	cdh.CITY_COUNTY_ID = (SELECT cdh.CITY_COUNTY_ID FROM [PBK_NSI].[CITY_DISTRICT_HISTS] cdh WHERE cdh.V_END_DATE >= PBK_CORE.getVersionEndDate() AND cdh.HEAD_ID = #{districtId})
+	</select>
+	
+	<select id="getGtfsRouteLists"  resultType="ru.armd.pbk.views.nsi.route.RouteSelectItem">
+    	<![CDATA[
+    		SELECT distinct agr.[ROUTE_ID] as id     
+			       , agr.[ROUTE_SHORT_NAME] + ' (' + rtk.NAME+ ')' as name  
+			      
+			FROM [PBK_VIS].[ASDU_GTFS_ROUTES] agr
+			JOIN PBK_VIS.ASMPP_STOPS asmpp on agr.ROUTE_ID = asmpp.ROUTE_ID
+			JOIN PBK_GISMGT.GM_ROUTE_TS_KINDS gm on agr.ROUTE_TYPE = gm.SHORT_NAME
+			JOIN PBK_NSI.ROUTE_TS_KINDS rtk on rtk.GM_ROUTE_TS_KIND_ID = gm.ID
+			
+			WHERE 1 = 1 
+		        AND (#{dateFrom, jdbcType=DATE} IS NULL OR #{dateFrom, jdbcType=DATE} <= agr.WORK_DATE)
+	            AND (#{dateTo, jdbcType=DATE} IS NULL OR #{dateTo, jdbcType=DATE} >= agr.WORK_DATE)
+            ]]>
+            <if test="tsType != null and tsType != '-1'">
+				AND rtk.ID IN (${tsType}) 
+        	</if>
+        	<![CDATA[
+        		AND (#{routeName} IS NULL OR UPPER(agr.ROUTE_SHORT_NAME) like UPPER('${routeName}%'))        		
+        	]]>
+        	order by name
+	</select>
+	
+	<select id="getRouteTsName" resultType="ru.armd.pbk.core.views.SelectItem">
+		<![CDATA[		
+			SELECT 
+               d.[ID] as id
+               , CASE rtk.[COD] WHEN '1' THEN 'А-' WHEN '2' THEN 'Тб-' WHEN '3' THEN 'Тр-' WHEN '4' THEN 'СТр-' END + dh.ROUTE_NUMBER as name
+			FROM [PBK_NSI].[ROUTES] d JOIN [PBK_NSI].[ROUTE_HISTS] dh on (d.ID = dh.HEAD_ID)
+			LEFT JOIN PBK_NSI.ROUTE_TS_KINDS rtk on (dh.[ROUTE_TS_KIND_ID] = rtk.ID)
+			WHERE
+               dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+               and d.ID = #{id}
+    	]]>
+	</select>
+	
+</mapper>

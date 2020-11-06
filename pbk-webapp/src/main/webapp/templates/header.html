@@ -1,0 +1,231 @@
+<div ng-init="show=true">
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <p class="navbar-text pull-right">
+                <span class="">Пользователь: <a ng-if="hasSelfAdminPriviled" ng-href="current/user/{{userInfo.userId}}/info"> {{userInfo.name}}</a>
+                    <span ng-if="!hasSelfAdminPriviled">{{userInfo.name}}</span> </span> <br/>
+                
+                <nobr class="pull-right">
+               		<button type="button" ar-tooltip="Инструкция по работе АСУ ПБК" ng-click="manual()" class="btn btn-primary">
+                		<span>Инструкция <i class="glyphicon glyphicon-download small"></i></span>
+                	</button>
+                	<button type="button" ar-tooltip="Выйти из системы" ng-click="logout()" class="btn btn-primary">Выход</button>            
+                </nobr>
+            </p>
+            <div class="navbar-header">
+                <a class="navbar-brand" href="/" style="height: auto;">
+                    <img ng-src="images/logo.png"/>
+                </a>
+            </div>
+            <p class="navbar-text">
+                <span class="h4">Государственное унитарное предприятие "Мосгортранс"</span>
+                <br/>
+                <br/>
+                <span class="h4">АВТОМАТИЗИРОВАННАЯ СИСТЕМА УПРАВЛЕНИЯ ПРОВЕДЕНИЕМ БИЛЕТНОГО КОНТРОЛЯ</span>
+            </p>
+            <!--
+            перенёс в администрирование
+            <p class="navbar-text">
+                <a href="#" popover-template="popoverTemplate" popover-placement="bottom" popover-append-to-body="true" type="button">Информация о сборке</a>
+            </p>-->
+
+        </div>
+    </nav>
+</div>
+<div class="row">
+    <div class="container-fluid col-sm-2" style="display: inline-block;" ng-show="show">
+        <div style="border-width: 0 1px 0 0; border-color: #eee; border-style: solid; padding-right: 10px;">
+            <button type="button" class="btn" style="background-color: #f5f5f5; color: #777; width: 100%" ng-click="show=!show;">Меню</button>
+                <ul class="nav nav-pills nav-stacked left-menu">
+                    <li ng-show="hasWatchPbkMenuPrivilege" role="presentation" class="dropdown">
+                        <a class="showHide" data-target="#ticketControl" data-toggle="collapse" href="#" role="button" aria-haspopup="true"
+                           aria-expanded="false">Билетный контроль<span class="caret"></span></a>
+                        <ul id="ticketControl" class="nav nav-pills nav-stacked collapse upDown" style="margin-left: 30px">
+                            <li ng-show="hasWatchPlansPrivilege" class="forActive"><a ng-href="pbk/plans">Планирование ПБК</a></li>
+                            <li ng-show="hasWatchTasksPrivilege" class="forActive"><a ng-href="pbk/tasks">Задания</a></li>
+                            <li ng-show="hasWatchBSOPrivilege" class="forActive"><a ng-href="nsi/bsos">Журнал БСО</a></li>
+                            <li ng-show="hasWithdrawnDrawnCardsPrivilege" class="forActive"><a ng-href="pbk/withdrawn-cards">Изъятые проездные документы</a></li>
+                            <li ng-show="hasWatchRouteRatioPrivilege" class="forActive"><a ng-href="pbk/routes-ratio">Рейтинги маршрутов</a></li>
+                        	<li ng-show="hasWatchBonusesPrivilege" class="forActive"><a ng-href="pbk/bonuses">Премирование</a></li>
+                        </ul>
+                    </li>
+
+                    <li ng-show="hasWatchNsiMenuPrivilege" role="presentation" class="dropdown">
+                        <a class="showHide" data-target="#nsi" data-toggle="collapse" href="#" role="button" aria-haspopup="true"
+                           aria-expanded="false">НСИ<span class="caret"></span></a>
+                        <ul id="nsi" class="nav nav-pills nav-stacked collapse upDown" style="margin-left: 30px">
+                            <li ng-show="hasWatchDepartmentsPrivilege" class="forActive"><a ng-href="nsi/departments">Подразделения</a></li>
+                            <li ng-show="hasWatchNsiEmployeeMenuPrivilege">
+                                <a class="showHideLvl2" data-target="#employees" data-toggle="collapse" href="#" role="button" aria-haspopup="true"
+                                   aria-expanded="false">Сотрудники<span class="caret"></span></a>
+                                <ul id="employees" class="nav nav-pills nav-stacked collapse upDownLvl2" style="margin-left: 30px">
+                                    <li ng-show="hasWatchEmployeesPrivilege"  class="forActive"><a ng-href="nsi/employees">Сотрудники СДиК</a></li>
+                                    <li ng-show="hasWatchGkuopsEmployeesPrivilege" class="forActive"><a ng-href="nsi/gkuops">Сотрудники ГКУ ОП</a></li>
+                                    <li ng-show="hasWatchDriversPrivilege" class="forActive"><a ng-href="nsi/drivers">Водители</a></li>
+                                    <li ng-show="hasWatchEmployeeDevicesMenuPrivilege">
+                                        <a data-target="#equepments" data-toggle="collapse" href="#" role="button" aria-haspopup="true"
+                                           aria-expanded="false">Персональные устройства и карты<span class="caret"></span></a>
+                                        <ul id="equepments" class="nav nav-pills nav-stacked collapse upDownLvl3" style="margin-left: 30px">
+                                            <li ng-show="hasWatchDvrsPrivilege" class="forActive"><a ng-href="nsi/dvrs">Видеорегистраторы</a></li>
+                                            <li ng-show="hasWatchContactLessCardPrivilege" class="forActive"><a ng-href="nsi/contactless-cards">БСК</a></li>
+                                            <li ng-show="hasWatchPusksPrivilege" class="forActive"><a ng-href="nsi/pusks">ПУсК</a></li>
+                                            <li ng-show="hasWatchOficialCardsPrivilege" class="forActive"><a ng-href="nsi/official-cards">СКК</a></li>
+                                        </ul>
+                                    </li>
+                                    <li ng-show="hasWatchSexEmployeesPrivilege" class="forActive"><a ng-href="nsi/sexes">Пол</a></li>
+                                </ul>
+                            </li>
+                            <li ng-show="hasWatchNsiPlansMenuPrivilege">
+                                <a class="showHideLvl2" data-target="#plans" data-toggle="collapse" href="#" role="button" aria-haspopup="true"
+                                   aria-expanded="false">Планирование<span class="caret"></span></a>
+                                <ul id="plans" class="nav nav-pills nav-stacked collapse upDownLvl2" style="margin-left: 30px">
+                                    <li ng-show="hasWatchCalendarPrivilege" class="forActive"><a ng-href="nsi/calendar">Календарь</a></li>
+                                    <li ng-show="hasWatchShiftsPrivilege" class="forActive"><a ng-href="nsi/shifts">Смены</a></li>
+                                    <li ng-show="hasWatchVenuesPrivilege" class="forActive"><a ng-href="nsi/venues">Места встреч</a></li>
+                                    <li ng-show="hasWatchTicketsPrivilege" class="forActive"><a ng-href="nsi/tickets">Виды билетов</a></li>
+                                    <li ng-show="hasWatchTaskReportFieldsPrivilege" class="forActive"><a ng-href="nsi/task-report-fields">Виды операций</a></li>
+									<li ng-show="hasWatchVenuesPrivilege" class="forActive"><a ng-href="nsi/grafics">Графики</a></li>
+                                    
+                                    <!-- <li ng-show="hasWatchBSONumRulesPrivilege" class="forActive"><a ng-href="nsi/bso-number-rules">Правила формирования номера БСО</a></li> -->
+                                    <!-- 
+                                    <li ng-show="hasWatchNsiBSOMenuPrivilege">
+                                        <a data-target="#bso" data-toggle="collapse" href="#" role="button" aria-haspopup="true"
+                                           aria-expanded="false">БСО<span class="caret"></span></a>
+                                        <ul id="bso" class="nav nav-pills nav-stacked collapse upDownLvl3" style="margin-left: 30px">
+                                            <li ng-show="hasWatchBSONumRulesPrivilege" class="forActive"><a ng-href="nsi/bso-number-rules">Правила формирования номера</a></li>
+                                        </ul>
+                                    </li>
+                                     -->
+                                </ul>
+                            </li>
+                            <li ng-show="hasWatchRoutesPrivilege" class="forActive"><a ng-href="nsi/map-routes">Маршруты</a></li>
+                            <li ng-show="hasWatchPassangersVeniclesPrivilege" class="forActive"><a ng-href="nsi/venicles">Транспортные средства</a></li>
+                            <li ng-show="hasWatchNsiOtherMenuPrivilege">
+                                <a class="showHideLvl2" data-target="#other" data-toggle="collapse" href="#" role="button" aria-haspopup="true"
+                                   aria-expanded="false">Прочее<span class="caret"></span></a>
+                                <ul id="other" class="nav nav-pills nav-stacked collapse upDownLvl2" style="margin-left: 30px">
+                                    <li ng-show="hasWatchCountiesPrivilege" class="forActive"><a ng-href="nsi/counties">Округа</a></li>
+                                    <li ng-show="hasWatchDistrictsPrivilege" class="forActive"><a ng-href="nsi/districts">Районы</a></li>
+                                    <li ng-show="hasWatchParksPrivilege" class="forActive"><a ng-href="nsi/parks">Эксплуатационные филиалы</a></li>
+                                    <li ng-show="hasWatchRouteTsTypesPrivilege" class="forActive"><a ng-href="nsi/route-ts-kinds">Виды транспорта</a></li>                                    
+                                    <li ng-show="hasWatchStopsPrivilege" class="forActive"><a ng-href="nsi/stops">Остановочные пункты</a>
+                                    <!-- <li ng-show="hasWatchPassangersTsTypesPrivilege" class="forActive"><a ng-href="nsi/ts-types">Типы</a></li> -->
+                                    <li ng-show="hasWatchPassangersTsCapacitiesPrivilege" class="forActive"><a ng-href="nsi/ts-capacities">Вместимость</a></li>
+                                    <li ng-show="hasWatchPassangersTsModelsPrivilege" class="forActive"><a ng-href="nsi/ts-models">Модели</a></li>
+                                    <li ng-show="hasWatchEquipmentPrivilege" class="forActive"><a ng-href="nsi/equipments">Бортовое оборудование</a></li>
+                            		<!--  <li ng-show="hasWatchDutiesPrivilege" class="forActive"><a ng-href="nsi/duties">Наряды</a></li> -->
+                            		<li ng-show="hasWatchRoutesPrivilege" class="forActive"><a ng-href="nsi/routes">Маршруты</a></li>
+                                </ul>
+                            </li>
+                            <!--  
+                            <li ng-show="hasWatchNsiRoutesMenuPrivilege">
+                                <a class="showHideLvl2" data-target="#routes" data-toggle="collapse" href="#" role="button" aria-haspopup="true"
+                                   aria-expanded="false">Маршруты<span class="caret"></span></a>
+                                <ul id="routes" class="nav nav-pills nav-stacked collapse upDownLvl2" style="margin-left: 30px">
+                                    <li ng-show="hasWatchCountiesPrivilege" class="forActive"><a ng-href="nsi/counties">Округа</a></li>
+                                    <li ng-show="hasWatchDistrictsPrivilege" class="forActive"><a ng-href="nsi/districts">Районы</a></li>
+                                    <li ng-show="hasWatchParksPrivilege" class="forActive"><a ng-href="nsi/parks">Эксплуатационные филиалы</a></li>
+                                    <li ng-show="hasWatchRouteTsTypesPrivilege" class="forActive"><a ng-href="nsi/route-ts-kinds">Виды транспорта</a></li>
+                                    <li ng-show="hasWatchRoutesPrivilege" class="forActive"><a ng-href="nsi/routes">Маршруты</a></li>
+                                    <li ng-show="hasWatchStopsPrivilege" class="forActive"><a ng-href="nsi/stops">Остановочные пункты</a>
+                                </ul>
+                            </li>
+                            <li ng-show="hasWatchPassangersTsMenuPrivilege">
+                                <a class="showHideLvl2" data-target="#passFlow" data-toggle="collapse" href="#" role="button" aria-haspopup="true"
+                                   aria-expanded="false">Транспортные средства<span class="caret"></span></a>
+                                <ul id="passFlow" class="nav nav-pills nav-stacked collapse upDownLvl2" style="margin-left: 30px">
+                                    <li ng-show="hasWatchPassangersVeniclesPrivilege" class="forActive"><a ng-href="nsi/venicles">ТС</a></li>
+                                    <li ng-show="hasWatchPassangersTsTypesPrivilege" class="forActive"><a ng-href="nsi/ts-types">Типы</a></li>
+                                    <li ng-show="hasWatchPassangersTsCapacitiesPrivilege" class="forActive"><a ng-href="nsi/ts-capacities">Вместимость</a></li>
+                                    <li ng-show="hasWatchPassangersTsModelsPrivilege" class="forActive"><a ng-href="nsi/ts-models">Модели</a></li>
+                                    <li ng-show="hasWatchEquipmentPrivilege" class="forActive"><a ng-href="nsi/equipments">Бортовое оборудование</a></li>
+                            		<li ng-show="hasWatchDutiesPrivilege" class="forActive"><a ng-href="nsi/duties">Наряды</a></li>
+                                </ul>
+                            </li>
+                            -->
+                        </ul>
+                    </li>
+
+                    <li ng-show="hasWatchReportMenuPrivilege" role="presentation" class="dropdown">
+                        <a class="showHide" data-target="#reports" data-toggle="collapse" href="#" role="button" aria-haspopup="true"
+                           aria-expanded="false">Отчетность<span class="caret"></span></a>
+                        <ul id="reports" class="nav nav-pills nav-stacked collapse upDown" style="margin-left: 30px">
+                            <li ng-show="hasWatchTelematicsPrivilege" class="forActive">
+                                <a class="showHideLvl2" data-target="#askp" data-toggle="collapse" href="#" role="button" aria-haspopup="true"
+                                   aria-expanded="false">Анализ пассажиропотока<span class="caret"></span></a>
+                                <ul id="askp" class="nav nav-pills nav-stacked collapse upDownLvl2" style="margin-left: 30px">
+                                    <li ng-show="hasWatchTelematicsPrivilege" class="forActive"><a ng-href="askp/checks/moves">АСКП (данные по проходам)</a></li>
+                                    <!--<li ng-show="hasWatchTelematicsPrivilege" class="forActive"><a ng-href="askp/analysis/routes">Сравнительный анализ ПП</a></li>-->
+                                	<li ng-show="hasWatchTelematicsPrivilege" class="forActive"><a ng-href="report/union-analysis-on-date/move-routes">Сравнительный анализ ПП на дату</a></li>
+                                	<li ng-show="hasWatchTelematicsPrivilege" class="forActive"><a ng-href="report/union-analysis/routes">Сводный сравнительный анализ ПП</a></li>
+                                	<li ng-show="hasWatchTelematicsPrivilege" class="forActive"><a ng-href="report/askp/stops">Пассажиропоток по остановке</a></li>
+                                </ul>
+                            </li>                            
+                            <li ng-show="hasWatchStandartReportsPrivilege" class="forActive"><a ng-href="report/standard/list">Стандартные отчеты</a></li>
+                            <li ng-show="hasWatchReportsConstructorPrivilege" class="forActive"><a ng-href="/reports/builder/" target="_self">Конструктор отчетов</a></li>
+                            <li ng-show="hasWatchReportsUserPrivilege" class="forActive"><a ng-href="/reports?pa={{getReportsAuth()}}" target="_self">Пользовательские отчеты</a></li>
+                        </ul>
+                    </li>
+
+                    <!--ng-show="hasUserPriviled"-->
+                    <li ng-show="hasWatchAdminMenuPrivilege" role="presentation" class="dropdown">
+                        <a class="showHide" data-target="#administration" data-toggle="collapse" href="#" role="button" aria-haspopup="true"
+                           aria-expanded="false">Администрирование<span class="caret"></span></a>
+                        <ul id="administration" class="nav nav-pills nav-stacked collapse upDown" style="margin-left: 30px">
+                            <li ng-show="hasWatchUserPrivilege" class="forActive"><a ng-href="admin/users">Пользователи</a></li>
+                            <li ng-show="hasWatchRolesPrivilege" class="forActive"><a ng-href="admin/roles">Роли</a></li>
+                            <li ng-show="hasWatchAuditPrivilage" class="forActive"><a ng-href="admin/audit">Журнал действий</a></li>
+                            <li ng-show="hasWatchAuditPrivilage" class="forActive"><a ng-href="admin/audit-logs">Журнал очистки</a></li>
+                            <!--<li ng-show="hasWatchAuditTypePrivilage" class="forActive"><a ng-href="admin/audit-types">Справочник действий</a></li>-->
+                            <li ng-show="hasWatchSettingsPrivilege" class="forActive"><a ng-href="admin/settings/common">Настройки</a></li>
+                            <!--<li class="forActive"><a ng-href="admin/version">Версия приложения</a></li>-->
+                            <li ng-show="hasWatchVisMenuPrivilege">
+		                        <a class="showHideLvl2" data-target="#vis" data-toggle="collapse" href="#" role="button" aria-haspopup="true"
+		                           aria-expanded="false">ВИС<span class="caret"></span></a>
+		                        <ul id="vis" class="nav nav-pills nav-stacked collapse upDownLvl2" style="margin-left: 30px">
+		                        	<li ng-show="hasWatchAskpPuskCheckBindPrivilege" class="forActive"><a ng-href="vis/askp-pusk-check-bind">АСКП: проверки ПУсК</a></li>
+		                            <li ng-show="hasWatchVisPrivilege" class="forActive"><a ng-href="vis/vis">ВИС</a></li>
+		                            <li ng-show="hasWatchVisExchangePrivilege" class="forActive"><a ng-href="vis/exchanges">Журнал обмена с ВИС</a></li>
+		                            <li ng-show="hasWatchVisExchangeConfPrivilege" class="forActive"><a ng-href="vis/exchange-configs">Конфигурации взаимодействия</a></li>
+		                            <li ng-show="hasWatchVisExchangeObjPrivilege" class="forActive"><a ng-href="vis/exchange-objects">Объекты обмена</a></li>
+		                        </ul>
+		                    </li>
+                        </ul>
+                    </li>
+
+                    
+
+                </ul>
+        </div>
+    </div>
+    <div ng-class="{'col-sm-10' : show, 'col-sm-12' : !show}">
+        <button ng-show="!show" type="button" class="btn" style="width: 9%; background-color: #f5f5f5; color: #777; display: inline-block;" ng-click="show=!show;">Меню</button>
+        <div ncy-breadcrumb style="display: inline-block; width: 90%;"></div>
+        <div class="container-fluid" ui-view ng-cloak>
+        	<div ng-show="hasOnlySelfAdminPriviled" class="row">
+        		<div class="panel panel-default">        			
+				  <div class="panel-body">
+				    <p>Для Вашей роли не предусмотрено прав для работы с Системой.</p>
+				    <p>Для расширения набора прав обратитесь к администратору.</p>
+				  </div>
+				</div>
+        	</div>
+        </div>
+    </div>
+       
+    <script type="text/javascript">
+    	$(".forActive").on("click",function(){
+    	  $(".forActive").removeClass("active");
+    	  $(this).addClass("active");
+    	});
+    	$(".showHide").on("click",function(){
+    		$('.upDown').collapse('hide');
+    		$('.upDownLvl2').collapse('hide');
+    		$('.upDownLvl3').collapse('hide');
+    	});
+    	$(".showHideLvl2").on("click",function(){
+    		$('.upDownLvl2').collapse('hide');
+    		$('.upDownLvl3').collapse('hide');
+    	});
+    </script>
+</div>

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.department.DepartmentParkMapper">
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.department.DepartmentParkView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+          select dp.id as id, 
+				 park.name as name, 
+				 dp.V_START_DATE as versionStartDate,
+				 dp.V_END_DATE as versionEndDate,
+				 cdu.LOGIN as createUser,
+				 dp.CREATE_DATE as createDate,
+				 udu.LOGIN as updateUser,
+				 dp.UPDATE_DATE as updateDate
+          from   PBK_NSI.DEPT_PARKS dp 
+          		 INNER JOIN PBK_CORE.USERS cdu ON (dp.CREATE_USER_ID = cdu.ID) 
+          		 INNER JOIN PBK_CORE.USERS udu ON (dp.UPDATE_USER_ID = udu.ID)
+          		 INNER JOIN PBK_NSI.PARKS  park ON (dp.park_id = park.id)
+          where  dp.dept_id =  #{filter.departmentId}
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+	<select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+        select id as id, name as name
+        from [PBK_NSI].[PARKS]
+    </select>
+    
+    <insert id="insert" parameterType="ru.armd.pbk.domain.nsi.department.DepartmentPark" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        INSERT INTO
+        	PBK_NSI.DEPT_PARKS(
+		      CREATE_DATE
+		      , CREATE_USER_ID
+		      , UPDATE_DATE
+		      , UPDATE_USER_ID
+		      , V_START_DATE
+		      , V_END_DATE
+		      , DEPT_ID
+		      , PARK_ID
+	      ) VALUES(
+	        #{createDate},
+	        #{createUserId},
+	        #{updateDate},
+	        #{updateUserId},
+	        #{versionStartDate},
+	        #{versionEndDate},
+	        #{departmentId},
+	        #{parkId}
+	      )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.DEPT_PARKS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.department.DepartmentPark">
+        <![CDATA[
+        	select
+	    		ID,
+	    		CREATE_DATE as createDate,
+			    CREATE_USER_ID as createUserId,
+				UPDATE_DATE as updateDate,
+			    UPDATE_USER_ID as updateUserId,
+			    V_START_DATE as versionStartDate,
+			    V_END_DATE as versionEndDate,
+				DEPT_ID as departmentId,
+				PARK_ID as parkId
+			from
+				PBK_NSI.DEPT_PARKS
+            where ID = #{id}
+        ]]>
+    </select>
+    
+    <select id="getActual" parameterType="long" resultType="ru.armd.pbk.domain.nsi.department.DepartmentPark">
+    	SELECT
+    		ID,
+    		CREATE_DATE as createDate,
+		    CREATE_USER_ID as createUserId,
+			UPDATE_DATE as updateDate,
+		    UPDATE_USER_ID as updateUserId,
+		    V_START_DATE as versionStartDate,
+		    V_END_DATE as versionEndDate,
+			DEPT_ID as departmentId,
+			PARK_ID as parkId
+		FROM
+			PBK_NSI.DEPT_PARKS
+		WHERE
+			DEPT_ID = #{domainId} AND V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    </select>
+    
+    <select id="getHistory" parameterType="long" resultType="ru.armd.pbk.domain.nsi.department.DepartmentPark">
+    	SELECT
+    		ID,
+    		CREATE_DATE as createDate,
+		    CREATE_USER_ID as createUserId,
+			UPDATE_DATE as updateDate,
+		    UPDATE_USER_ID as updateUserId,
+		    V_START_DATE as versionStartDate,
+		    V_END_DATE as versionEndDate,
+			DEPT_ID as departmentId,
+			PARK_ID as parkId
+		FROM
+			PBK_NSI.DEPT_PARKS
+		WHERE
+			DEPT_ID = #{domainId}
+    </select>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.nsi.department.DepartmentPark">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.DEPT_PARKS
+		    SET
+		    	CREATE_DATE = #{createDate},
+		    	CREATE_USER_ID = #{createUserId},
+				UPDATE_DATE = #{updateDate},
+		    	UPDATE_USER_ID = #{updateUserId},
+		    	V_START_DATE = #{versionStartDate},
+		    	V_END_DATE = #{versionEndDate},
+				DEPT_ID = #{departmentId},
+				PARK_ID = #{parkId}
+		    WHERE
+		    	ID = #{id}
+	    ]]>
+    </update>
+    
+</mapper>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.employee.EmployeeCalendarMapper">
+<select id="getCalendarForPeriod" resultType="ru.armd.pbk.views.nsi.employee.EmployeeCalendarView">
+	<![CDATA[
+		(SELECT
+		    WORK_DATE as startDate,
+			cast(null as date) as endDate,
+		    WORK_MODE_ID as shiftType,
+		    WORK_PLAN_HOURS as workPlanHours
+		FROM
+			PBK_NSI.EMPLOYEE_WORK_MODES
+		WHERE
+			(EMPLOYEE_ID = #{employeeId})
+			AND (#{from} is null OR WORK_DATE >= #{from})
+		 	AND (#{to}   is null OR WORK_DATE <= #{to})
+		
+		UNION
+		
+		SELECT
+			PERIOD_START_DATE as startDate,
+      		PERIOD_END_DATE as endDate,
+		    ABSENCE_TYPE_ID + (select count(id) from PBK_NSI.WORK_MODES) as shiftType,
+			null as workPlanHours
+		FROM
+			PBK_NSI.EMPLOYEE_ABSENCES
+		WHERE
+			(EMPLOYEE_ID = #{employeeId})
+			AND ((#{from} is null OR PERIOD_START_DATE >= #{from} AND PERIOD_START_DATE <= #{to})
+		 	OR (#{to} is null OR PERIOD_END_DATE <= #{to} AND PERIOD_END_DATE >= #{from})))
+		ORDER BY startDate
+	]]>
+	</select>
+</mapper>

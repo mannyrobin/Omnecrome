@@ -1,0 +1,12 @@
+<div class="errors"><p ng-repeat="error in errors">{{error}}</p></div>
+
+<div class="calendar" ng-model="eventSources" ui-calendar="uiConfig.calendar" calendar="calendarInstance"></div>
+
+<div class="row" style="padding-top: 20px;">
+    <div class="col-sm-2"><i ng-style="{color: calendarColors.HOLIDAY}" class="glyphicon glyphicon-stop btn-md"></i> - выходной</div>
+    <div class="col-sm-2"><i ng-style="{color: calendarColors.DAY}" class="glyphicon glyphicon-stop btn-md"></i> - дневная смена</div>
+    <div class="col-sm-2"><i ng-style="{color: calendarColors.NIGHT}" class="glyphicon glyphicon-stop btn-md"></i> - ночная смена</div>
+    <div class="col-sm-2"><i ng-style="{color: calendarColors.NOT_WORK}" class="glyphicon glyphicon-stop btn-md"></i> - не работает</div>
+    <div class="col-sm-2"><i ng-style="{color: calendarColors.HOSPITAL}" class="glyphicon glyphicon-stop btn-md"></i> - больничный</div>
+    <div class="col-sm-2"><i ng-style="{color: calendarColors.VACATION}" class="glyphicon glyphicon-stop btn-md"></i> - отпуск</div>
+</div>

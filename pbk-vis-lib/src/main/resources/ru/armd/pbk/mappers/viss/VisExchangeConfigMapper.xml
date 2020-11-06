@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.VisExchangeConfigMapper">
+
+	<select id="getGridViews" resultType="ru.armd.pbk.views.viss.VisExchangeConfigView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+		<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+		<![CDATA[
+			SELECT 
+				ec.ID as id
+                , ec.IS_DELETE as isDelete
+    			, ec.COD as code
+    			, ec.NAME as name
+                , ec.DESCRIPTION as description
+                , eo.NAME as exchangeOperation
+                , eb.NAME as exchangeObject
+                , v.NAME as vis
+                , ec.IS_ACTIVE as isActive
+                , tt.NAME as transportType
+			FROM
+				PBK_VIS.VIS_EXCHANGE_CONFIGS ec
+                LEFT JOIN PBK_VIS.VIS_EXCHANGE_OPERATIONS eo ON (ec.EXCHANGE_OPERATION_ID = eo.ID)
+                LEFT JOIN PBK_VIS.VIS_TRANSPORT_TYPES tt ON (ec.TRANSPORT_TYPE_ID = tt.ID)
+				LEFT JOIN PBK_VIS.VIS_EXCHANGE_OBJECTS eb ON (ec.EXCHANGE_OBJECT_ID = eb.ID)
+                LEFT JOIN PBK_VIS.VISS v ON (eb.VIS_ID = v.ID)
+			WHERE
+				(#{filter.code} is null or UPPER(ec.COD) like UPPER('%${filter.code}%')) 
+				AND (#{filter.name} is null or UPPER(ec.NAME) like UPPER('%${filter.name}%'))
+				AND (#{filter.vis} is null or eb.VIS_ID = #{filter.vis})
+				AND (#{filter.transportType} is null or ec.TRANSPORT_TYPE_ID = #{filter.transportType})
+				AND (#{filter.exchangeOperation} is null or ec.EXCHANGE_OPERATION_ID = #{filter.exchangeOperation})
+				AND (#{filter.exchangeObject} is null or ec.EXCHANGE_OBJECT_ID = #{filter.exchangeObject})
+				AND (#{filter.isActive} is null or ec.IS_ACTIVE = #{filter.isActive})
+				and ((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR ec.IS_DELETE = 0)
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.VisExchangeConfig" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            INSERT INTO [PBK_VIS].[VIS_EXCHANGE_CONFIGS] (
+                  ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                  ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertDictionaryFields" /><![CDATA[
+                ,EXCHANGE_OPERATION_ID
+      			,TRANSPORT_TYPE_ID
+      			,EXCHANGE_OBJECT_ID
+                ,IS_DELETE
+                ,IS_ACTIVE
+                ,[URI]
+                ,[LOGIN]
+                ,[PASSWORD]
+            ) VALUES (
+                  ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+                  ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertDictionaryValues" /><![CDATA[
+                , #{exchangeOperationId}
+                , #{transportTypeId}
+                , #{exchangeObjectId}
+                , 0
+                , #{isActive}
+                , #{uri}
+                , #{login}
+                , #{password}
+            )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_VIS.VIS_EXCHANGE_CONFIGS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.VisExchangeConfig">
+        <![CDATA[
+            UPDATE [PBK_VIS].[VIS_EXCHANGE_CONFIGS]
+            SET
+                 ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+                 ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateDictionaryValues" /><![CDATA[
+                ,EXCHANGE_OPERATION_ID = #{exchangeOperationId}
+      			,TRANSPORT_TYPE_ID = #{transportTypeId}
+      			,EXCHANGE_OBJECT_ID = #{exchangeObjectId}
+                ,IS_ACTIVE = #{isActive}
+                ,[URI] = #{uri}
+                ,[LOGIN] = #{login}
+                ,[PASSWORD] = #{password}
+            WHERE [ID] = #{id}
+        ]]>
+    </update>
+
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM [PBK_VIS].[VIS_EXCHANGE_CONFIGS]
+            WHERE [ID] in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.VisExchangeConfig">
+        <![CDATA[
+            SELECT
+                  [ID] as id
+                  ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues" /><![CDATA[
+                  ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectDictionaryValues" /><![CDATA[
+                ,[EXCHANGE_OPERATION_ID] as exchangeOperationId
+                ,[TRANSPORT_TYPE_ID] as transportTypeId
+                ,[EXCHANGE_OBJECT_ID] as exchangeObjectId
+                ,[IS_ACTIVE] as isActive
+                ,IS_DELETE as isDelete
+                ,[URI] as uri
+                ,[LOGIN] as login
+                ,[PASSWORD] as password
+            FROM [PBK_VIS].[VIS_EXCHANGE_CONFIGS]
+            WHERE [ID] = #{id}
+       ]]>
+    </select>
+
+    <select id="getDomains" resultType="ru.armd.pbk.domain.viss.VisExchangeConfig">
+        <![CDATA[
+            SELECT
+                ID as id
+                 ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectAuditValues" /><![CDATA[
+                 ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplSelectDictionaryValues" /><![CDATA[
+                ,[EXCHANGE_OPERATION_ID] as exchangeOperationId
+                ,[TRANSPORT_TYPE_ID] as transportTypeId
+                ,[EXCHANGE_OBJECT_ID] as exchangeObjectId
+                ,[IS_ACTIVE] as isActive
+                ,[URI] as uri
+                ,[LOGIN] as login
+                ,[PASSWORD] as password
+                ,[RE_REQUEST_DEPTH] AS reRequestDepth
+            FROM [PBK_VIS].[VIS_EXCHANGE_CONFIGS]
+            WHERE 1 = 1
+              and (#{isDelete} is null or [IS_DELETE] = #{isDelete})
+              and (#{isActive} is null or [IS_ACTIVE] = #{isActive})
+              and (#{exchangeObjectId} is null or [EXCHANGE_OBJECT_ID] = #{exchangeObjectId})
+              and (#{exchangeOperationId} is null or [EXCHANGE_OPERATION_ID] = #{exchangeOperationId})
+        ]]>
+    </select>
+
+	<update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_VIS.VIS_EXCHANGE_CONFIGS
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+		SELECT
+			ID as id,
+			NAME as name
+		FROM
+			PBK_VIS.VIS_EXCHANGE_CONFIGS
+		WHERE
+			IS_DELETE = 0
+    </select>
+</mapper>

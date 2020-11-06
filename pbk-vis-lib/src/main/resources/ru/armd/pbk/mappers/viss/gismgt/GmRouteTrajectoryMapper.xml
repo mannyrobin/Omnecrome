@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gismgt.GmRouteTrajectoryMapper">
+	
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.gismgt.GmRouteTrajectory" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] (
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmFields" /><![CDATA[	
+    			, [LENGTH_FIX]
+    			, [TRAJECTORY_TYPE_MUID]
+    			, [WKT_GEOM]
+    			, [RR_MUID]
+    			, [SPECIFICATION]
+    			, [LENGTH]
+    			, [RR_NULL_MUID]
+            ) values (
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmValues" /><![CDATA[
+    			, #{fixedLength}
+    			, #{trajectoryTypeMuid}
+    			, #{wktGeom}
+    			, #{routeRoundMuid}
+    			, #{specification}
+    			, #{length}
+    			, #{routeNullRoundMuid}
+            )
+        ]]>     
+    </insert>
+    
+    <select id="getByMuid" resultType="ru.armd.pbk.domain.viss.gismgt.GmRouteTrajectory">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, LENGTH_FIX as fixedLength
+	    		, TRAJECTORY_TYPE_MUID as trajectoryTypeId
+	    		, WKT_GEOM as wktGeom
+	    		, RR_MUID as routeRoundId
+	    		, SPECIFICATION as specification
+	    		, LENGTH as length
+	    		, RR_NULL_MUID as routeNullRoundId
+			from [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] a
+            where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTE_TRAJECTORIES WHERE MUID = #{muid})			
+        ]]>
+    </select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.gismgt.GmRouteTrajectory">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, LENGTH_FIX as fixedLength
+	    		, TRAJECTORY_TYPE_MUID as trajectoryTypeId
+	    		, WKT_GEOM as wktGeom
+	    		, RR_MUID as routeRoundId
+	    		, SPECIFICATION as specification
+	    		, LENGTH as length
+	    		, RR_NULL_MUID as routeNullRoundId
+			from [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES] a
+            where ID = #{id}			
+        ]]>
+    </select>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.gismgt.GmRouteTrajectory">
+        <![CDATA[
+        	update [PBK_GISMGT].[GM_ROUTE_TRAJECTORIES]
+            set
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.updateGmFields" /><![CDATA[
+	    		, LENGTH_FIX = #{fixedLength}
+	    		, TRAJECTORY_TYPE_MUID = #{trajectoryTypeMuid}
+	    		, WKT_GEOM = #{wktGeom}
+	    		, RR_MUID = #{routeRoundMuid}
+	    		, SPECIFICATION = #{specification}
+	    		, LENGTH = #{length}
+	    		, RR_NULL_MUID = #{routeNullRoundMuid}
+			where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTE_TRAJECTORIES WHERE MUID = #{muid})
+        ]]>
+    </update>    
+</mapper>

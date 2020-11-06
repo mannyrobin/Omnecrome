@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.bsos.BsoReportMapper">
+
+  <select id="getByIds" resultType="ru.armd.pbk.aspose.nsi.bsos.BsoReportBeanData">
+    <![CDATA[
+      SELECT
+		b.BSO_NUMBER as actNumber,
+		eh.SURNAME as surname,
+		eh.NAME as name,
+		eh.PATRONUMIC as patronumic,
+		eh.PERSONNEL_NUMBER as personalNumber,
+		YEAR(GETDATE()) as year	
+	FROM
+		PBK_NSI.BSOS b LEFT JOIN PBK_NSI.BSO_EMPLOYEES be ON (b.ID = be.BSO_ID) LEFT JOIN PBK_NSI.EMPLOYEES e ON (be.EMPLOYEE_ID = e.ID)
+		LEFT JOIN PBK_NSI.EMPLOYEE_HISTS eh ON (e.ID = eh.HEAD_ID AND eh.V_END_DATE >= PBK_CORE.getVersionEndDate()) LEFT JOIN PBK_NSI.BSO_NUMBER_RULES br ON (b.BSO_NUMBER_RULE_ID = br.ID)
+		LEFT JOIN PBK_NSI.BSO_TYPES bt ON (br.BSO_TYPE_ID = bt.ID)
+	WHERE
+		bt.ID = 2 AND b.ID IN]]>
+		<foreach collection="ids" open="(" separator="," close=")" item="id">
+			#{id}
+		</foreach>
+  </select>
+
+</mapper>

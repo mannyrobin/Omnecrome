@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.viss.gismgt.GmRouteTransportKindMapper">
+	
+    <insert id="insert" parameterType="ru.armd.pbk.domain.viss.gismgt.GmRouteTransportKind" keyProperty="id" keyColumn="id">
+        <![CDATA[
+            insert into [PBK_GISMGT].[GM_ROUTE_TS_KINDS] (
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmFields" /><![CDATA[	
+    			, [NAME]
+    			, [SHORT_NAME]
+            ) values (
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.insertGmValues" /><![CDATA[
+    			, #{name}
+    			, #{shortName}
+            )
+        ]]>  
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( '[PBK_GISMGT].[GM_ROUTE_TS_KINDS]' ) as id
+            ]]>
+        </selectKey>     
+    </insert>
+    
+    <select id="getByMuid" resultType="ru.armd.pbk.domain.viss.gismgt.GmRouteTransportKind">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, NAME as name
+	    		, SHORT_NAME as shortName
+			from [PBK_GISMGT].[GM_ROUTE_TS_KINDS] a
+            where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTE_TS_KINDS WHERE MUID = #{muid})			
+        ]]>
+    </select>
+    
+    <select id="getById" resultType="ru.armd.pbk.domain.viss.gismgt.GmRouteTransportKind">
+        <![CDATA[
+			select 
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.gmFields" /><![CDATA[
+	    		, NAME as name
+	    		, SHORT_NAME as shortName
+			from [PBK_GISMGT].[GM_ROUTE_TS_KINDS] a
+            where ID = #{id}			
+        ]]>
+    </select>
+    
+    <update id="update" parameterType="ru.armd.pbk.domain.viss.gismgt.GmRouteTransportKind">
+        <![CDATA[
+        	update [PBK_GISMGT].[GM_ROUTE_TS_KINDS]
+            set
+            	]]><include refid="ru.armd.pbk.mappers.CommonSql.updateGmFields" /><![CDATA[
+	    		, NAME = #{name}
+	    		, SHORT_NAME = #{shortName}
+			where MUID = #{muid} and VERSION = (SELECT max(VERSION) FROM [PBK_GISMGT].GM_ROUTE_TS_KINDS WHERE MUID = #{muid})
+        ]]>
+    </update> 
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+    	<![CDATA[
+	    	SELECT
+	        	gm.ID as id, gm.NAME as name
+	        FROM
+	        	PBK_GISMGT.GM_ROUTE_TS_KINDS gm
+	        WHERE
+	        	gm.IS_DELETE = 0 AND
+	        	gm.ID NOT IN (SELECT GM_ROUTE_TS_KIND_ID FROM PBK_NSI.ROUTE_TS_KINDS WHERE IS_DELETE = 0 AND GM_ROUTE_TS_KIND_ID IS NOT NULL) OR (#{currentId} IS NOT NULL AND gm.ID = #{currentId}) 
+    	]]> 
+    </select>
+    
+</mapper>

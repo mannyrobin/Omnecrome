@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.armd.pbk.mappers.nsi.EquipmentMapper">
+
+    <sql id="fieldDomain">
+        <![CDATA[
+              ,d.[IS_DELETE] as isDelete
+              ,dh.[CREATE_DATE] as createDate
+              ,dh.[CREATE_USER_ID] as createUserId
+              ,dh.[UPDATE_DATE] as updateDate
+              ,dh.[UPDATE_USER_ID] as updateUserId
+              ,dh.[V_START_DATE] as versionStartDate
+              ,dh.[V_END_DATE] as versionEndDate
+              ,dh.[HEAD_ID] as headId
+              ,dh.[VENICLE_ID] as venicleId
+              ,dh.[BRAND] as brand
+              ,dh.[MODEL] as model
+              ,dh.[FIRMWARE_VERSION] as firmwareVersion
+              ,dh.[CELL_NUMBER] as cellNumber
+              ,dh.[ASDU_EQUIPMENT_ID] as asduEquipmentId
+              ,dh.[ASDU_VENICLE_ID] as asduVenicleId
+        ]]>
+    </sql>
+
+    <select id="getGridViews" resultType="ru.armd.pbk.views.nsi.equipment.EquipmentView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams">
+    	<include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+
+        <![CDATA[
+			SELECT
+               d.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			   ,CONCAT(m.[MAKE], m.[MODEL], '[', vh.DEPO_NUMBER, ']') as tsView
+			FROM [PBK_NSI].[TS_EQUIPMENTS] d JOIN [PBK_NSI].[TS_EQUIPMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+			  JOIN [PBK_NSI].[TS_VENICLES] v on (v.[ID] = dh.[VENICLE_ID])
+			  JOIN [PBK_NSI].[TS_VENICLE_HISTS] vh on (v.ID = vh.HEAD_ID AND vh.V_END_DATE >= [PBK_CORE].getVersionEndDate())
+			  JOIN [PBK_NSI].[TS_MODELS] m on (m.[ID] = vh.[TS_MODEL_ID])
+			WHERE 1 = 1
+                and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+                and (#{filter.model} is null or UPPER(dh.MODEL) like UPPER('%${filter.model}%'))
+        	    and (#{filter.brand} is null or UPPER(dh.BRAND) like UPPER('%${filter.brand}%'))
+        	    and (#{filter.tsView} is null or UPPER(vh.DEPO_NUMBER) like UPPER('%${filter.tsView}%'))
+        	    and ((SELECT VALUE FROM PBK_CORE.SETTINGS WHERE ID = 2006) = 'Да' OR d.IS_DELETE = 0)
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+	<select id="getHistoryViews" resultType="ru.armd.pbk.views.nsi.equipment.EquipmentHistoryView" parameterType="ru.armd.pbk.core.views.BaseGridViewParams" >
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportBegin" />
+        <![CDATA[
+			SELECT
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.historyViewValues" /><![CDATA[
+				dh.BRAND as brand
+				,dh.MODEL as model
+				,dh.VENICLE_ID as venicleId
+                ,dh.FIRMWARE_VERSION as firmwareVersion
+                ,dh.CELL_NUMBER as cellNumber
+                ,dh.ASDU_EQUIPMENT_ID as asduEquipmentId
+                ,dh.ASDU_VENICLE_ID as asduVenicleId
+
+			FROM
+				PBK_NSI.TS_EQUIPMENT_HISTS dh LEFT JOIN PBK_CORE.USERS cu ON (dh.CREATE_USER_ID = cu.ID) LEFT JOIN PBK_CORE.USERS uu ON (dh.UPDATE_USER_ID = uu.ID)
+			WHERE
+          		dh.HEAD_ID = #{filter.equipmentHeadId}
+        ]]>
+        <include refid="ru.armd.pbk.mappers.CommonSql.pageSupportEnd" />
+    </select>
+
+    <insert id="insertHead" parameterType="ru.armd.pbk.domain.HeadVersionDomain" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.TS_EQUIPMENTS(
+	        [IS_DELETE]
+        ) VALUES (
+        	#{isDelete}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.TS_EQUIPMENTS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <insert id="insert" parameterType="ru.armd.pbk.domain.nsi.Equipment" keyProperty="id" keyColumn="id">
+        <![CDATA[
+        insert into PBK_NSI.TS_EQUIPMENT_HISTS(
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditFields" /><![CDATA[
+                ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionFields" /><![CDATA[
+        	, [HEAD_ID]
+	        , [VENICLE_ID]
+        	, [ASDU_EQUIPMENT_ID]
+        	, [ASDU_VENICLE_ID]
+        	, [BRAND]
+        	, [MODEL]
+        	, [FIRMWARE_VERSION]
+        	, [CELL_NUMBER]
+        ) VALUES (
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertAuditValues" /><![CDATA[
+               ]]><include refid="ru.armd.pbk.mappers.CommonSql.tplInsertVersionValues" /><![CDATA[
+        	, #{headId}
+            , #{venicleId}
+            , #{asduEquipmentId}
+            , #{asduVenicleId}
+            , #{brand}
+            , #{model}
+            , #{firmwareVersion}
+            , #{cellNumber}
+        )
+        ]]>
+        <selectKey order="AFTER" resultType="long" keyProperty="id">
+            <![CDATA[
+              SELECT IDENT_CURRENT( 'PBK_NSI.TS_EQUIPMENT_HISTS' ) as id
+            ]]>
+        </selectKey>
+    </insert>
+
+    <update id="update" parameterType="ru.armd.pbk.domain.nsi.Equipment">
+        <![CDATA[
+			UPDATE PBK_NSI.TS_EQUIPMENT_HISTS SET
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateAuditValues" /><![CDATA[
+				]]><include refid="ru.armd.pbk.mappers.CommonSql.tplUpdateVersionValues" /><![CDATA[
+				,VENICLE_ID = #{venicleId}
+                ,BRAND = #{brand}
+                ,MODEL = #{model}
+                ,FIRMWARE_VERSION = #{firmwareVersion}
+                ,CELL_NUMBER = #{cellNumber}
+                ,ASDU_EQUIPMENT_ID = #{asduEquipmentId}
+                ,ASDU_VENICLE_ID = #{asduVenicleId}
+			WHERE
+			  ID = #{id}
+        ]]>
+    </update>
+
+    <delete id="delete">
+        <![CDATA[
+            DELETE FROM
+            	PBK_NSI.TS_EQUIPMENTS
+            where ID in ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </delete>
+    
+    <update id="deleteSoft">
+    	<![CDATA[
+		    UPDATE
+		    	PBK_NSI.TS_EQUIPMENTS
+		    SET
+		    	IS_DELETE = 1
+		    WHERE
+		    	ID IN ]]><include refid="ru.armd.pbk.mappers.CommonSql.inList" />
+    </update>
+
+    <select id="getById" resultType="ru.armd.pbk.domain.nsi.Equipment">
+		<![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[TS_EQUIPMENTS] d JOIN [PBK_NSI].[TS_EQUIPMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+				dh.[ID] = #{id}
+        ]]>
+    </select>
+    
+    <select id="getDomain" resultType="ru.armd.pbk.domain.nsi.Equipment">
+        <![CDATA[
+            SELECT
+                dh.[ID] as id
+                ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[TS_EQUIPMENTS] d JOIN [PBK_NSI].[TS_EQUIPMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+            WHERE 1 = 1
+              and (#{asduEquipmentId} is not null and dh.[ASDU_EQUIPMENT_ID] = #{asduEquipmentId})
+              and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>
+
+    <select id="getDomains" resultType="ru.armd.pbk.domain.nsi.Equipment">
+        <![CDATA[
+            SELECT
+                dh.[ID] as id
+                ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[TS_EQUIPMENTS] d JOIN [PBK_NSI].[TS_EQUIPMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+            WHERE 1 = 1
+              and (#{asduEquipmentId} is null or dh.[ASDU_EQUIPMENT_ID] = #{asduEquipmentId})
+              and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>
+
+    <select id="getDomainsShort" resultType="ru.armd.pbk.domain.nsi.EquipmentShort">
+        <![CDATA[
+            SELECT
+              dh.[HEAD_ID] as headId
+              ,dh.[ASDU_EQUIPMENT_ID] as asduEquipmentId
+            FROM [PBK_NSI].[TS_EQUIPMENT_HISTS] dh
+            WHERE 1 = 1
+              and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>
+
+    <select id="getActual" resultType="ru.armd.pbk.domain.nsi.Equipment">
+        <![CDATA[
+			SELECT
+               dh.[ID] as id
+               ]]><include refid="fieldDomain" /><![CDATA[
+			FROM [PBK_NSI].[TS_EQUIPMENTS] d JOIN [PBK_NSI].[TS_EQUIPMENT_HISTS] dh on (d.ID = dh.HEAD_ID)
+			WHERE
+				dh.[HEAD_ID] = #{domainId}
+				and dh.[V_END_DATE] >= [PBK_CORE].getVersionEndDate()
+        ]]>
+    </select>
+    
+    <select id="getSelectItems" resultType="ru.armd.pbk.core.views.SelectItem">
+      	SELECT
+        	d.ID as id, CONCAT(dh.BRAND, ' ', dh.MODEL) as name
+        FROM
+        	PBK_NSI.TS_EQUIPMENTS d JOIN PBK_NSI.TS_EQUIPMENT_HISTS dh on (d.ID = dh.HEAD_ID)
+        WHERE
+        	(d.IS_DELETE = 0 OR (#{currentId} IS NOT NULL AND d.ID = #{currentId})) AND dh.V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    </select>
+    	
+	<select id="isExist" resultType="boolean">
+	    <include refid="ru.armd.pbk.mappers.CommonSql.isExistStart" />
+   			SELECT
+   				1
+   			FROM
+   				PBK_NSI.TS_EQUIPMENT_HISTS
+   			WHERE
+   				(#{headId} is null OR HEAD_ID != #{headId})
+   				AND (#{asduEquipmentId} is null OR ASDU_EQUIPMENT_ID = #{asduEquipmentId})
+   				AND V_END_DATE >= [PBK_CORE].getVersionEndDate()
+    	<include refid="ru.armd.pbk.mappers.CommonSql.isExistEnd" />
+    </select>
+</mapper>
